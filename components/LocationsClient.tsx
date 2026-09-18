@@ -26,7 +26,7 @@ export function LocationsClient({
         <button
           type="button"
           onClick={() => setShowForm((v) => !v)}
-          className="rounded-full bg-green-600 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-green-700"
+          className="rounded-full bg-green-700 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-green-800"
         >
           + 場所を追加
         </button>
@@ -45,7 +45,7 @@ export function LocationsClient({
       )}
 
       {nodes.length === 0 ? (
-        <p className="rounded-xl border border-green-100 bg-white/70 p-6 text-center text-sm text-ink/60">
+        <p className="rounded-2xl border border-green-100 bg-white/70 p-6 text-center text-sm text-ink/60">
           まだ場所が登録されていません。
         </p>
       ) : (
@@ -54,7 +54,7 @@ export function LocationsClient({
             <li
               key={location.id}
               style={{ marginLeft: `${depth * 1.5}rem` }}
-              className="flex items-center justify-between rounded-xl border border-green-100 bg-white/70 px-4 py-3 shadow-sm"
+              className="flex items-center justify-between rounded-2xl border border-green-100 bg-white/70 px-4 py-3 shadow-sm"
             >
               <div>
                 <div className="flex items-center gap-2">
