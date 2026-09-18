@@ -95,7 +95,7 @@ export function BulkItemForm({ userId }: { userId: string }) {
   }
 
   return (
-    <div className="flex flex-col gap-6 rounded-2xl border border-green-100 bg-white/70 p-6 shadow-sm sm:p-8">
+    <div className="flex flex-col gap-6 rounded-[1.75rem] border border-green-100 bg-white/70 p-6 shadow-sm sm:p-8">
       <div className="flex flex-col gap-1.5">
         <label className="text-sm font-medium text-ink/80">
           写真をまとめて選択
@@ -143,7 +143,7 @@ export function BulkItemForm({ userId }: { userId: string }) {
         type="button"
         onClick={handleBulkRegister}
         disabled={processing || files.length === 0}
-        className="rounded-full bg-green-600 px-6 py-3 font-semibold text-white transition hover:bg-green-700 disabled:opacity-60"
+        className="rounded-full bg-green-700 px-6 py-3 font-semibold text-white transition hover:bg-green-800 disabled:opacity-60"
       >
         {processing ? "登録中…" : `まとめて登録する(${files.length}件)`}
       </button>
