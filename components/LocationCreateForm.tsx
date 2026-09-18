@@ -58,7 +58,7 @@ export function LocationCreateForm({
   return (
     <form
       onSubmit={handleSubmit}
-      className="flex flex-col gap-3 rounded-xl border border-green-200 bg-green-50/60 p-4"
+      className="flex flex-col gap-3 rounded-2xl border border-green-200 bg-green-50/60 p-4"
     >
       <div className="flex flex-col gap-1.5">
         <label className="text-sm font-medium text-ink/80">場所の名前</label>
@@ -107,7 +107,7 @@ export function LocationCreateForm({
         <button
           type="submit"
           disabled={submitting}
-          className="rounded-full bg-green-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-green-700 disabled:opacity-60"
+          className="rounded-full bg-green-700 px-4 py-2 text-sm font-semibold text-white transition hover:bg-green-800 disabled:opacity-60"
         >
           {submitting ? "追加中…" : "追加する"}
         </button>
