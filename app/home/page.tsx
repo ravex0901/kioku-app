@@ -79,7 +79,7 @@ export default async function HomePage() {
           </p>
           <Link
             href="/items/new"
-            className="rounded-full bg-green-600 px-8 py-4 text-lg font-semibold text-white shadow-sm transition hover:bg-green-700"
+            className="rounded-full bg-green-700 px-8 py-4 text-lg font-semibold text-cream shadow-sm transition hover:bg-green-800"
           >
             はじめての1品を登録する
           </Link>
@@ -94,12 +94,22 @@ export default async function HomePage() {
       <main className="mx-auto flex max-w-5xl flex-col gap-8 px-4 py-8 sm:px-6">
         <Link
           href="/items/new"
-          className="flex items-center justify-between rounded-2xl bg-green-600 px-6 py-6 text-white shadow-sm transition hover:bg-green-700"
+          className="flex items-center justify-between rounded-[1.75rem] bg-green-700 px-6 py-7 text-cream shadow-md transition hover:bg-green-800"
         >
-          <span className="text-xl font-bold">
-            ものを、ひとつ登録してみましょう
-          </span>
-          <span aria-hidden className="text-2xl">
+          <div>
+            <p className="text-xs tracking-widest text-cream/60">
+              TODAY&apos;S ONE
+            </p>
+            <span className="mt-1 block font-serif-jp text-xl font-bold leading-snug">
+              ものを、ひとつ
+              <br />
+              登録してみましょう
+            </span>
+          </div>
+          <span
+            aria-hidden
+            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-cream/15 text-2xl"
+          >
             +
           </span>
         </Link>
@@ -116,7 +126,7 @@ export default async function HomePage() {
               <Link
                 key={item.id}
                 href={`/items/${item.id}`}
-                className="flex flex-col overflow-hidden rounded-xl border border-green-100 bg-white/70 shadow-sm transition hover:shadow"
+                className="flex flex-col overflow-hidden rounded-2xl border border-green-100 bg-white/70 shadow-sm transition hover:shadow"
               >
                 <div className="aspect-square w-full bg-green-50">
                   {item.photo_url && photoMap[item.photo_url] ? (
@@ -148,7 +158,7 @@ export default async function HomePage() {
 
         <Link
           href="/progress"
-          className="rounded-2xl border border-green-100 bg-white/70 p-6 shadow-sm transition hover:shadow"
+          className="rounded-[1.75rem] border border-green-100 bg-white/70 p-6 shadow-sm transition hover:shadow"
         >
           <h2 className="text-lg font-bold text-ink">片付けの進捗</h2>
           <div className="mt-4">
@@ -178,7 +188,7 @@ export default async function HomePage() {
         <div className="grid gap-4 sm:grid-cols-2">
           <Link
             href="/items"
-            className="rounded-2xl border border-green-100 bg-white/70 p-6 shadow-sm transition hover:shadow"
+            className="rounded-[1.75rem] border border-green-100 bg-white/70 p-6 shadow-sm transition hover:shadow"
           >
             <h3 className="text-base font-bold text-ink">見る・探す</h3>
             <p className="mt-1 text-sm text-ink/60">
@@ -187,7 +197,7 @@ export default async function HomePage() {
           </Link>
           <Link
             href="/locations"
-            className="rounded-2xl border border-green-100 bg-white/70 p-6 shadow-sm transition hover:shadow"
+            className="rounded-[1.75rem] border border-green-100 bg-white/70 p-6 shadow-sm transition hover:shadow"
           >
             <h3 className="text-base font-bold text-ink">場所を管理する</h3>
             <p className="mt-1 text-sm text-ink/60">
