@@ -16,12 +16,6 @@ const CATEGORY_VALUES: CategoryMajor[] = [
 const CONDITION_VALUES = ["good", "used", "needs_repair"] as const;
 export type ItemCondition = (typeof CONDITION_VALUES)[number];
 
-export const CONDITION_LABELS: Record<ItemCondition, string> = {
-  good: "良好",
-  used: "使用感あり",
-  needs_repair: "要修理",
-};
-
 export type ItemAiSuggestion = {
   name: string;
   categoryMajor: CategoryMajor;
