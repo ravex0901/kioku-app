@@ -180,9 +180,9 @@ export function ItemDetail({
 
   if (!editing) {
     return (
-      <div className="flex flex-col gap-6 rounded-2xl border border-green-100 bg-white/70 p-6 shadow-sm sm:p-8">
+      <div className="flex flex-col gap-6 rounded-[1.75rem] border border-green-100 bg-white/70 p-6 shadow-sm sm:p-8">
         <div className="flex flex-col items-start gap-4 sm:flex-row">
-          <div className="h-40 w-40 shrink-0 overflow-hidden rounded-xl bg-green-50">
+          <div className="h-40 w-40 shrink-0 overflow-hidden rounded-2xl bg-green-50">
             {photoPreview ? (
               // eslint-disable-next-line @next/next/no-img-element
               <img
@@ -241,7 +241,7 @@ export function ItemDetail({
           <button
             type="button"
             onClick={() => setEditing(true)}
-            className="rounded-full bg-green-600 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-green-700"
+            className="rounded-full bg-green-700 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-green-800"
           >
             編集する
           </button>
@@ -259,7 +259,7 @@ export function ItemDetail({
   }
 
   return (
-    <div className="flex flex-col gap-6 rounded-2xl border border-green-100 bg-white/70 p-6 shadow-sm sm:p-8">
+    <div className="flex flex-col gap-6 rounded-[1.75rem] border border-green-100 bg-white/70 p-6 shadow-sm sm:p-8">
       <div className="flex flex-col gap-1.5">
         <label className="text-sm font-medium text-ink/80">写真</label>
         {photoPreview && (
@@ -267,7 +267,7 @@ export function ItemDetail({
           <img
             src={photoPreview}
             alt="プレビュー"
-            className="mb-2 h-40 w-40 rounded-xl object-cover"
+            className="mb-2 h-40 w-40 rounded-2xl object-cover"
           />
         )}
         <input
@@ -417,7 +417,7 @@ export function ItemDetail({
           type="button"
           onClick={handleSave}
           disabled={submitting}
-          className="rounded-full bg-green-600 px-6 py-3 font-semibold text-white transition hover:bg-green-700 disabled:opacity-60"
+          className="rounded-full bg-green-700 px-6 py-3 font-semibold text-white transition hover:bg-green-800 disabled:opacity-60"
         >
           {submitting ? "保存中…" : "保存する"}
         </button>

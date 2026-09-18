@@ -72,7 +72,7 @@ export default async function ProgressPage() {
       <main className="mx-auto max-w-3xl px-4 py-8 sm:px-6">
         <h1 className="mb-6 text-xl font-bold text-ink">片付けの進捗マップ</h1>
 
-        <section className="mb-8 rounded-2xl border border-green-100 bg-white/70 p-6 shadow-sm">
+        <section className="mb-8 rounded-[1.75rem] border border-green-100 bg-white/70 p-6 shadow-sm">
           <ProgressBar ratio={overallRatio} />
           <p className="mt-2 text-sm text-ink/60">
             全体の完了度 {Math.round(overallRatio * 100)}%
@@ -98,7 +98,7 @@ export default async function ProgressPage() {
         <section>
           <h2 className="mb-3 text-lg font-bold text-ink">部屋ごとの進捗</h2>
           {roomStats.length === 0 ? (
-            <p className="rounded-xl border border-green-100 bg-white/70 p-6 text-center text-sm text-ink/60">
+            <p className="rounded-2xl border border-green-100 bg-white/70 p-6 text-center text-sm text-ink/60">
               部屋・収納の場所が登録されていません。
             </p>
           ) : (
@@ -108,7 +108,7 @@ export default async function ProgressPage() {
                 return (
                   <li
                     key={room.id}
-                    className="rounded-xl border border-green-100 bg-white/70 p-4 shadow-sm"
+                    className="rounded-2xl border border-green-100 bg-white/70 p-4 shadow-sm"
                   >
                     <div className="flex items-center justify-between">
                       <span className="font-medium text-ink">

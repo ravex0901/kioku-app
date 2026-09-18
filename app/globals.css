@@ -1,19 +1,21 @@
 @import "tailwindcss";
 
 @theme {
-  --color-cream: #faf6ee;
-  --color-cream-dark: #f2ead9;
-  --color-ink: #2f2a20;
-  --color-green-50: #eef3ea;
-  --color-green-100: #d9e6cf;
-  --color-green-200: #b3cc9f;
-  --color-green-300: #8bb073;
-  --color-green-400: #5f8f4c;
-  --color-green-500: #3f6b30;
-  --color-green-600: #2f5324;
-  --color-green-700: #24401c;
-  --color-green-800: #1b3015;
+  --color-cream: #f6efe0;
+  --color-cream-dark: #eee2c6;
+  --color-ink: #2b2a24;
+  --color-green-50: #eef2ea;
+  --color-green-100: #dbe5d2;
+  --color-green-200: #b8cdac;
+  --color-green-300: #93b183;
+  --color-green-400: #6c9260;
+  --color-green-500: #4a7248;
+  --color-green-600: #2f5233;
+  --color-green-700: #213c28;
+  --color-green-800: #172a1c;
   --color-gold: #c8a45c;
+  --font-serif-jp: var(--font-shippori-mincho), "Hiragino Mincho ProN",
+    "Yu Mincho", serif;
 }
 
 html {
@@ -44,4 +46,15 @@ body {
 
 a {
   color: inherit;
+}
+
+h1,
+h2,
+h3 {
+  font-family: var(--font-serif-jp);
+  letter-spacing: 0.01em;
+}
+
+main {
+  padding-bottom: 6rem;
 }

@@ -75,7 +75,7 @@ export function SignupForm() {
       <button
         type="submit"
         disabled={pending}
-        className="mt-2 rounded-full bg-green-600 px-6 py-3 font-semibold text-white transition hover:bg-green-700 disabled:opacity-60"
+        className="mt-2 rounded-full bg-green-700 px-6 py-3 font-semibold text-white transition hover:bg-green-800 disabled:opacity-60"
       >
         {pending ? "登録中…" : "新規登録"}
       </button>

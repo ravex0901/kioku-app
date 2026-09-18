@@ -65,7 +65,7 @@ export default async function ItemsPage({
         <h1 className="mb-6 text-xl font-bold text-ink">見る・探す</h1>
 
         {bulkAdded && (
-          <p className="mb-6 rounded-xl border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-700">
+          <p className="mb-6 rounded-2xl border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-700">
             {bulkAdded}件を仮登録しました。場所や処分方針は後で確認してください。
           </p>
         )}
@@ -81,7 +81,7 @@ export default async function ItemsPage({
         />
 
         {list.length === 0 ? (
-          <p className="mt-6 rounded-xl border border-green-100 bg-white/70 p-8 text-center text-sm text-ink/60">
+          <p className="mt-6 rounded-2xl border border-green-100 bg-white/70 p-8 text-center text-sm text-ink/60">
             条件に一致するものが見つかりませんでした。
           </p>
         ) : (
@@ -90,7 +90,7 @@ export default async function ItemsPage({
               <Link
                 key={item.id}
                 href={`/items/${item.id}`}
-                className="flex flex-col overflow-hidden rounded-xl border border-green-100 bg-white/70 shadow-sm transition hover:shadow"
+                className="flex flex-col overflow-hidden rounded-2xl border border-green-100 bg-white/70 shadow-sm transition hover:shadow"
               >
                 <div className="aspect-square w-full bg-green-50">
                   {item.photo_url && photoMap[item.photo_url] ? (

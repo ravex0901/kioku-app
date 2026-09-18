@@ -201,7 +201,7 @@ export function ItemForm({
 
   if (registeredName) {
     return (
-      <div className="flex flex-col items-center gap-6 rounded-2xl border border-green-100 bg-white/70 p-10 text-center shadow-sm">
+      <div className="flex flex-col items-center gap-6 rounded-[1.75rem] border border-green-100 bg-white/70 p-10 text-center shadow-sm">
         <p className="text-2xl font-bold text-green-700">
           登録が完了しました
         </p>
@@ -215,7 +215,7 @@ export function ItemForm({
               resetForm();
               setRegisteredName(null);
             }}
-            className="rounded-full bg-green-600 px-6 py-3 font-semibold text-white transition hover:bg-green-700"
+            className="rounded-full bg-green-700 px-6 py-3 font-semibold text-white transition hover:bg-green-800"
           >
             続けて登録する
           </button>
@@ -233,7 +233,7 @@ export function ItemForm({
   return (
     <form
       onSubmit={handleSubmit}
-      className="flex flex-col gap-6 rounded-2xl border border-green-100 bg-white/70 p-6 shadow-sm sm:p-8"
+      className="flex flex-col gap-6 rounded-[1.75rem] border border-green-100 bg-white/70 p-6 shadow-sm sm:p-8"
     >
       <div className="flex flex-col gap-1.5">
         <label className="text-sm font-medium text-ink/80">写真(任意)</label>
@@ -242,7 +242,7 @@ export function ItemForm({
           <img
             src={photoPreview}
             alt="プレビュー"
-            className="mb-2 h-48 w-48 rounded-xl object-cover"
+            className="mb-2 h-48 w-48 rounded-2xl object-cover"
           />
         )}
         <input
@@ -430,7 +430,7 @@ export function ItemForm({
       <button
         type="submit"
         disabled={submitting}
-        className="rounded-full bg-green-600 px-6 py-3 font-semibold text-white transition hover:bg-green-700 disabled:opacity-60"
+        className="rounded-full bg-green-700 px-6 py-3 font-semibold text-white transition hover:bg-green-800 disabled:opacity-60"
       >
         {submitting ? "登録中…" : "登録する"}
       </button>
