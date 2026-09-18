@@ -6,15 +6,14 @@ import { createClient } from "@/lib/supabase/client";
 import { QuickLocationAdd } from "@/components/QuickLocationAdd";
 import {
   analyzeItemPhoto,
-  CONDITION_LABELS,
   type ItemCondition,
 } from "@/app/actions/ai";
 import {
   CATEGORY_OPTIONS,
+  CONDITION_LABELS,
   DISPOSITION_OPTIONS,
   DISPOSITION_TAG_OPTIONS,
-} from "@/lib/constants";
-import { fileToBase64 } from "@/lib/fileToBase64";
+} from "@/lib/constants";import { fileToBase64 } from "@/lib/fileToBase64";
 import type {
   CategoryMajor,
   Disposition,
