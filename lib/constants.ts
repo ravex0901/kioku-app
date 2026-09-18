@@ -77,3 +77,8 @@ export function labelFor<T extends string>(
 ): string {
   return options.find((o) => o.value === value)?.label ?? "未設定";
 }
+export const CONDITION_LABELS: Record<"good" | "used" | "needs_repair", string> = {
+  good: "良好",
+  used: "使用感あり",
+  needs_repair: "要修理",
+};
