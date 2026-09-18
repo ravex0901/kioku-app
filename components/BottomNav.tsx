@@ -51,7 +51,7 @@ const NAV_ITEMS = [
     href: "/items/new",
     label: "記録",
     isAction: true,
-    icon: () => (
+    icon: (_active: boolean) => (
       <svg viewBox="0 0 24 24" fill="none" className="h-6 w-6">
         <path
           d="M12 5v14M5 12h14"
@@ -150,4 +150,3 @@ export function BottomNav() {
     </nav>
   );
 }
-
