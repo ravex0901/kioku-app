@@ -17,7 +17,7 @@ export default function PurposePage() {
             <form key={option.value} action={setPurpose.bind(null, option.value)}>
               <button
                 type="submit"
-                className="w-full rounded-2xl border border-green-100 bg-white/70 p-5 text-left shadow-sm transition hover:border-green-300 hover:bg-green-50"
+                className="w-full rounded-[1.75rem] border border-green-100 bg-white/70 p-5 text-left shadow-sm transition hover:border-green-300 hover:bg-green-50"
               >
                 <span className="block text-lg font-semibold text-green-700">
                   {option.label}
