@@ -4,7 +4,7 @@ import { SignupForm } from "@/components/SignupForm";
 export default function SignupPage() {
   return (
     <main className="flex min-h-screen items-center justify-center bg-cream px-4 py-12">
-      <div className="w-full max-w-sm rounded-2xl border border-green-100 bg-white/60 p-8 shadow-sm">
+      <div className="w-full max-w-sm rounded-[1.75rem] border border-green-100 bg-white/70 p-8 shadow-sm">
         <h1 className="text-center text-2xl font-bold text-green-700">
           新規登録
         </h1>
