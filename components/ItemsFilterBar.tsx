@@ -28,7 +28,7 @@ export function ItemsFilterBar({
   }
 
   return (
-    <div className="flex flex-wrap gap-3 rounded-xl border border-green-100 bg-white/70 p-4 shadow-sm">
+    <div className="flex flex-wrap gap-3 rounded-2xl border border-green-100 bg-white/70 p-4 shadow-sm">
       <select
         defaultValue={defaultValues.category}
         onChange={(e) => updateParam("category", e.target.value)}
