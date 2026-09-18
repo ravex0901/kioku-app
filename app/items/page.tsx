@@ -21,6 +21,7 @@ export default async function ItemsPage({
   const locationId = first(params.location) ?? "";
   const disposition = first(params.disposition) ?? "";
   const keyword = first(params.q) ?? "";
+  const bulkAdded = first(params.bulkAdded);
 
   const supabase = await createClient();
   const {
@@ -62,6 +63,12 @@ export default async function ItemsPage({
       <Header />
       <main className="mx-auto max-w-5xl px-4 py-8 sm:px-6">
         <h1 className="mb-6 text-xl font-bold text-ink">見る・探す</h1>
+
+        {bulkAdded && (
+          <p className="mb-6 rounded-xl border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-700">
+            {bulkAdded}件を仮登録しました。場所や処分方針は後で確認してください。
+          </p>
+        )}
 
         <ItemsFilterBar
           locations={locations ?? []}

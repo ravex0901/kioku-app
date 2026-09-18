@@ -1,10 +1,10 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { Header } from "@/components/Header";
-import { ItemForm } from "@/components/ItemForm";
 import { ItemRegisterTabs } from "@/components/ItemRegisterTabs";
+import { BulkItemForm } from "@/components/BulkItemForm";
 
-export default async function NewItemPage() {
+export default async function BulkNewItemPage() {
   const supabase = await createClient();
   const {
     data: { user },
@@ -14,20 +14,13 @@ export default async function NewItemPage() {
     redirect("/login");
   }
 
-  const { data: locations } = await supabase
-    .from("locations")
-    .select("*")
-    .eq("user_id", user.id)
-    .order("sort_order", { ascending: true, nullsFirst: true })
-    .order("name", { ascending: true });
-
   return (
     <div className="min-h-screen bg-cream">
       <Header />
       <main className="mx-auto max-w-2xl px-4 py-8 sm:px-6">
         <h1 className="mb-4 text-xl font-bold text-ink">ものを登録する</h1>
-        <ItemRegisterTabs active="single" />
-        <ItemForm userId={user.id} initialLocations={locations ?? []} />
+        <ItemRegisterTabs active="bulk" />
+        <BulkItemForm userId={user.id} />
       </main>
     </div>
   );

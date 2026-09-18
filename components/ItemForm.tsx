@@ -3,12 +3,18 @@
 import { useRef, useState } from "react";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
-import { LocationCreateForm } from "@/components/LocationCreateForm";
+import { QuickLocationAdd } from "@/components/QuickLocationAdd";
+import {
+  analyzeItemPhoto,
+  CONDITION_LABELS,
+  type ItemCondition,
+} from "@/app/actions/ai";
 import {
   CATEGORY_OPTIONS,
   DISPOSITION_OPTIONS,
   DISPOSITION_TAG_OPTIONS,
 } from "@/lib/constants";
+import { fileToBase64 } from "@/lib/fileToBase64";
 import type {
   CategoryMajor,
   Disposition,
@@ -45,6 +51,10 @@ export function ItemForm({
   const [registeredName, setRegisteredName] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  const [aiLoading, setAiLoading] = useState(false);
+  const [aiError, setAiError] = useState<string | null>(null);
+  const [aiCondition, setAiCondition] = useState<ItemCondition | null>(null);
+
   const showTags =
     form.disposition === "keep" || form.disposition === "keepsake";
 
@@ -53,6 +63,8 @@ export function ItemForm({
     setPhotoFile(null);
     setPhotoPreview(null);
     setShowLocationForm(false);
+    setAiError(null);
+    setAiCondition(null);
     if (fileInputRef.current) fileInputRef.current.value = "";
   }
 
@@ -60,6 +72,47 @@ export function ItemForm({
     const file = e.target.files?.[0] ?? null;
     setPhotoFile(file);
     setPhotoPreview(file ? URL.createObjectURL(file) : null);
+    setAiError(null);
+    setAiCondition(null);
+  }
+
+  async function handleAiAssist() {
+    if (!photoFile) return;
+
+    setAiLoading(true);
+    setAiError(null);
+    setAiCondition(null);
+
+    try {
+      const base64 = await fileToBase64(photoFile);
+      const mediaType = photoFile.type || "image/jpeg";
+      const result = await analyzeItemPhoto(base64, mediaType);
+
+      if (!result.ok) {
+        setAiError(result.error);
+        return;
+      }
+
+      const { suggestion } = result;
+      setForm((prev) => ({
+        ...prev,
+        name: suggestion.name,
+        categoryMajor: suggestion.categoryMajor,
+        categoryOther:
+          suggestion.categoryMajor === "other"
+            ? suggestion.categoryOther ?? prev.categoryOther
+            : "",
+        memo:
+          prev.memo.trim().length === 0
+            ? `(AI推定)状態:${CONDITION_LABELS[suggestion.condition]}`
+            : prev.memo,
+      }));
+      setAiCondition(suggestion.condition);
+    } catch {
+      setAiError("判定に失敗しました。手動で入力してください。");
+    } finally {
+      setAiLoading(false);
+    }
   }
 
   function toggleTag(tag: DispositionTag) {
@@ -200,6 +253,39 @@ export function ItemForm({
           onChange={handlePhotoChange}
           className="text-sm text-ink/70 file:mr-4 file:rounded-full file:border-0 file:bg-green-100 file:px-4 file:py-2 file:text-sm file:font-medium file:text-green-700 hover:file:bg-green-200"
         />
+
+        {photoFile && (
+          <div className="mt-2 flex flex-col gap-2">
+            <button
+              type="button"
+              onClick={handleAiAssist}
+              disabled={aiLoading}
+              className="self-start rounded-full border border-green-300 bg-green-50 px-4 py-2 text-sm font-semibold text-green-700 transition hover:bg-green-100 disabled:opacity-60"
+            >
+              {aiLoading ? "AIが写真を見ています…" : "✨ AIにおまかせ入力"}
+            </button>
+
+            {aiError && (
+              <p className="rounded-lg bg-red-50 px-4 py-2 text-sm text-red-600">
+                {aiError}
+              </p>
+            )}
+
+            {aiCondition && !aiError && (
+              <div className="rounded-lg bg-green-50 px-4 py-2 text-sm text-green-700">
+                <p>
+                  推定される状態:{" "}
+                  <span className="font-semibold">
+                    {CONDITION_LABELS[aiCondition]}
+                  </span>
+                </p>
+                <p className="mt-1 text-xs text-green-700/70">
+                  AIによる推定です。内容を確認・修正してください。
+                </p>
+              </div>
+            )}
+          </div>
+        )}
       </div>
 
       <div className="flex flex-col gap-1.5">
@@ -263,9 +349,8 @@ export function ItemForm({
         </select>
         {showLocationForm && (
           <div className="mt-2">
-            <LocationCreateForm
+            <QuickLocationAdd
               userId={userId}
-              locations={locations}
               onCreated={handleLocationCreated}
               onCancel={() => setShowLocationForm(false)}
             />
