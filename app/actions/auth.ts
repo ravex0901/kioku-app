@@ -1,9 +1,14 @@
 "use server";
 
 import { redirect } from "next/navigation";
+import { headers } from "next/headers";
 import { createClient } from "@/lib/supabase/server";
 
 export type AuthFormState = { error?: string } | undefined;
+
+export type ForgotPasswordState =
+  | { error?: string; success?: boolean }
+  | undefined;
 
 export async function login(
   _prevState: AuthFormState,
@@ -72,6 +77,28 @@ export async function signup(
   }
 
   redirect("/onboarding/purpose");
+}
+
+export async function requestPasswordReset(
+  _prevState: ForgotPasswordState,
+  formData: FormData
+): Promise<ForgotPasswordState> {
+  const email = String(formData.get("email") ?? "").trim();
+
+  if (!email) {
+    return { error: "メールアドレスを入力してください。" };
+  }
+
+  const supabase = await createClient();
+  const headersList = await headers();
+  const host = headersList.get("host") ?? "kioku-app-rho.vercel.app";
+  const protocol = host.startsWith("localhost") ? "http" : "https";
+  const redirectTo = `${protocol}://${host}/reset-password`;
+
+  await supabase.auth.resetPasswordForEmail(email, { redirectTo });
+
+  // メールアドレスの存在有無を推測されないよう、成否に関わらず同じ成功メッセージを返す
+  return { success: true };
 }
 
 export async function logout() {
