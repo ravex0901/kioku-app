@@ -1,9 +1,21 @@
+import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { Header } from "@/components/Header";
 import { InheritanceTaxCalculator } from "@/components/InheritanceTaxCalculator";
 import { InheritanceChecklist } from "@/components/InheritanceChecklist";
-import type { CategoryMajor, DigitalItemType } from "@/lib/types";
+import {
+  buildFamilyBurdenTasks,
+  summarizeBurdenTasks,
+} from "@/lib/familyBurdenTasks";
+import { estimateMaxYen, isSellCandidate } from "@/lib/priceRange";
+import type {
+  CategoryMajor,
+  Disposition,
+  DigitalItemStatus,
+  DigitalItemType,
+  ItemStatus,
+} from "@/lib/types";
 
 function ScoreRing({ percent }: { percent: number }) {
   const size = 88;
@@ -94,6 +106,9 @@ export default async function DashboardPage() {
     digitalItemsForChecklistRes,
     willRes,
     checklistProgressRes,
+    itemsForBurdenRes,
+    digitalItemsForBurdenRes,
+    sellCandidateItemsRes,
   ] = await Promise.all([
     supabase
       .from("items")
@@ -131,6 +146,18 @@ export default async function DashboardPage() {
       .from("inheritance_checklist_progress")
       .select("procedure_key, done")
       .eq("user_id", user.id),
+    supabase
+      .from("items")
+      .select("id, name, status, disposition")
+      .eq("user_id", user.id),
+    supabase
+      .from("digital_items")
+      .select("id, title, item_type, status")
+      .eq("user_id", user.id),
+    supabase
+      .from("items")
+      .select("id, name, estimated_price_range, professional_appraisal, disposition")
+      .eq("user_id", user.id),
   ]);
 
   const total = totalRes.count ?? 0;
@@ -167,6 +194,48 @@ export default async function DashboardPage() {
   for (const row of checklistProgressRes.data ?? []) {
     checklistProgress[row.procedure_key] = row.done;
   }
+
+  // 家族負担・残作業量(請求項6)
+  const burdenItems = (itemsForBurdenRes.data ?? []) as {
+    id: string;
+    name: string;
+    status: ItemStatus | null;
+    disposition: Disposition | null;
+  }[];
+  const burdenDigitalItems = (digitalItemsForBurdenRes.data ?? []) as {
+    id: string;
+    title: string;
+    item_type: DigitalItemType;
+    status: DigitalItemStatus | null;
+  }[];
+  const burdenTasks = buildFamilyBurdenTasks(burdenItems, burdenDigitalItems);
+  const burdenSummary = summarizeBurdenTasks(burdenTasks);
+  const totalRemainingHours = burdenSummary.reduce((sum, s) => sum + s.hours, 0);
+  const totalWorkUnits = burdenItems.length + burdenDigitalItems.length;
+  const remainingWorkUnits = burdenTasks.length;
+  const burdenProgressRatio =
+    totalWorkUnits > 0
+      ? Math.round(((totalWorkUnits - remainingWorkUnits) / totalWorkUnits) * 100)
+      : 100;
+
+  // 資産価格・売却候補(請求項4、スコープを縮小した簡易版)
+  const priceItems = (sellCandidateItemsRes.data ?? []) as {
+    id: string;
+    name: string;
+    estimated_price_range: string | null;
+    professional_appraisal: string | null;
+    disposition: Disposition | null;
+  }[];
+  const sellCandidates = priceItems
+    .filter(
+      (i) => i.disposition !== "discard" && isSellCandidate(i.estimated_price_range)
+    )
+    .sort(
+      (a, b) =>
+        (estimateMaxYen(b.estimated_price_range) ?? 0) -
+        (estimateMaxYen(a.estimated_price_range) ?? 0)
+    )
+    .slice(0, 10);
 
   return (
     <div className="min-h-screen bg-cream">
@@ -210,6 +279,82 @@ export default async function DashboardPage() {
           digitalItems={checklistDigitalItems}
           initialProgress={checklistProgress}
         />
+
+        {/* SCR-08 家族負担(請求項6): 残作業量をカテゴリ別に表示 */}
+        <div className="rounded-[1.75rem] border border-green-100 bg-white/70 p-5 shadow-sm sm:p-6">
+          <div className="mb-1 flex items-center justify-between">
+            <h2 className="text-sm font-bold text-ink">家族負担・残作業量</h2>
+            <span className="text-xs font-medium text-ink/50">
+              進捗 {burdenProgressRatio}%
+            </span>
+          </div>
+          <p className="mb-4 text-xs text-ink/60">
+            登録済みの「もの」「デジタル情報」の現在の状態から、残っている作業をカテゴリ別に自動集計しています。想定工数の合計は目安です。
+          </p>
+          {burdenSummary.length === 0 ? (
+            <p className="rounded-xl bg-green-50 px-4 py-3 text-sm text-green-700">
+              現時点で残っている作業はありません。
+            </p>
+          ) : (
+            <>
+              <div className="flex flex-col gap-2">
+                {burdenSummary.map((s) => (
+                  <div key={s.category} className="flex items-center gap-3">
+                    <span className="w-20 shrink-0 text-xs font-medium text-ink/60">
+                      {s.label}
+                    </span>
+                    <div className="h-2 flex-1 overflow-hidden rounded-full bg-black/5">
+                      <div
+                        className="h-full rounded-full bg-amber-400"
+                        style={{
+                          width: `${Math.min(
+                            100,
+                            Math.round((s.count / Math.max(1, remainingWorkUnits)) * 100)
+                          )}%`,
+                        }}
+                      />
+                    </div>
+                    <span className="w-24 shrink-0 text-right text-xs font-semibold text-ink/70">
+                      {s.count}件・約{s.hours}h
+                    </span>
+                  </div>
+                ))}
+              </div>
+              <p className="mt-3 text-xs text-ink/50">
+                残作業合計:{remainingWorkUnits}件 / 推定残時間:約{Math.round(totalRemainingHours * 10) / 10}時間
+              </p>
+            </>
+          )}
+        </div>
+
+        {/* SCR-06 資産価格(請求項4、簡易版): 一定額以上の推定価格の遺品を売却候補として表示 */}
+        <div className="rounded-[1.75rem] border border-green-100 bg-white/70 p-5 shadow-sm sm:p-6">
+          <h2 className="mb-1 text-sm font-bold text-ink">資産価格・売却候補</h2>
+          <p className="mb-4 text-xs text-ink/60">
+            AIが推定した価格帯をもとに、一定額以上の値がつきそうなものを売却候補として抽出しています。あくまで目安であり、確定査定ではありません。専門査定の結果は各遺品の詳細画面から登録できます。
+          </p>
+          {sellCandidates.length === 0 ? (
+            <p className="rounded-xl bg-black/[0.03] px-4 py-3 text-sm text-ink/60">
+              現時点で売却候補に該当するものはありません。
+            </p>
+          ) : (
+            <ul className="flex flex-col gap-2">
+              {sellCandidates.map((item) => (
+                <li key={item.id}>
+                  <Link
+                    href={`/items/${item.id}`}
+                    className="flex items-center justify-between rounded-xl bg-gold/10 px-3 py-2.5 text-sm transition hover:bg-gold/20"
+                  >
+                    <span className="font-medium text-ink">{item.name}</span>
+                    <span className="text-xs font-semibold text-green-800">
+                      {item.professional_appraisal ?? item.estimated_price_range}
+                    </span>
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
 
         <InheritanceTaxCalculator />
       </main>
