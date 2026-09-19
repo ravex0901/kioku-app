@@ -12,8 +12,27 @@ export const CATEGORY_OPTIONS: { value: CategoryMajor; label: string }[] = [
   { value: "tableware", label: "食器" },
   { value: "books", label: "書籍" },
   { value: "jewelry", label: "貴金属" },
+  { value: "asset", label: "資産" },
+  { value: "subscription", label: "サブスク" },
+  { value: "insurance", label: "保険" },
   { value: "other", label: "その他" },
 ];
+
+// 資産・サブスク・保険は現物の「もの」ではないため、
+// 品名/メモの入力欄でどんな情報を書けばよいかをガイドする文言。
+export const CATEGORY_MEMO_HINTS: Partial<Record<CategoryMajor, string>> = {
+  asset: "例:○○銀行 普通預金、△△証券のNISA口座、概算評価額など",
+  subscription:
+    "例:月額○○円、契約プラン、更新日・解約方法、契約者名義など",
+  insurance:
+    "例:保険会社名、保険の種類、証券番号、満期日、受取人など",
+};
+
+export const CATEGORY_NAME_HINTS: Partial<Record<CategoryMajor, string>> = {
+  asset: "例:○○銀行 普通預金、NISA口座 など",
+  subscription: "例:Netflix、〇〇新聞、△△ジムの会費 など",
+  insurance: "例:〇〇生命 終身保険、△△火災保険 など",
+};
 
 export const DISPOSITION_OPTIONS: { value: Disposition; label: string }[] = [
   { value: "keep", label: "残しておきたい" },
