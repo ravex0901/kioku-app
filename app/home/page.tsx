@@ -1,4 +1,5 @@
 import Link from "next/link";
+import type { ReactNode } from "react";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getSignedUrlMap } from "@/lib/storage";
@@ -90,6 +91,35 @@ function ProgressMiniBar({
         {clamped}%
       </span>
     </div>
+  );
+}
+
+function HomeGridCard({
+  href,
+  label,
+  icon,
+  bg,
+  fg,
+}: {
+  href: string;
+  label: string;
+  icon: ReactNode;
+  bg: string;
+  fg: string;
+}) {
+  return (
+    <Link
+      href={href}
+      className="flex flex-col items-center gap-2 rounded-2xl border border-green-100 bg-white/70 px-2 py-4 text-center shadow-sm transition hover:shadow"
+    >
+      <span
+        aria-hidden
+        className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full ${bg} ${fg}`}
+      >
+        {icon}
+      </span>
+      <span className="text-xs font-medium text-ink">{label}</span>
+    </Link>
   );
 }
 
@@ -338,41 +368,84 @@ export default async function HomePage() {
           </section>
         )}
 
-        <div className="grid gap-4 sm:grid-cols-3">
-          <Link
+        <div className="grid grid-cols-3 gap-3">
+          <HomeGridCard
             href="/items"
-            className="rounded-[1.75rem] border border-green-100 bg-white/70 p-6 shadow-sm transition hover:shadow"
-          >
-            <h3 className="text-base font-bold text-ink">見る・探す</h3>
-            <p className="mt-1 text-sm text-ink/60">
-              登録したものを一覧で確認・検索できます。
-            </p>
-          </Link>
-          <Link
-            href="/locations"
-            className="rounded-[1.75rem] border border-green-100 bg-white/70 p-6 shadow-sm transition hover:shadow"
-          >
-            <h3 className="text-base font-bold text-ink">場所を管理する</h3>
-            <p className="mt-1 text-sm text-ink/60">
-              建物・部屋・収納場所を整理できます。
-            </p>
-          </Link>
-          <Link
-            href="/digital"
-            className="rounded-[1.75rem] border border-green-100 bg-white/70 p-6 shadow-sm transition hover:shadow"
-          >
-            <h3 className="flex items-center gap-1.5 text-base font-bold text-ink">
-              <svg viewBox="0 0 24 24" fill="none" className="h-4 w-4 text-green-700">
-                <rect x="3" y="7" width="7" height="7" rx="1.5" stroke="currentColor" strokeWidth={1.6} />
-                <rect x="14" y="7" width="7" height="7" rx="1.5" stroke="currentColor" strokeWidth={1.6} />
-                <rect x="8.5" y="14" width="7" height="7" rx="1.5" stroke="currentColor" strokeWidth={1.6} />
+            label="見る・探す"
+            bg="bg-green-50"
+            fg="text-green-700"
+            icon={
+              <svg viewBox="0 0 24 24" fill="none" className="h-5 w-5">
+                <circle cx="11" cy="11" r="6.5" stroke="currentColor" strokeWidth={1.6} />
+                <path d="m20 20-3.5-3.5" stroke="currentColor" strokeWidth={1.6} strokeLinecap="round" />
               </svg>
-              デジタル情報
-            </h3>
-            <p className="mt-1 text-sm text-ink/60">
-              契約やアカウントの所在を残せます。
-            </p>
-          </Link>
+            }
+          />
+          <HomeGridCard
+            href="/settings#family"
+            label="家族と共有"
+            bg="bg-green-50"
+            fg="text-green-700"
+            icon={
+              <svg viewBox="0 0 24 24" fill="none" className="h-5 w-5">
+                <circle cx="9" cy="9" r="2.6" stroke="currentColor" strokeWidth={1.6} />
+                <path d="M4.5 19c.6-3 2.3-4.5 4.5-4.5s3.9 1.5 4.5 4.5" stroke="currentColor" strokeWidth={1.6} strokeLinecap="round" />
+                <circle cx="16.5" cy="9.5" r="2.1" stroke="currentColor" strokeWidth={1.6} />
+                <path d="M14.8 14.7c1.5.2 3 1.6 3.5 4.3" stroke="currentColor" strokeWidth={1.6} strokeLinecap="round" />
+              </svg>
+            }
+          />
+          <HomeGridCard
+            href="/request"
+            label="ご依頼・買取"
+            bg="bg-red-50"
+            fg="text-red-500"
+            icon={
+              <svg viewBox="0 0 24 24" fill="none" className="h-5 w-5">
+                <path d="M12 3 4 7v10l8 4 8-4V7l-8-4Z" stroke="currentColor" strokeWidth={1.6} strokeLinejoin="round" />
+                <path d="M4 7l8 4 8-4M12 11v10" stroke="currentColor" strokeWidth={1.6} strokeLinejoin="round" />
+              </svg>
+            }
+          />
+          <HomeGridCard
+            href="/dashboard"
+            label="ダッシュボード"
+            bg="bg-gold/20"
+            fg="text-green-800"
+            icon={
+              <svg viewBox="0 0 24 24" fill="none" className="h-5 w-5">
+                <path d="M5 19V10M12 19V5M19 19v-6" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" />
+              </svg>
+            }
+          />
+          <HomeGridCard
+            href="/settings#handover"
+            label="もしもの時"
+            bg="bg-gold/20"
+            fg="text-green-800"
+            icon={
+              <svg viewBox="0 0 24 24" fill="none" className="h-5 w-5">
+                <path d="M12 3 4 6v6c0 5 3.5 8 8 9 4.5-1 8-4 8-9V6l-8-3Z" stroke="currentColor" strokeWidth={1.6} strokeLinejoin="round" />
+              </svg>
+            }
+          />
+          <HomeGridCard
+            href="/settings"
+            label="設定"
+            bg="bg-black/5"
+            fg="text-ink/70"
+            icon={
+              <svg viewBox="0 0 24 24" fill="none" className="h-5 w-5">
+                <circle cx="12" cy="12" r="2.75" stroke="currentColor" strokeWidth={1.6} />
+                <path
+                  d="M12 3.5v2.2M12 18.3v2.2M4.9 6.1l1.6 1.6M17.5 16.3l1.6 1.6M3.5 12h2.2M18.3 12h2.2M4.9 17.9l1.6-1.6M17.5 7.7l1.6-1.6"
+                  stroke="currentColor"
+                  strokeWidth={1.6}
+                  strokeLinecap="round"
+                />
+              </svg>
+            }
+          />
         </div>
       </main>
     </div>
