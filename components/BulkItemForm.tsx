@@ -83,7 +83,7 @@ export function BulkItemForm({ userId }: { userId: string }) {
           disposition_tags: null,
           memo: null,
           photo_url: path,
-          media_type: "image",
+          media_type: "image" as const,
         };
 
         let { error: insertError } = await supabase
