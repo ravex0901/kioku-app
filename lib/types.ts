@@ -19,6 +19,17 @@ export type Disposition =
   | "undecided";
 export type DispositionTag = "heirloom" | "inherited" | "memory" | "other";
 
+// デジタル情報・契約情報の種別(特許図面【図10】〜【図13】に対応)
+export type DigitalItemType =
+  | "subscription"
+  | "account"
+  | "data_storage"
+  | "finance"
+  | "insurance"
+  | "contract"
+  | "access_info"
+  | "other";
+
 export type Profile = {
   id: string;
   name: string | null;
@@ -49,6 +60,17 @@ export type Item = {
   disposition: Disposition | null;
   disposition_tags: DispositionTag[] | null;
   estimated_price_range: string | null;
+  memo: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+// デジタル・契約情報(特許図面【図10】〜【図13】、【図23】【図24】に対応)
+export type DigitalItem = {
+  id: string;
+  user_id: string;
+  item_type: DigitalItemType;
+  title: string;
   memo: string | null;
   created_at: string;
   updated_at: string;
@@ -97,6 +119,20 @@ export type Database = {
             referencedColumns: ["id"];
           },
         ];
+      };
+      digital_items: {
+        Row: DigitalItem;
+        Insert: Partial<
+          Omit<DigitalItem, "id" | "created_at" | "updated_at">
+        > & {
+          user_id: string;
+          item_type: DigitalItemType;
+          title: string;
+        };
+        Update: Partial<
+          Omit<DigitalItem, "id" | "user_id" | "created_at">
+        >;
+        Relationships: [];
       };
     };
     Views: Record<string, never>;
