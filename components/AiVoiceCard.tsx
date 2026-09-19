@@ -10,6 +10,7 @@ type SpeechRecognitionResultLike = {
 type SpeechRecognitionLike = {
   lang: string;
   interimResults: boolean;
+  continuous: boolean;
   maxAlternatives: number;
   start: () => void;
   stop: () => void;
@@ -82,16 +83,22 @@ export function AiVoiceCard() {
     const recognition = new SpeechRecognitionCtor();
     recognition.lang = "ja-JP";
     recognition.interimResults = false;
+    recognition.continuous = false;
     recognition.maxAlternatives = 1;
 
     recognition.onresult = (event) => {
       const transcript = event.results[0]?.[0]?.transcript ?? "";
+      // 話し終えて結果が確定した時点で、ブラウザの無音検出を待たずに
+      // すぐマイクを止める(つけっぱなしに見える問題への対応)。
+      recognition.stop();
+      setListening(false);
       if (transcript) {
         setQuestion(transcript);
         handleAsk(transcript);
       }
     };
     recognition.onerror = () => {
+      recognition.stop();
       setListening(false);
       setError("音声を認識できませんでした。もう一度お試しください。");
     };
