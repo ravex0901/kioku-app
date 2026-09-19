@@ -7,6 +7,9 @@ export type CategoryMajor =
   | "tableware"
   | "books"
   | "jewelry"
+  | "asset"
+  | "subscription"
+  | "insurance"
   | "other";
 export type Disposition =
   | "keep"
