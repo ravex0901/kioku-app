@@ -1,9 +1,11 @@
 import type {
   CategoryMajor,
+  DigitalItemStatus,
   DigitalItemType,
   Disposition,
   DispositionTag,
   FamilyRelation,
+  ItemStatus,
   LocationType,
   ServiceType,
 } from "@/lib/types";
@@ -178,3 +180,34 @@ export const CONDITION_LABELS: Record<"good" | "used" | "needs_repair", string> 
   used: "使用感あり",
   needs_repair: "要修理",
 };
+
+// 遺品の整理進捗ステータス(請求項7の標準ワークフローに対応)
+export const ITEM_STATUS_OPTIONS: { value: ItemStatus; label: string }[] = [
+  { value: "photo_registered", label: "写真登録" },
+  { value: "appraisal_pending", label: "査定待ち" },
+  { value: "appraisal_done", label: "査定完了" },
+  { value: "family_confirmed", label: "家族確認" },
+  { value: "policy_recorded", label: "方針記録済み" },
+  { value: "transport_scheduled", label: "搬送予定・搬出" },
+  { value: "completed", label: "完了" },
+];
+
+export const ITEM_STATUS_BADGE_STYLE: Record<ItemStatus, string> = {
+  photo_registered: "bg-black/5 text-ink/60",
+  appraisal_pending: "bg-sky-100 text-sky-700",
+  appraisal_done: "bg-sky-100 text-sky-800",
+  family_confirmed: "bg-gold/25 text-green-800",
+  policy_recorded: "bg-orange-100 text-orange-700",
+  transport_scheduled: "bg-orange-100 text-orange-800",
+  completed: "bg-green-100 text-green-700",
+};
+
+// デジタル・契約情報の手続き状態(請求項9対応)
+export const DIGITAL_ITEM_STATUS_OPTIONS: {
+  value: DigitalItemStatus;
+  label: string;
+}[] = [
+  { value: "not_started", label: "未着手" },
+  { value: "in_progress", label: "対応中" },
+  { value: "done", label: "完了" },
+];
