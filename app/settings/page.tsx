@@ -2,7 +2,7 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { Header } from "@/components/Header";
 import { SettingsClient } from "@/components/SettingsClient";
-import type { FamilyMember } from "@/lib/types";
+import type { FamilyMember, HandoverSettings, Will } from "@/lib/types";
 
 export default async function SettingsPage() {
   const supabase = await createClient();
@@ -14,13 +14,24 @@ export default async function SettingsPage() {
     redirect("/login");
   }
 
-  const [{ data: profile }, { data: familyData }] = await Promise.all([
+  const [
+    { data: profile },
+    { data: familyData },
+    { data: willData },
+    { data: handoverData },
+  ] = await Promise.all([
     supabase.from("profiles").select("*").eq("id", user.id).maybeSingle(),
     supabase
       .from("family_members")
       .select("*")
       .eq("user_id", user.id)
       .order("created_at", { ascending: false }),
+    supabase.from("wills").select("*").eq("user_id", user.id).maybeSingle(),
+    supabase
+      .from("handover_settings")
+      .select("*")
+      .eq("user_id", user.id)
+      .maybeSingle(),
   ]);
 
   const rawName =
@@ -47,9 +58,10 @@ export default async function SettingsPage() {
           displayName={displayName}
           purpose={profile?.purpose ?? null}
           initialFamily={family}
+          initialWill={(willData as Will | null) ?? null}
+          initialHandover={(handoverData as HandoverSettings | null) ?? null}
         />
       </main>
     </div>
   );
 }
-
