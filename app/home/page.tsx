@@ -13,6 +13,7 @@ type RecentItem = {
   name: string;
   photo_url: string | null;
   disposition: Disposition | null;
+  estimated_price_range: string | null;
   location: { name: string } | { name: string }[] | null;
 };
 
@@ -126,7 +127,7 @@ export default async function HomePage() {
         .not("disposition", "is", null),
       supabase
         .from("items")
-        .select("id, name, photo_url, disposition, location:locations(name)")
+        .select("*, location:locations(name)")
         .eq("user_id", user.id)
         .order("created_at", { ascending: false })
         .limit(5),
@@ -322,7 +323,14 @@ export default async function HomePage() {
                     <span className="truncate text-xs text-ink/50">
                       {resolveLocationName(item.location)}
                     </span>
-                    <DispositionBadge disposition={item.disposition} />
+                    <div className="flex flex-wrap items-center gap-1">
+                      <DispositionBadge disposition={item.disposition} />
+                      {item.estimated_price_range && (
+                        <span className="truncate rounded-full bg-gold/20 px-2 py-0.5 text-[10px] font-semibold text-green-800">
+                          {item.estimated_price_range}
+                        </span>
+                      )}
+                    </div>
                   </div>
                 </Link>
               ))}
