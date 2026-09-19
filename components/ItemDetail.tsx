@@ -133,7 +133,8 @@ export function ItemDetail({
           photo_url: photoPath,
           media_type: mediaType,
         })
-        .eq("id", item.id);
+        .eq("id", item.id)
+        .eq("user_id", item.user_id);
 
       if (updateError) {
         throw new Error("更新に失敗しました。もう一度お試しください。");
@@ -164,7 +165,8 @@ export function ItemDetail({
       const { error: deleteError } = await supabase
         .from("items")
         .delete()
-        .eq("id", item.id);
+        .eq("id", item.id)
+        .eq("user_id", item.user_id);
 
       if (deleteError) {
         throw new Error("削除に失敗しました。");
