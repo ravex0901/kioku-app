@@ -30,6 +30,20 @@ export type DigitalItemType =
   | "access_info"
   | "other";
 
+// デジタル情報・契約情報の手続き状態(請求項9対応)
+export type DigitalItemStatus = "not_started" | "in_progress" | "done";
+
+// 遺品の整理進捗ステータス(請求項7の標準ワークフローに対応)
+// 写真登録→AI解析/登録→査定待ち→査定完了→家族確認→処分方針の記録→搬送予定/搬出→完了
+export type ItemStatus =
+  | "photo_registered"
+  | "appraisal_pending"
+  | "appraisal_done"
+  | "family_confirmed"
+  | "policy_recorded"
+  | "transport_scheduled"
+  | "completed";
+
 // ご依頼(買取・回収・整理サービス)の種別(特許図面【図2】【図18】の「ご依頼」に対応)
 export type ServiceType =
   | "all_in_one"
@@ -87,9 +101,22 @@ export type Item = {
   disposition: Disposition | null;
   disposition_tags: DispositionTag[] | null;
   estimated_price_range: string | null;
+  professional_appraisal: string | null;
+  status: ItemStatus;
   memo: string | null;
   created_at: string;
   updated_at: string;
+};
+
+// 遺品ステータス変更履歴(請求項7「ステータス履歴(変更前、変更後、変更者、日時)」に対応)
+export type ItemStatusHistory = {
+  id: string;
+  item_id: string;
+  user_id: string;
+  from_status: ItemStatus | null;
+  to_status: ItemStatus;
+  changed_by: string | null;
+  changed_at: string;
 };
 
 // デジタル・契約情報(特許図面【図10】〜【図13】、【図23】【図24】に対応)
@@ -99,6 +126,9 @@ export type DigitalItem = {
   item_type: DigitalItemType;
   title: string;
   memo: string | null;
+  contact_person: string | null;
+  related_documents: string | null;
+  status: DigitalItemStatus;
   created_at: string;
   updated_at: string;
 };
@@ -206,6 +236,24 @@ export type Database = {
           Omit<DigitalItem, "id" | "user_id" | "created_at">
         >;
         Relationships: [];
+      };
+      item_status_history: {
+        Row: ItemStatusHistory;
+        Insert: Partial<Omit<ItemStatusHistory, "id" | "changed_at">> & {
+          item_id: string;
+          user_id: string;
+          to_status: ItemStatus;
+        };
+        Update: Partial<Omit<ItemStatusHistory, "id" | "item_id" | "user_id">>;
+        Relationships: [
+          {
+            foreignKeyName: "item_status_history_item_id_fkey";
+            columns: ["item_id"];
+            isOneToOne: false;
+            referencedRelation: "items";
+            referencedColumns: ["id"];
+          },
+        ];
       };
       service_requests: {
         Row: ServiceRequest;
