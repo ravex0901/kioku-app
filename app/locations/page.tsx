@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { ensureDefaultLocations } from "@/lib/defaultLocations";
 import { Header } from "@/components/Header";
 import { LocationsClient } from "@/components/LocationsClient";
 
@@ -13,10 +14,16 @@ export default async function LocationsPage() {
     redirect("/login");
   }
 
-  const [{ data: locations }, { data: items }] = await Promise.all([
+  const [{ data: locationsData }, { data: items }] = await Promise.all([
     supabase.from("locations").select("*").eq("user_id", user.id),
     supabase.from("items").select("location_id").eq("user_id", user.id),
   ]);
+
+  const locations = await ensureDefaultLocations(
+    supabase,
+    user.id,
+    locationsData ?? []
+  );
 
   const counts: Record<string, number> = {};
   for (const item of items ?? []) {
@@ -31,7 +38,7 @@ export default async function LocationsPage() {
         <h1 className="mb-6 text-xl font-bold text-ink">場所を管理する</h1>
         <LocationsClient
           userId={user.id}
-          initialLocations={locations ?? []}
+          initialLocations={locations}
           itemCounts={counts}
         />
       </main>
