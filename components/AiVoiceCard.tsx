@@ -1,7 +1,8 @@
 "use client";
 
 import { useRef, useState } from "react";
-import { askAboutItems } from "@/app/actions/ai";
+import Link from "next/link";
+import { askAboutItems, type ReferencedItem } from "@/app/actions/ai";
 
 type SpeechRecognitionResultLike = {
   results: { [index: number]: { [index: number]: { transcript: string } } };
@@ -28,6 +29,7 @@ export function AiVoiceCard() {
   const [open, setOpen] = useState(false);
   const [question, setQuestion] = useState("");
   const [answer, setAnswer] = useState<string | null>(null);
+  const [referencedItems, setReferencedItems] = useState<ReferencedItem[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [listening, setListening] = useState(false);
@@ -47,10 +49,12 @@ export function AiVoiceCard() {
     setLoading(true);
     setError(null);
     setAnswer(null);
+    setReferencedItems([]);
     try {
       const result = await askAboutItems(trimmed);
       if (result.ok) {
         setAnswer(result.answer);
+        setReferencedItems(result.referencedItems);
       } else {
         setError(result.error);
       }
@@ -208,9 +212,25 @@ export function AiVoiceCard() {
           )}
 
           {!loading && answer && (
-            <p className="whitespace-pre-wrap rounded-xl bg-green-50 px-4 py-3 text-sm text-green-800">
-              {answer}
-            </p>
+            <div className="rounded-xl bg-green-50 px-4 py-3">
+              <p className="whitespace-pre-wrap text-sm text-green-800">
+                {answer}
+              </p>
+              {referencedItems.length > 0 && (
+                <div className="mt-3 flex flex-wrap gap-1.5 border-t border-green-100 pt-3">
+                  <span className="text-[11px] text-green-700/70">根拠にした登録情報:</span>
+                  {referencedItems.map((item) => (
+                    <Link
+                      key={item.id}
+                      href={`/items/${item.id}`}
+                      className="rounded-full bg-white px-2.5 py-1 text-[11px] font-medium text-green-800 shadow-sm hover:bg-green-100"
+                    >
+                      {item.name}
+                    </Link>
+                  ))}
+                </div>
+              )}
+            </div>
           )}
 
           {!loading && error && (
