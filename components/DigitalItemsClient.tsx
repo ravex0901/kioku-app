@@ -2,13 +2,16 @@
 
 import { useMemo, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
-import { askAboutDigitalItems } from "@/app/actions/digital";
+import { askAboutDigitalItems, type ReferencedDigitalItem } from "@/app/actions/digital";
 import {
+  DIGITAL_ITEM_STATUS_OPTIONS,
   DIGITAL_ITEM_TYPE_OPTIONS,
   DIGITAL_ITEM_TITLE_HINTS,
   labelFor,
 } from "@/lib/constants";
-import type { DigitalItem, DigitalItemType } from "@/lib/types";
+import { checkForPlaintextSecret, SECRET_GUARD_MESSAGE } from "@/lib/secretGuard";
+import ConfirmDialog from "@/components/ConfirmDialog";
+import type { DigitalItem, DigitalItemStatus, DigitalItemType } from "@/lib/types";
 
 const TYPE_STYLE: Record<DigitalItemType, { bg: string; text: string }> = {
   subscription: { bg: "bg-sky-100", text: "text-sky-700" },
@@ -19,6 +22,12 @@ const TYPE_STYLE: Record<DigitalItemType, { bg: string; text: string }> = {
   contract: { bg: "bg-black/5", text: "text-ink/70" },
   access_info: { bg: "bg-red-50", text: "text-red-600" },
   other: { bg: "bg-black/5", text: "text-ink/60" },
+};
+
+const STATUS_STYLE: Record<DigitalItemStatus, string> = {
+  not_started: "bg-black/5 text-ink/60",
+  in_progress: "bg-sky-100 text-sky-700",
+  done: "bg-green-100 text-green-700",
 };
 
 function TypeIcon({ type }: { type: DigitalItemType }) {
@@ -99,9 +108,13 @@ function DigitalItemRow({
   const [itemType, setItemType] = useState<DigitalItemType>(item.item_type);
   const [title, setTitle] = useState(item.title);
   const [memo, setMemo] = useState(item.memo ?? "");
+  const [contactPerson, setContactPerson] = useState(item.contact_person ?? "");
+  const [relatedDocuments, setRelatedDocuments] = useState(item.related_documents ?? "");
+  const [status, setStatus] = useState<DigitalItemStatus>(item.status ?? "not_started");
   const [submitting, setSubmitting] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [confirmOpen, setConfirmOpen] = useState(false);
 
   const style = TYPE_STYLE[item.item_type] ?? TYPE_STYLE.other;
 
@@ -111,12 +124,24 @@ function DigitalItemRow({
       setError("タイトルを入力してください。");
       return;
     }
+    const guard = checkForPlaintextSecret(memo, relatedDocuments, contactPerson);
+    if (guard.blocked) {
+      setError(SECRET_GUARD_MESSAGE);
+      return;
+    }
     setSubmitting(true);
     setError(null);
     const supabase = createClient();
     const { data, error: updateError } = await supabase
       .from("digital_items")
-      .update({ item_type: itemType, title: trimmed, memo: memo.trim() || null })
+      .update({
+        item_type: itemType,
+        title: trimmed,
+        memo: memo.trim() || null,
+        contact_person: contactPerson.trim() || null,
+        related_documents: relatedDocuments.trim() || null,
+        status,
+      })
       .eq("id", item.id)
       .eq("user_id", item.user_id)
       .select()
@@ -132,9 +157,6 @@ function DigitalItemRow({
   }
 
   async function handleDelete() {
-    if (!window.confirm(`「${item.title}」を削除します。よろしいですか?`)) {
-      return;
-    }
     setDeleting(true);
     setError(null);
     const supabase = createClient();
@@ -187,6 +209,38 @@ function DigitalItemRow({
               className="rounded-lg border border-black/10 bg-white px-3 py-2 text-sm outline-none focus:border-green-400 focus:ring-2 focus:ring-green-100"
             />
           </div>
+          <div className="flex flex-col gap-1.5">
+            <label className="text-sm font-medium text-ink/80">手続担当者</label>
+            <input
+              value={contactPerson}
+              onChange={(e) => setContactPerson(e.target.value)}
+              placeholder="例:長男が対応"
+              className="rounded-lg border border-black/10 bg-white px-3 py-2 text-sm outline-none focus:border-green-400 focus:ring-2 focus:ring-green-100"
+            />
+          </div>
+          <div className="flex flex-col gap-1.5">
+            <label className="text-sm font-medium text-ink/80">関連書類</label>
+            <input
+              value={relatedDocuments}
+              onChange={(e) => setRelatedDocuments(e.target.value)}
+              placeholder="例:契約書は自宅の書類ファイルに保管"
+              className="rounded-lg border border-black/10 bg-white px-3 py-2 text-sm outline-none focus:border-green-400 focus:ring-2 focus:ring-green-100"
+            />
+          </div>
+          <div className="flex flex-col gap-1.5">
+            <label className="text-sm font-medium text-ink/80">状態</label>
+            <select
+              value={status}
+              onChange={(e) => setStatus(e.target.value as DigitalItemStatus)}
+              className="rounded-lg border border-black/10 bg-white px-3 py-2 text-sm outline-none focus:border-green-400 focus:ring-2 focus:ring-green-100"
+            >
+              {DIGITAL_ITEM_STATUS_OPTIONS.map((opt) => (
+                <option key={opt.value} value={opt.value}>
+                  {opt.label}
+                </option>
+              ))}
+            </select>
+          </div>
           {error && <p className="text-sm text-red-600">{error}</p>}
           <div className="flex gap-2">
             <button
@@ -204,6 +258,9 @@ function DigitalItemRow({
                 setItemType(item.item_type);
                 setTitle(item.title);
                 setMemo(item.memo ?? "");
+                setContactPerson(item.contact_person ?? "");
+                setRelatedDocuments(item.related_documents ?? "");
+                setStatus(item.status ?? "not_started");
                 setError(null);
               }}
               className="rounded-full px-4 py-2 text-sm font-medium text-ink/60 hover:bg-black/5"
@@ -227,11 +284,20 @@ function DigitalItemRow({
             <TypeIcon type={item.item_type} />
           </span>
           <div>
-            <span
-              className={`rounded-full px-2 py-0.5 text-[11px] font-medium ${style.bg} ${style.text}`}
-            >
-              {labelFor(DIGITAL_ITEM_TYPE_OPTIONS, item.item_type)}
-            </span>
+            <div className="flex flex-wrap items-center gap-1.5">
+              <span
+                className={`rounded-full px-2 py-0.5 text-[11px] font-medium ${style.bg} ${style.text}`}
+              >
+                {labelFor(DIGITAL_ITEM_TYPE_OPTIONS, item.item_type)}
+              </span>
+              <span
+                className={`rounded-full px-2 py-0.5 text-[11px] font-medium ${
+                  STATUS_STYLE[item.status ?? "not_started"]
+                }`}
+              >
+                {labelFor(DIGITAL_ITEM_STATUS_OPTIONS, item.status ?? "not_started")}
+              </span>
+            </div>
             <p className="mt-0.5 font-medium text-ink">{item.title}</p>
           </div>
         </div>
@@ -253,7 +319,7 @@ function DigitalItemRow({
           </button>
           <button
             type="button"
-            onClick={handleDelete}
+            onClick={() => setConfirmOpen(true)}
             disabled={deleting}
             aria-label="削除する"
             className="flex h-8 w-8 items-center justify-center rounded-full text-red-500 transition hover:bg-red-50 disabled:opacity-60"
@@ -275,7 +341,23 @@ function DigitalItemRow({
           {item.memo}
         </p>
       )}
+      {(item.contact_person || item.related_documents) && (
+        <div className="flex flex-col gap-1 text-xs text-ink/60">
+          {item.contact_person && <p>手続担当者: {item.contact_person}</p>}
+          {item.related_documents && <p>関連書類: {item.related_documents}</p>}
+        </div>
+      )}
       {error && <p className="text-xs text-red-600">{error}</p>}
+      <ConfirmDialog
+        open={confirmOpen}
+        title="この項目を削除しますか?"
+        description={`「${item.title}」を削除します。この操作は取り消せません。`}
+        onConfirm={() => {
+          setConfirmOpen(false);
+          handleDelete();
+        }}
+        onCancel={() => setConfirmOpen(false)}
+      />
     </li>
   );
 }
@@ -292,6 +374,8 @@ export function DigitalItemsClient({
   const [itemType, setItemType] = useState<DigitalItemType>("subscription");
   const [title, setTitle] = useState("");
   const [memo, setMemo] = useState("");
+  const [contactPerson, setContactPerson] = useState("");
+  const [relatedDocuments, setRelatedDocuments] = useState("");
   const [saving, setSaving] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
 
@@ -303,12 +387,18 @@ export function DigitalItemsClient({
   const [question, setQuestion] = useState("");
   const [asking, setAsking] = useState(false);
   const [answer, setAnswer] = useState<string | null>(null);
+  const [referencedItems, setReferencedItems] = useState<ReferencedDigitalItem[]>([]);
   const [askError, setAskError] = useState<string | null>(null);
 
   async function handleSave() {
     const trimmed = title.trim();
     if (!trimmed) {
       setFormError("タイトルを入力してください。");
+      return;
+    }
+    const guard = checkForPlaintextSecret(memo, relatedDocuments, contactPerson);
+    if (guard.blocked) {
+      setFormError(SECRET_GUARD_MESSAGE);
       return;
     }
     setSaving(true);
@@ -321,6 +411,8 @@ export function DigitalItemsClient({
         item_type: itemType,
         title: trimmed,
         memo: memo.trim() || null,
+        contact_person: contactPerson.trim() || null,
+        related_documents: relatedDocuments.trim() || null,
       })
       .select()
       .single();
@@ -336,6 +428,8 @@ export function DigitalItemsClient({
     setItems((prev) => [data, ...prev]);
     setTitle("");
     setMemo("");
+    setContactPerson("");
+    setRelatedDocuments("");
   }
 
   async function handleAsk() {
@@ -344,10 +438,12 @@ export function DigitalItemsClient({
     setAsking(true);
     setAskError(null);
     setAnswer(null);
+    setReferencedItems([]);
     try {
       const result = await askAboutDigitalItems(trimmed);
       if (result.ok) {
         setAnswer(result.answer);
+        setReferencedItems(result.referencedItems);
       } else {
         setAskError(result.error);
       }
@@ -387,7 +483,7 @@ export function DigitalItemsClient({
         <p>
           <span className="font-semibold">パスワードは保存しないでください。</span>
           <br />
-          パスワードや暗証番号そのものは入れず、家族が判断できる短いメモだけを残します。
+          パスワードや暗証番号そのものは入れず、家族が判断できる短いメモだけを残します。それらしい内容は自動的に保存をブロックします。
         </p>
       </div>
 
@@ -431,6 +527,24 @@ export function DigitalItemsClient({
               onChange={(e) => setMemo(e.target.value)}
               rows={2}
               placeholder="例:解約は家族で判断、写真はクラウドに保存など"
+              className="rounded-lg border border-black/10 bg-white px-4 py-2.5 outline-none focus:border-green-400 focus:ring-2 focus:ring-green-100"
+            />
+          </div>
+          <div className="flex flex-col gap-1.5">
+            <label className="text-sm font-medium text-ink/80">手続担当者(任意)</label>
+            <input
+              value={contactPerson}
+              onChange={(e) => setContactPerson(e.target.value)}
+              placeholder="例:長男が対応"
+              className="rounded-lg border border-black/10 bg-white px-4 py-2.5 outline-none focus:border-green-400 focus:ring-2 focus:ring-green-100"
+            />
+          </div>
+          <div className="flex flex-col gap-1.5">
+            <label className="text-sm font-medium text-ink/80">関連書類(任意)</label>
+            <input
+              value={relatedDocuments}
+              onChange={(e) => setRelatedDocuments(e.target.value)}
+              placeholder="例:契約書は自宅の書類ファイルに保管"
               className="rounded-lg border border-black/10 bg-white px-4 py-2.5 outline-none focus:border-green-400 focus:ring-2 focus:ring-green-100"
             />
           </div>
@@ -493,9 +607,22 @@ export function DigitalItemsClient({
           </p>
         )}
         {!asking && answer && (
-          <p className="mt-3 whitespace-pre-wrap rounded-xl bg-green-50 px-4 py-3 text-sm text-green-800">
-            {answer}
-          </p>
+          <div className="mt-3 rounded-xl bg-green-50 px-4 py-3">
+            <p className="whitespace-pre-wrap text-sm text-green-800">{answer}</p>
+            {referencedItems.length > 0 && (
+              <div className="mt-3 flex flex-wrap gap-1.5 border-t border-green-100 pt-3">
+                <span className="text-[11px] text-green-700/70">根拠にした登録情報:</span>
+                {referencedItems.map((item) => (
+                  <span
+                    key={item.id}
+                    className="rounded-full bg-white px-2.5 py-1 text-[11px] font-medium text-green-800 shadow-sm"
+                  >
+                    {item.title}
+                  </span>
+                ))}
+              </div>
+            )}
+          </div>
         )}
         {!asking && askError && (
           <p className="mt-3 rounded-xl bg-red-50 px-4 py-3 text-xs text-red-600">
@@ -518,7 +645,7 @@ export function DigitalItemsClient({
             onChange={(e) => setKeyword(e.target.value)}
             placeholder="タイトル、メモで探索"
             className="flex-1 rounded-lg border border-black/10 bg-white px-4 py-2.5 text-sm outline-none focus:border-green-400 focus:ring-2 focus:ring-green-100"
-          />
+            />
           <select
             value={filterType}
             onChange={(e) => setFilterType(e.target.value as DigitalItemType | "")}
