@@ -3,7 +3,9 @@ import type {
   DigitalItemType,
   Disposition,
   DispositionTag,
+  FamilyRelation,
   LocationType,
+  ServiceType,
 } from "@/lib/types";
 
 export const CATEGORY_OPTIONS: { value: CategoryMajor; label: string }[] = [
@@ -109,6 +111,52 @@ export const PURPOSE_OPTIONS: {
     label: "家族の遺品整理をしたい",
     description: "ご家族の思い出の品と向き合いたい方に。",
   },
+];
+
+// ご依頼(特許図面【図2】【図18】の「ご依頼」に対応)
+export const SERVICE_TYPE_OPTIONS: {
+  value: ServiceType;
+  label: string;
+  description: string;
+}[] = [
+  {
+    value: "all_in_one",
+    label: "丸投げ依頼(全部おまかせ)",
+    description:
+      "サービス選びに迷ったら、まずはこちら。状況をお伺いしたうえで最適な組み合わせをご提案します。",
+  },
+  {
+    value: "buyback",
+    label: "出張買取",
+    description: "ご自宅までお伺いし、価値のあるものを査定・買取します。",
+  },
+  {
+    value: "junk_removal",
+    label: "不用品回収",
+    description: "手放すと決めたものを、まとめて回収します。",
+  },
+  {
+    value: "estate_cleanup",
+    label: "遺品整理",
+    description: "ご家族が亡くなった後のお片付けをお手伝いします。",
+  },
+  {
+    value: "pre_death_cleanup",
+    label: "生前整理",
+    description: "ご自身の持ち物を、元気なうちから整理するお手伝いをします。",
+  },
+];
+
+export const FAMILY_RELATION_OPTIONS: {
+  value: FamilyRelation;
+  label: string;
+}[] = [
+  { value: "spouse", label: "配偶者" },
+  { value: "eldest_son", label: "長男" },
+  { value: "eldest_daughter", label: "長女" },
+  { value: "son", label: "次男以降の息子" },
+  { value: "daughter", label: "次女以降の娘" },
+  { value: "other", label: "その他" },
 ];
 
 export const DISPOSITION_BADGE_STYLE: Record<Disposition, string> = {
