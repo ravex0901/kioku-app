@@ -1,0 +1,17 @@
+{
+  "name": "きおく | 生前整理AI",
+  "short_name": "きおく",
+  "description": "ものの記録と片付けの進捗をやさしく整理するアプリ「きおく」",
+  "start_url": "/home",
+  "display": "standalone",
+  "background_color": "#f6efe0",
+  "theme_color": "#f6efe0",
+  "icons": [
+    {
+      "src": "/favicon.ico",
+      "sizes": "48x48",
+      "type": "image/x-icon"
+    }
+  ]
+}
+
