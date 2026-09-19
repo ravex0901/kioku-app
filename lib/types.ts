@@ -53,7 +53,16 @@ export type Profile = {
   name: string | null;
   purpose: string | null;
   created_at: string;
+  last_active_at: string | null;
 };
+
+export type Json =
+  | string
+  | number
+  | boolean
+  | null
+  | { [key: string]: Json | undefined }
+  | Json[];
 
 export type Location = {
   id: string;
@@ -111,6 +120,33 @@ export type FamilyMember = {
   name: string;
   relation: FamilyRelation;
   created_at: string;
+};
+
+// 遺言書・遺言動画による本人の意思伝達情報(特許図面「もしもの時」に対応)
+export type Will = {
+  id: string;
+  user_id: string;
+  message: string | null;
+  video_url: string | null;
+  updated_at: string;
+};
+
+// もしもの時(引き継ぎ)設定。開示条件(非アクティブ日数・承認者)と共有トークンを保持する
+export type HandoverSettings = {
+  user_id: string;
+  inactive_days: number;
+  approver_family_member_id: string | null;
+  share_token: string;
+  approved_at: string | null;
+  updated_at: string;
+};
+
+// 相続手続きチェックリストの完了状況(請求項1の相続レポート機能に対応)
+export type ChecklistProgress = {
+  user_id: string;
+  procedure_key: string;
+  done: boolean;
+  updated_at: string;
 };
 
 export type Database = {
@@ -192,8 +228,52 @@ export type Database = {
         Update: Partial<Omit<FamilyMember, "id" | "user_id" | "created_at">>;
         Relationships: [];
       };
+      wills: {
+        Row: Will;
+        Insert: Partial<Omit<Will, "id" | "updated_at">> & {
+          user_id: string;
+        };
+        Update: Partial<Omit<Will, "id" | "user_id">>;
+        Relationships: [];
+      };
+      handover_settings: {
+        Row: HandoverSettings;
+        Insert: Partial<
+          Omit<HandoverSettings, "share_token" | "updated_at">
+        > & { user_id: string };
+        Update: Partial<Omit<HandoverSettings, "user_id">>;
+        Relationships: [
+          {
+            foreignKeyName: "handover_settings_approver_family_member_id_fkey";
+            columns: ["approver_family_member_id"];
+            isOneToOne: false;
+            referencedRelation: "family_members";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      inheritance_checklist_progress: {
+        Row: ChecklistProgress;
+        Insert: Partial<Omit<ChecklistProgress, "updated_at">> & {
+          user_id: string;
+          procedure_key: string;
+        };
+        Update: Partial<
+          Omit<ChecklistProgress, "user_id" | "procedure_key">
+        >;
+        Relationships: [];
+      };
     };
     Views: Record<string, never>;
-    Functions: Record<string, never>;
+    Functions: {
+      get_handover_status: {
+        Args: { p_token: string };
+        Returns: Json;
+      };
+      approve_handover: {
+        Args: { p_token: string };
+        Returns: boolean;
+      };
+    };
   };
 };
