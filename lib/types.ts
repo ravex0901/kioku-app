@@ -30,6 +30,24 @@ export type DigitalItemType =
   | "access_info"
   | "other";
 
+// ご依頼(買取・回収・整理サービス)の種別(特許図面【図2】【図18】の「ご依頼」に対応)
+export type ServiceType =
+  | "all_in_one"
+  | "buyback"
+  | "junk_removal"
+  | "estate_cleanup"
+  | "pre_death_cleanup";
+
+export type ServiceRequestStatus = "pending" | "in_progress" | "done";
+
+export type FamilyRelation =
+  | "spouse"
+  | "eldest_son"
+  | "eldest_daughter"
+  | "son"
+  | "daughter"
+  | "other";
+
 export type Profile = {
   id: string;
   name: string | null;
@@ -74,6 +92,25 @@ export type DigitalItem = {
   memo: string | null;
   created_at: string;
   updated_at: string;
+};
+
+// ご依頼(特許図面【図2】【図18】に対応)
+export type ServiceRequest = {
+  id: string;
+  user_id: string;
+  service_type: ServiceType;
+  note: string | null;
+  status: ServiceRequestStatus;
+  created_at: string;
+};
+
+// 家族と共有(特許図面【図2】【図18】の「家族と共有」に対応)
+export type FamilyMember = {
+  id: string;
+  user_id: string;
+  name: string;
+  relation: FamilyRelation;
+  created_at: string;
 };
 
 export type Database = {
@@ -132,6 +169,27 @@ export type Database = {
         Update: Partial<
           Omit<DigitalItem, "id" | "user_id" | "created_at">
         >;
+        Relationships: [];
+      };
+      service_requests: {
+        Row: ServiceRequest;
+        Insert: Partial<
+          Omit<ServiceRequest, "id" | "created_at" | "status">
+        > & {
+          user_id: string;
+          service_type: ServiceType;
+        };
+        Update: Partial<Omit<ServiceRequest, "id" | "user_id" | "created_at">>;
+        Relationships: [];
+      };
+      family_members: {
+        Row: FamilyMember;
+        Insert: Partial<Omit<FamilyMember, "id" | "created_at">> & {
+          user_id: string;
+          name: string;
+          relation: FamilyRelation;
+        };
+        Update: Partial<Omit<FamilyMember, "id" | "user_id" | "created_at">>;
         Relationships: [];
       };
     };
