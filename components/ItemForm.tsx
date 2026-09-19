@@ -9,11 +9,15 @@ import {
   type ItemCondition,
 } from "@/app/actions/ai";
 import {
+  CATEGORY_MEMO_HINTS,
+  CATEGORY_NAME_HINTS,
   CATEGORY_OPTIONS,
   CONDITION_LABELS,
   DISPOSITION_OPTIONS,
   DISPOSITION_TAG_OPTIONS,
-} from "@/lib/constants";import { fileToBase64 } from "@/lib/fileToBase64";
+} from "@/lib/constants";
+import { fileToBase64 } from "@/lib/fileToBase64";
+import { resizeImageFile } from "@/lib/resizeImage";
 import type {
   CategoryMajor,
   Disposition,
@@ -31,6 +35,7 @@ const initialFormState = {
   disposition: "" as Disposition | "",
   dispositionTags: [] as DispositionTag[],
   memo: "",
+  estimatedPriceRange: "",
 };
 
 export function ItemForm({
@@ -53,6 +58,7 @@ export function ItemForm({
   const [aiLoading, setAiLoading] = useState(false);
   const [aiError, setAiError] = useState<string | null>(null);
   const [aiCondition, setAiCondition] = useState<ItemCondition | null>(null);
+  const [photoProcessing, setPhotoProcessing] = useState(false);
 
   const showTags =
     form.disposition === "keep" || form.disposition === "keepsake";
@@ -67,12 +73,26 @@ export function ItemForm({
     if (fileInputRef.current) fileInputRef.current.value = "";
   }
 
-  function handlePhotoChange(e: React.ChangeEvent<HTMLInputElement>) {
+  async function handlePhotoChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0] ?? null;
-    setPhotoFile(file);
-    setPhotoPreview(file ? URL.createObjectURL(file) : null);
     setAiError(null);
     setAiCondition(null);
+
+    if (!file) {
+      setPhotoFile(null);
+      setPhotoPreview(null);
+      return;
+    }
+
+    setPhotoProcessing(true);
+    try {
+      // AI判定・アップロードを高速化するため、大きな写真はここで軽量化する
+      const resized = await resizeImageFile(file);
+      setPhotoFile(resized);
+      setPhotoPreview(URL.createObjectURL(resized));
+    } finally {
+      setPhotoProcessing(false);
+    }
   }
 
   async function handleAiAssist() {
@@ -105,6 +125,8 @@ export function ItemForm({
           prev.memo.trim().length === 0
             ? `(AI推定)状態:${CONDITION_LABELS[suggestion.condition]}`
             : prev.memo,
+        estimatedPriceRange:
+          suggestion.estimatedPriceRange ?? prev.estimatedPriceRange,
       }));
       setAiCondition(suggestion.condition);
     } catch {
@@ -168,24 +190,38 @@ export function ItemForm({
         photoPath = path;
       }
 
-      const { data, error: insertError } = await supabase
+      const baseInsert = {
+        user_id: userId,
+        recorded_by_user_id: userId,
+        name: form.name.trim(),
+        category_major: form.categoryMajor || null,
+        category_minor:
+          form.categoryMajor === "other" ? form.categoryOther.trim() || null : null,
+        location_id: form.locationId || null,
+        disposition: form.disposition || null,
+        disposition_tags: showTags ? form.dispositionTags : null,
+        memo: form.memo.trim() || null,
+        photo_url: photoPath,
+        media_type: mediaType,
+      };
+
+      let { data, error: insertError } = await supabase
         .from("items")
         .insert({
-          user_id: userId,
-          recorded_by_user_id: userId,
-          name: form.name.trim(),
-          category_major: form.categoryMajor || null,
-          category_minor:
-            form.categoryMajor === "other" ? form.categoryOther.trim() || null : null,
-          location_id: form.locationId || null,
-          disposition: form.disposition || null,
-          disposition_tags: showTags ? form.dispositionTags : null,
-          memo: form.memo.trim() || null,
-          photo_url: photoPath,
-          media_type: mediaType,
+          ...baseInsert,
+          estimated_price_range: form.estimatedPriceRange.trim() || null,
         })
         .select("name")
         .single();
+
+      // estimated_price_range 列がまだ存在しない環境向けのフォールバック
+      if (insertError?.message?.includes("estimated_price_range")) {
+        ({ data, error: insertError } = await supabase
+          .from("items")
+          .insert(baseInsert)
+          .select("name")
+          .single());
+      }
 
       if (insertError || !data) {
         throw new Error("登録に失敗しました。もう一度お試しください。");
@@ -250,15 +286,19 @@ export function ItemForm({
           type="file"
           accept="image/*,video/*"
           onChange={handlePhotoChange}
-          className="text-sm text-ink/70 file:mr-4 file:rounded-full file:border-0 file:bg-green-100 file:px-4 file:py-2 file:text-sm file:font-medium file:text-green-700 hover:file:bg-green-200"
+          disabled={photoProcessing}
+          className="text-sm text-ink/70 file:mr-4 file:rounded-full file:border-0 file:bg-green-100 file:px-4 file:py-2 file:text-sm file:font-medium file:text-green-700 hover:file:bg-green-200 disabled:opacity-60"
         />
+        {photoProcessing && (
+          <p className="text-xs text-ink/50">写真を軽量化しています…</p>
+        )}
 
         {photoFile && (
           <div className="mt-2 flex flex-col gap-2">
             <button
               type="button"
               onClick={handleAiAssist}
-              disabled={aiLoading}
+              disabled={aiLoading || photoProcessing}
               className="self-start rounded-full border border-green-300 bg-green-50 px-4 py-2 text-sm font-semibold text-green-700 transition hover:bg-green-100 disabled:opacity-60"
             >
               {aiLoading ? "AIが写真を見ています…" : "✨ AIにおまかせ入力"}
@@ -278,6 +318,14 @@ export function ItemForm({
                     {CONDITION_LABELS[aiCondition]}
                   </span>
                 </p>
+                {form.estimatedPriceRange && (
+                  <p className="mt-1">
+                    推定売却額:{" "}
+                    <span className="font-semibold">
+                      {form.estimatedPriceRange}
+                    </span>
+                  </p>
+                )}
                 <p className="mt-1 text-xs text-green-700/70">
                   AIによる推定です。内容を確認・修正してください。
                 </p>
@@ -296,6 +344,7 @@ export function ItemForm({
           required
           value={form.name}
           onChange={(e) => setForm((p) => ({ ...p, name: e.target.value }))}
+          placeholder={CATEGORY_NAME_HINTS[form.categoryMajor || "other"]}
           className="rounded-lg border border-black/10 bg-white px-4 py-2.5 outline-none focus:border-green-400 focus:ring-2 focus:ring-green-100"
         />
       </div>
@@ -409,6 +458,27 @@ export function ItemForm({
       )}
 
       <div className="flex flex-col gap-1.5">
+        <label
+          htmlFor="estimatedPriceRange"
+          className="text-sm font-medium text-ink/80"
+        >
+          売却額の目安(任意)
+        </label>
+        <input
+          id="estimatedPriceRange"
+          value={form.estimatedPriceRange}
+          onChange={(e) =>
+            setForm((p) => ({ ...p, estimatedPriceRange: e.target.value }))
+          }
+          placeholder="例:3,000円〜5,000円 / 1万円前後"
+          className="rounded-lg border border-black/10 bg-white px-4 py-2.5 outline-none focus:border-green-400 focus:ring-2 focus:ring-green-100"
+        />
+        <p className="text-xs text-ink/40">
+          「✨ AIにおまかせ入力」を使うと、写真から目安額を自動入力します。
+        </p>
+      </div>
+
+      <div className="flex flex-col gap-1.5">
         <label htmlFor="memo" className="text-sm font-medium text-ink/80">
           家族へのメモ(任意)
         </label>
@@ -417,6 +487,7 @@ export function ItemForm({
           rows={4}
           value={form.memo}
           onChange={(e) => setForm((p) => ({ ...p, memo: e.target.value }))}
+          placeholder={CATEGORY_MEMO_HINTS[form.categoryMajor || "other"]}
           className="rounded-lg border border-black/10 bg-white px-4 py-2.5 outline-none focus:border-green-400 focus:ring-2 focus:ring-green-100"
         />
       </div>
