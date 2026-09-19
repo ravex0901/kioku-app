@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useActionState } from "react";
 import { login } from "@/app/actions/auth";
 
@@ -38,6 +39,12 @@ export function LoginForm({ infoMessage }: { infoMessage?: string }) {
           autoComplete="current-password"
           className="rounded-lg border border-black/10 bg-white px-4 py-2.5 text-ink outline-none focus:border-green-400 focus:ring-2 focus:ring-green-100"
         />
+        <Link
+          href="/forgot-password"
+          className="self-end text-xs text-green-700 underline underline-offset-2"
+        >
+          パスワードをお忘れですか?
+        </Link>
       </div>
 
       {state?.error && (
