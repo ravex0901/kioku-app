@@ -1,5 +1,6 @@
 import type {
   CategoryMajor,
+  DigitalItemType,
   Disposition,
   DispositionTag,
   LocationType,
@@ -32,6 +33,34 @@ export const CATEGORY_NAME_HINTS: Partial<Record<CategoryMajor, string>> = {
   asset: "例:○○銀行 普通預金、NISA口座 など",
   subscription: "例:Netflix、〇〇新聞、△△ジムの会費 など",
   insurance: "例:〇〇生命 終身保険、△△火災保険 など",
+};
+
+// デジタル情報・契約情報の種別(特許図面【図10】〜【図13】に対応)
+export const DIGITAL_ITEM_TYPE_OPTIONS: {
+  value: DigitalItemType;
+  label: string;
+}[] = [
+  { value: "subscription", label: "サブスク" },
+  { value: "account", label: "アカウント" },
+  { value: "data_storage", label: "データ保管場所" },
+  { value: "finance", label: "金融" },
+  { value: "insurance", label: "保険" },
+  { value: "contract", label: "契約" },
+  { value: "access_info", label: "アクセス情報" },
+  { value: "other", label: "その他" },
+];
+
+export const DIGITAL_ITEM_TITLE_HINTS: Partial<
+  Record<DigitalItemType, string>
+> = {
+  subscription: "例:Net◯◯、〇〇新聞",
+  account: "例:〇〇銀行 普通預金、icloud",
+  data_storage: "例:iCloud写真、外付けHDD",
+  finance: "例:〇〇証券 NISA口座",
+  insurance: "例:がん保険、〇〇火災保険",
+  contract: "例:〇〇マンション賃貸契約",
+  access_info: "例:実家の鍵の保管場所",
+  other: "例:その他残しておきたい情報",
 };
 
 export const DISPOSITION_OPTIONS: { value: Disposition; label: string }[] = [
