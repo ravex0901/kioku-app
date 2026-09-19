@@ -333,7 +333,6 @@ export function ItemDetail({
           <div className="mt-2">
             <LocationCreateForm
               userId={item.user_id}
-              locations={locations}
               onCreated={(loc) => {
                 setLocations((prev) => [...prev, loc]);
                 setLocationId(loc.id);
