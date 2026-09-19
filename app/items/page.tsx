@@ -39,9 +39,7 @@ export default async function ItemsPage({
 
   let query = supabase
     .from("items")
-    .select(
-      "id, name, photo_url, category_major, disposition, location:locations(name)"
-    )
+    .select("*, location:locations(name)")
     .eq("user_id", user.id)
     .order("created_at", { ascending: false });
 
@@ -114,7 +112,14 @@ export default async function ItemsPage({
                     {labelFor(CATEGORY_OPTIONS, item.category_major)} ・{" "}
                     {resolveLocationName(item.location)}
                   </span>
-                  <DispositionBadge disposition={item.disposition} />
+                  <div className="flex flex-wrap items-center gap-1.5">
+                    <DispositionBadge disposition={item.disposition} />
+                    {item.estimated_price_range && (
+                      <span className="rounded-full bg-gold/20 px-2 py-0.5 text-[11px] font-semibold text-green-800">
+                        {item.estimated_price_range}
+                      </span>
+                    )}
+                  </div>
                 </div>
               </Link>
             ))}
