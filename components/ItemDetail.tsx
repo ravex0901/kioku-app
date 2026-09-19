@@ -6,11 +6,13 @@ import { createClient } from "@/lib/supabase/client";
 import { LocationCreateForm } from "@/components/LocationCreateForm";
 import { DispositionBadge } from "@/components/DispositionBadge";
 import {
+  CATEGORY_MEMO_HINTS,
   CATEGORY_OPTIONS,
   DISPOSITION_OPTIONS,
   DISPOSITION_TAG_OPTIONS,
   labelFor,
 } from "@/lib/constants";
+import { resizeImageFile } from "@/lib/resizeImage";
 import type {
   CategoryMajor,
   Disposition,
@@ -52,10 +54,14 @@ export function ItemDetail({
     item.disposition_tags ?? []
   );
   const [memo, setMemo] = useState(item.memo ?? "");
+  const [estimatedPriceRange, setEstimatedPriceRange] = useState(
+    item.estimated_price_range ?? ""
+  );
   const [photoFile, setPhotoFile] = useState<File | null>(null);
   const [photoPreview, setPhotoPreview] = useState<string | null>(
     signedPhotoUrl
   );
+  const [photoProcessing, setPhotoProcessing] = useState(false);
 
   const [submitting, setSubmitting] = useState(false);
   const [deleting, setDeleting] = useState(false);
@@ -70,10 +76,17 @@ export function ItemDetail({
     );
   }
 
-  function handlePhotoChange(e: React.ChangeEvent<HTMLInputElement>) {
+  async function handlePhotoChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0] ?? null;
-    setPhotoFile(file);
-    if (file) setPhotoPreview(URL.createObjectURL(file));
+    if (!file) return;
+    setPhotoProcessing(true);
+    try {
+      const resized = await resizeImageFile(file);
+      setPhotoFile(resized);
+      setPhotoPreview(URL.createObjectURL(resized));
+    } finally {
+      setPhotoProcessing(false);
+    }
   }
 
   function handleLocationSelect(value: string) {
@@ -119,22 +132,36 @@ export function ItemDetail({
         photoPath = path;
       }
 
-      const { error: updateError } = await supabase
+      const baseUpdate = {
+        name: name.trim(),
+        category_major: categoryMajor || null,
+        category_minor:
+          categoryMajor === "other" ? categoryOther.trim() || null : null,
+        location_id: locationId || null,
+        disposition: disposition || null,
+        disposition_tags: showTags ? dispositionTags : null,
+        memo: memo.trim() || null,
+        photo_url: photoPath,
+        media_type: mediaType,
+      };
+
+      let { error: updateError } = await supabase
         .from("items")
         .update({
-          name: name.trim(),
-          category_major: categoryMajor || null,
-          category_minor:
-            categoryMajor === "other" ? categoryOther.trim() || null : null,
-          location_id: locationId || null,
-          disposition: disposition || null,
-          disposition_tags: showTags ? dispositionTags : null,
-          memo: memo.trim() || null,
-          photo_url: photoPath,
-          media_type: mediaType,
+          ...baseUpdate,
+          estimated_price_range: estimatedPriceRange.trim() || null,
         })
         .eq("id", item.id)
         .eq("user_id", item.user_id);
+
+      // estimated_price_range 列がまだ存在しない環境向けのフォールバック
+      if (updateError?.message?.includes("estimated_price_range")) {
+        ({ error: updateError } = await supabase
+          .from("items")
+          .update(baseUpdate)
+          .eq("id", item.id)
+          .eq("user_id", item.user_id));
+      }
 
       if (updateError) {
         throw new Error("更新に失敗しました。もう一度お試しください。");
@@ -200,7 +227,14 @@ export function ItemDetail({
           </div>
           <div className="flex flex-1 flex-col gap-2">
             <h1 className="text-2xl font-bold text-ink">{item.name}</h1>
-            <DispositionBadge disposition={item.disposition} />
+            <div className="flex flex-wrap items-center gap-2">
+              <DispositionBadge disposition={item.disposition} />
+              {item.estimated_price_range && (
+                <span className="inline-flex items-center gap-1 rounded-full bg-gold/20 px-3 py-1 text-xs font-semibold text-green-800">
+                  推定売却額 {item.estimated_price_range}
+                </span>
+              )}
+            </div>
             <dl className="mt-2 grid grid-cols-[auto_1fr] gap-x-4 gap-y-1 text-sm">
               <dt className="text-ink/50">ジャンル</dt>
               <dd className="text-ink">
@@ -211,6 +245,8 @@ export function ItemDetail({
               </dd>
               <dt className="text-ink/50">保管場所</dt>
               <dd className="text-ink">{locationName}</dd>
+              <dt className="text-ink/50">売却額の目安</dt>
+              <dd className="text-ink">{item.estimated_price_range || "―"}</dd>
               {showTags && dispositionTags.length > 0 && (
                 <>
                   <dt className="text-ink/50">理由タグ</dt>
@@ -277,8 +313,12 @@ export function ItemDetail({
           type="file"
           accept="image/*,video/*"
           onChange={handlePhotoChange}
-          className="text-sm text-ink/70 file:mr-4 file:rounded-full file:border-0 file:bg-green-100 file:px-4 file:py-2 file:text-sm file:font-medium file:text-green-700 hover:file:bg-green-200"
+          disabled={photoProcessing}
+          className="text-sm text-ink/70 file:mr-4 file:rounded-full file:border-0 file:bg-green-100 file:px-4 file:py-2 file:text-sm file:font-medium file:text-green-700 hover:file:bg-green-200 disabled:opacity-60"
         />
+        {photoProcessing && (
+          <p className="text-xs text-ink/50">写真を軽量化しています…</p>
+        )}
       </div>
 
       <div className="flex flex-col gap-1.5">
@@ -397,12 +437,25 @@ export function ItemDetail({
 
       <div className="flex flex-col gap-1.5">
         <label className="text-sm font-medium text-ink/80">
+          売却額の目安
+        </label>
+        <input
+          value={estimatedPriceRange}
+          onChange={(e) => setEstimatedPriceRange(e.target.value)}
+          placeholder="例:3,000円〜5,000円 / 1万円前後"
+          className="rounded-lg border border-black/10 bg-white px-4 py-2.5 outline-none focus:border-green-400 focus:ring-2 focus:ring-green-100"
+        />
+      </div>
+
+      <div className="flex flex-col gap-1.5">
+        <label className="text-sm font-medium text-ink/80">
           家族へのメモ
         </label>
         <textarea
           rows={4}
           value={memo}
           onChange={(e) => setMemo(e.target.value)}
+          placeholder={CATEGORY_MEMO_HINTS[categoryMajor || "other"]}
           className="rounded-lg border border-black/10 bg-white px-4 py-2.5 outline-none focus:border-green-400 focus:ring-2 focus:ring-green-100"
         />
       </div>
@@ -417,7 +470,7 @@ export function ItemDetail({
         <button
           type="button"
           onClick={handleSave}
-          disabled={submitting}
+          disabled={submitting || photoProcessing}
           className="rounded-full bg-green-700 px-6 py-3 font-semibold text-white transition hover:bg-green-800 disabled:opacity-60"
         >
           {submitting ? "保存中…" : "保存する"}
