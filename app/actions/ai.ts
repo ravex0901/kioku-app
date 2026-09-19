@@ -13,6 +13,9 @@ const CATEGORY_VALUES: CategoryMajor[] = [
   "tableware",
   "books",
   "jewelry",
+  "asset",
+  "subscription",
+  "insurance",
   "other",
 ];
 
@@ -24,20 +27,36 @@ export type ItemAiSuggestion = {
   categoryMajor: CategoryMajor;
   categoryOther: string | null;
   condition: ItemCondition;
+  estimatedPriceRange: string | null;
 };
 
 export type AnalyzeItemPhotoResult =
   | { ok: true; suggestion: ItemAiSuggestion }
   | { ok: false; error: string };
 
-const PROMPT = `この写真に写っている家財・持ち物について、生前整理を支援するアプリのために推定してください。
+const PROMPT = `あなたは中古品の査定・生前整理の専門家です。この写真に写っている家財・持ち物について、
+できるだけ具体的かつ正確に推定してください。以下の手順で慎重に確認してから回答してください。
+
+1. 写真の中に文字・ロゴ・型番・ブランド名・製品ラベルが写っていないか隅々まで確認する。
+   文字が読み取れる場合は、それを最優先で品名に反映する
+   (例: 「椅子」ではなく「カリモク60 Kチェア」、「テレビ」ではなく「SONY BRAVIA 43型」のように、
+   読み取れたブランド名・製品名・型番をできる限り具体的に品名に含める)。
+2. 文字やロゴが読み取れない、または不鮮明な場合のみ、形状・素材・デザインの特徴から
+   一般的な品名(例: 「木製の学習机」「ステンレス製の鍋」)を推定する。曖昧な当て推量はしない。
+3. 品目のジャンル、状態(良好・使用感あり・要修理)を判定する。
+4. 日本国内の中古市場(メルカリ・ジモティー・リサイクルショップなど)の実勢価格感を踏まえ、
+   売却した場合のおおよその価格帯を見積もる。ブランド品や高価なものほど根拠を持って高めに、
+   一般的な日用品は控えめに見積もる。売却価値がほぼ無いと判断される場合は
+   "値段がつきにくい" のように正直に答えてよい。
+
 説明文などは一切付けず、次の形式のJSONオブジェクトのみを出力してください。
 
 {
-  "name": "品名(20文字以内の日本語)",
-  "category_major": "furniture" | "appliance" | "clothing" | "tableware" | "books" | "jewelry" | "other" のいずれか,
+  "name": "品名(30文字以内の日本語。可能な限りブランド名・製品名・型番を含める)",
+  "category_major": "furniture" | "appliance" | "clothing" | "tableware" | "books" | "jewelry" | "asset" | "subscription" | "insurance" | "other" のいずれか,
   "category_other": "category_majorがotherの場合のみ具体的なジャンル名(日本語)。それ以外はnull",
-  "condition": "good" | "used" | "needs_repair" のいずれか(良好・使用感あり・要修理)
+  "condition": "good" | "used" | "needs_repair" のいずれか(良好・使用感あり・要修理),
+  "estimated_price_range": "売却した場合のおおよその価格帯(日本語、例: '3,000円〜5,000円', '1万円〜2万円前後', '値段がつきにくい')"
 }`;
 
 function extractJson(text: string): unknown {
@@ -71,7 +90,7 @@ export async function analyzeItemPhoto(
     const client = new Anthropic({ apiKey });
     const message = await client.messages.create({
       model: "claude-sonnet-5",
-      max_tokens: 512,
+      max_tokens: 768,
       messages: [
         {
           role: "user",
@@ -123,6 +142,12 @@ export async function analyzeItemPhoto(
         ? parsed.category_other.trim() || null
         : null;
 
+    const estimatedPriceRange =
+      typeof parsed.estimated_price_range === "string" &&
+      parsed.estimated_price_range.trim()
+        ? parsed.estimated_price_range.trim().slice(0, 30)
+        : null;
+
     return {
       ok: true,
       suggestion: {
@@ -130,6 +155,7 @@ export async function analyzeItemPhoto(
         categoryMajor: categoryMajor as CategoryMajor,
         categoryOther,
         condition: condition as ItemCondition,
+        estimatedPriceRange,
       },
     };
   } catch (err) {
@@ -148,6 +174,7 @@ type ItemRow = {
   category_minor: string | null;
   disposition: string | null;
   memo: string | null;
+  estimated_price_range?: string | null;
   location: { name: string } | { name: string }[] | null;
 };
 
@@ -185,9 +212,7 @@ export async function askAboutItems(
 
   const { data } = await supabase
     .from("items")
-    .select(
-      "name, category_major, category_minor, disposition, memo, location:locations(name)"
-    )
+    .select("*, location:locations(name)")
     .eq("user_id", user.id)
     .order("created_at", { ascending: false })
     .limit(200);
@@ -214,7 +239,10 @@ export async function askAboutItems(
         item.disposition as (typeof DISPOSITION_OPTIONS)[number]["value"] | null
       );
       const memoText = item.memo ? ` / メモ:${item.memo}` : "";
-      return `・${item.name} / ジャンル:${category} / 場所:${locationName} / 処分方針:${dispositionLabel}${memoText}`;
+      const priceText = item.estimated_price_range
+        ? ` / 推定売却額:${item.estimated_price_range}`
+        : "";
+      return `・${item.name} / ジャンル:${category} / 場所:${locationName} / 処分方針:${dispositionLabel}${priceText}${memoText}`;
     })
     .join("\n");
 
