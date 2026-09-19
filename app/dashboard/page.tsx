@@ -2,6 +2,8 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { Header } from "@/components/Header";
 import { InheritanceTaxCalculator } from "@/components/InheritanceTaxCalculator";
+import { InheritanceChecklist } from "@/components/InheritanceChecklist";
+import type { CategoryMajor, DigitalItemType } from "@/lib/types";
 
 function ScoreRing({ percent }: { percent: number }) {
   const size = 88;
@@ -76,31 +78,60 @@ export default async function DashboardPage() {
     redirect("/login");
   }
 
-  const [totalRes, locatedRes, dispositionRes, locationsRes, digitalRes] =
-    await Promise.all([
-      supabase
-        .from("items")
-        .select("id", { count: "exact", head: true })
-        .eq("user_id", user.id),
-      supabase
-        .from("items")
-        .select("id", { count: "exact", head: true })
-        .eq("user_id", user.id)
-        .not("location_id", "is", null),
-      supabase
-        .from("items")
-        .select("id", { count: "exact", head: true })
-        .eq("user_id", user.id)
-        .not("disposition", "is", null),
-      supabase
-        .from("locations")
-        .select("id", { count: "exact", head: true })
-        .eq("user_id", user.id),
-      supabase
-        .from("digital_items")
-        .select("id", { count: "exact", head: true })
-        .eq("user_id", user.id),
-    ]);
+  // 最終アクティブ日時を更新(「もしもの時」の非アクティブ判定の基準になる)
+  await supabase
+    .from("profiles")
+    .update({ last_active_at: new Date().toISOString() })
+    .eq("id", user.id);
+
+  const [
+    totalRes,
+    locatedRes,
+    dispositionRes,
+    locationsRes,
+    digitalRes,
+    itemsForChecklistRes,
+    digitalItemsForChecklistRes,
+    willRes,
+    checklistProgressRes,
+  ] = await Promise.all([
+    supabase
+      .from("items")
+      .select("id", { count: "exact", head: true })
+      .eq("user_id", user.id),
+    supabase
+      .from("items")
+      .select("id", { count: "exact", head: true })
+      .eq("user_id", user.id)
+      .not("location_id", "is", null),
+    supabase
+      .from("items")
+      .select("id", { count: "exact", head: true })
+      .eq("user_id", user.id)
+      .not("disposition", "is", null),
+    supabase
+      .from("locations")
+      .select("id", { count: "exact", head: true })
+      .eq("user_id", user.id),
+    supabase
+      .from("digital_items")
+      .select("id", { count: "exact", head: true })
+      .eq("user_id", user.id),
+    supabase.from("items").select("category_major").eq("user_id", user.id),
+    supabase
+      .from("digital_items")
+      .select("item_type")
+      .eq("user_id", user.id),
+    supabase
+      .from("wills")
+      .select("message, video_url")
+      .eq("user_id", user.id)
+      .maybeSingle(),
+    supabase
+      .from("inheritance_checklist_progress")
+      .select("procedure_key, done")
+      .eq("user_id", user.id),
+  ]);
 
   const total = totalRes.count ?? 0;
   const located = locatedRes.count ?? 0;
@@ -113,8 +144,8 @@ export default async function DashboardPage() {
   const dispositionPercent =
     total > 0 ? Math.round((dispositionDecided / total) * 100) : 0;
   const digitalPercent = digitalCount > 0 ? 100 : 0;
-  const endingNotePercent = 0;
-  const willVideoPercent = 0;
+  const endingNotePercent = willRes.data?.message ? 100 : 0;
+  const willVideoPercent = willRes.data?.video_url ? 100 : 0;
 
   const overallScore = Math.round(
     (registeredPercent +
@@ -125,6 +156,17 @@ export default async function DashboardPage() {
       willVideoPercent) /
       6
   );
+
+  const checklistItems = (itemsForChecklistRes.data ?? []) as {
+    category_major: CategoryMajor | null;
+  }[];
+  const checklistDigitalItems = (digitalItemsForChecklistRes.data ?? []) as {
+    item_type: DigitalItemType;
+  }[];
+  const checklistProgress: Record<string, boolean> = {};
+  for (const row of checklistProgressRes.data ?? []) {
+    checklistProgress[row.procedure_key] = row.done;
+  }
 
   return (
     <div className="min-h-screen bg-cream">
@@ -152,7 +194,7 @@ export default async function DashboardPage() {
             <ScoreBar label="場所" percent={locatedPercent} />
             <ScoreBar label="処分方針" percent={dispositionPercent} />
             <ScoreBar label="デジタル資産" percent={digitalPercent} />
-            <ScoreBar label="エンディングノート" percent={endingNotePercent} />
+            <ScoreBar label="遺言書(意思伝達)" percent={endingNotePercent} />
             <ScoreBar label="遺言動画" percent={willVideoPercent} />
           </div>
           {locationsCount === 0 && (
@@ -162,26 +204,15 @@ export default async function DashboardPage() {
           )}
         </div>
 
-        <div className="rounded-[1.75rem] border border-gold/40 bg-gold/10 p-5 shadow-sm sm:p-6">
-          <h2 className="mb-3 text-sm font-bold text-ink">
-            手続きチェックリスト(ご家族と共有)
-          </h2>
-          <div className="flex items-start gap-3">
-            <span aria-hidden className="mt-0.5 shrink-0 text-gold">
-              <svg viewBox="0 0 24 24" fill="none" className="h-5 w-5">
-                <rect x="5" y="10" width="14" height="10" rx="2" stroke="currentColor" strokeWidth={1.6} />
-                <path d="M8 10V7a4 4 0 0 1 8 0v3" stroke="currentColor" strokeWidth={1.6} />
-              </svg>
-            </span>
-            <p className="text-sm text-ink/70">
-              ご家族が開示承認を行うと、期限付きの手続きチェックリストが自動生成され、家族全員で進み具合を共有できるようになります。設定タブの「もしもの時」から、開示承認後の状態を設定できます。
-            </p>
-          </div>
-        </div>
+        <InheritanceChecklist
+          userId={user.id}
+          items={checklistItems}
+          digitalItems={checklistDigitalItems}
+          initialProgress={checklistProgress}
+        />
 
         <InheritanceTaxCalculator />
       </main>
     </div>
   );
 }
-
