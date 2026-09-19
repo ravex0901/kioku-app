@@ -35,7 +35,6 @@ export function LocationsClient({
       {showForm && (
         <LocationCreateForm
           userId={userId}
-          locations={locations}
           onCreated={(loc) => {
             setLocations((prev) => [...prev, loc]);
             setShowForm(false);
