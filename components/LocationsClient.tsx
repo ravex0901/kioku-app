@@ -7,6 +7,85 @@ import { flattenLocationTree } from "@/lib/locationTree";
 import { LOCATION_TYPE_OPTIONS, labelFor } from "@/lib/constants";
 import type { Location, LocationType } from "@/lib/types";
 
+const LOCATION_TYPE_STYLE: Record<
+  LocationType,
+  { bg: string; text: string }
+> = {
+  building: { bg: "bg-sky-100", text: "text-sky-700" },
+  floor: { bg: "bg-amber-100", text: "text-amber-700" },
+  room: { bg: "bg-green-100", text: "text-green-700" },
+  storage: { bg: "bg-orange-100", text: "text-orange-700" },
+};
+
+function LocationTypeIcon({ type }: { type: LocationType }) {
+  switch (type) {
+    case "building":
+      return (
+        <svg viewBox="0 0 24 24" fill="none" className="h-5 w-5">
+          <path
+            d="M5 21V5a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v16M13 21v-8a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v8"
+            stroke="currentColor"
+            strokeWidth={1.7}
+            strokeLinejoin="round"
+          />
+          <path
+            d="M8 8h0M8 12h0M8 16h0"
+            stroke="currentColor"
+            strokeWidth={2}
+            strokeLinecap="round"
+          />
+        </svg>
+      );
+    case "floor":
+      return (
+        <svg viewBox="0 0 24 24" fill="none" className="h-5 w-5">
+          <path
+            d="m4 8 8-4 8 4-8 4-8-4Z"
+            stroke="currentColor"
+            strokeWidth={1.7}
+            strokeLinejoin="round"
+          />
+          <path
+            d="m4 12 8 4 8-4M4 16l8 4 8-4"
+            stroke="currentColor"
+            strokeWidth={1.7}
+            strokeLinejoin="round"
+          />
+        </svg>
+      );
+    case "storage":
+      return (
+        <svg viewBox="0 0 24 24" fill="none" className="h-5 w-5">
+          <path
+            d="M4 8.5 12 5l8 3.5V17a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V8.5Z"
+            stroke="currentColor"
+            strokeWidth={1.7}
+            strokeLinejoin="round"
+          />
+          <path
+            d="M4 8.5 12 12l8-3.5M12 12v6"
+            stroke="currentColor"
+            strokeWidth={1.7}
+            strokeLinejoin="round"
+          />
+        </svg>
+      );
+    case "room":
+    default:
+      return (
+        <svg viewBox="0 0 24 24" fill="none" className="h-5 w-5">
+          <path
+            d="M6 21V4.6a1 1 0 0 1 .82-.98l9-1.64A1 1 0 0 1 17 3v18"
+            stroke="currentColor"
+            strokeWidth={1.7}
+            strokeLinejoin="round"
+          />
+          <path d="M6 21h13M13.2 13h0" stroke="currentColor" strokeWidth={2} strokeLinecap="round" />
+        </svg>
+      );
+  }
+}
+
 function LocationListItem({
   location,
   depth,
@@ -31,6 +110,8 @@ function LocationListItem({
   const [deleting, setDeleting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  const style = LOCATION_TYPE_STYLE[location.location_type];
+
   async function handleSave() {
     const trimmed = name.trim();
     if (!trimmed) {
@@ -45,6 +126,7 @@ function LocationListItem({
       .from("locations")
       .update({ name: trimmed, location_type: locationType })
       .eq("id", location.id)
+      .eq("user_id", location.user_id)
       .select()
       .single();
 
@@ -74,7 +156,8 @@ function LocationListItem({
     const { error: deleteError } = await supabase
       .from("locations")
       .delete()
-      .eq("id", location.id);
+      .eq("id", location.id)
+      .eq("user_id", location.user_id);
 
     if (deleteError) {
       setDeleting(false);
@@ -91,7 +174,7 @@ function LocationListItem({
     return (
       <li
         style={{ marginLeft: `${depth * 1.5}rem` }}
-        className="rounded-2xl border border-green-200 bg-green-50/60 p-4"
+        className="rounded-[1.5rem] border border-green-200 bg-green-50/60 p-4 shadow-sm"
       >
         <div className="flex flex-col gap-3">
           <div className="flex flex-col gap-1.5">
@@ -151,22 +234,36 @@ function LocationListItem({
   return (
     <li
       style={{ marginLeft: `${depth * 1.5}rem` }}
-      className="flex flex-col gap-2 rounded-2xl border border-green-100 bg-white/70 px-4 py-3 shadow-sm sm:flex-row sm:items-center sm:justify-between"
+      className="flex flex-col gap-3 rounded-[1.5rem] border border-green-100 bg-white/70 px-4 py-3.5 shadow-sm transition hover:shadow-md sm:flex-row sm:items-center sm:justify-between"
     >
-      <div>
-        <div className="flex items-center gap-2">
-          <span className="rounded-full bg-green-100 px-2 py-0.5 text-xs font-medium text-green-700">
-            {labelFor(LOCATION_TYPE_OPTIONS, location.location_type)}
-          </span>
-          <span className="font-medium text-ink">{location.name}</span>
+      <div className="flex items-center gap-3">
+        <span
+          aria-hidden
+          className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full ${style.bg} ${style.text}`}
+        >
+          <LocationTypeIcon type={location.location_type} />
+        </span>
+        <div>
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="font-medium text-ink">{location.name}</span>
+            <span
+              className={`rounded-full px-2 py-0.5 text-[11px] font-medium ${style.bg} ${style.text}`}
+            >
+              {labelFor(LOCATION_TYPE_OPTIONS, location.location_type)}
+            </span>
+          </div>
+          {breadcrumb.length > 0 && (
+            <p className="mt-0.5 text-xs text-ink/40">
+              {breadcrumb.join(" > ")}
+            </p>
+          )}
+          {error && <p className="mt-1 text-xs text-red-600">{error}</p>}
         </div>
-        {breadcrumb.length > 0 && (
-          <p className="mt-0.5 text-xs text-ink/40">{breadcrumb.join(" > ")}</p>
-        )}
-        {error && <p className="mt-1 text-xs text-red-600">{error}</p>}
       </div>
-      <div className="flex shrink-0 items-center gap-3">
-        <span className="text-sm text-ink/60">{itemCount} 件</span>
+      <div className="flex shrink-0 flex-wrap items-center gap-2 pl-[3.25rem] sm:flex-nowrap sm:pl-0">
+        <span className="rounded-full bg-black/5 px-2.5 py-1 text-xs font-medium text-ink/60">
+          {itemCount} 件
+        </span>
         <button
           type="button"
           onClick={() => setEditing(true)}
@@ -207,9 +304,17 @@ export function LocationsClient({
         <button
           type="button"
           onClick={() => setShowForm((v) => !v)}
-          className="rounded-full bg-green-700 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-green-800"
+          className="inline-flex items-center gap-1.5 rounded-full bg-green-700 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-green-800"
         >
-          + 場所を追加
+          <svg viewBox="0 0 24 24" fill="none" className="h-4 w-4">
+            <path
+              d="M12 5v14M5 12h14"
+              stroke="currentColor"
+              strokeWidth={2.25}
+              strokeLinecap="round"
+            />
+          </svg>
+          場所を追加
         </button>
       </div>
 
@@ -225,11 +330,29 @@ export function LocationsClient({
       )}
 
       {nodes.length === 0 ? (
-        <p className="rounded-2xl border border-green-100 bg-white/70 p-6 text-center text-sm text-ink/60">
-          まだ場所が登録されていません。
-        </p>
+        <div className="flex flex-col items-center gap-2 rounded-[1.75rem] border border-dashed border-green-200 bg-white/50 p-10 text-center">
+          <span
+            aria-hidden
+            className="flex h-12 w-12 items-center justify-center rounded-full bg-green-50 text-green-400"
+          >
+            <svg viewBox="0 0 24 24" fill="none" className="h-6 w-6">
+              <path
+                d="M12 21s7-6.1 7-11.5A7 7 0 0 0 5 9.5C5 14.9 12 21 12 21Z"
+                stroke="currentColor"
+                strokeWidth={1.5}
+                strokeLinejoin="round"
+              />
+              <circle cx="12" cy="9.5" r="2.25" stroke="currentColor" strokeWidth={1.5} />
+            </svg>
+          </span>
+          <p className="text-sm text-ink/60">
+            まだ場所が登録されていません。
+            <br />
+            リビングや寝室など、片付けたい場所を追加してみましょう。
+          </p>
+        </div>
       ) : (
-        <ul className="flex flex-col gap-2">
+        <ul className="flex flex-col gap-2.5">
           {nodes.map(({ location, depth, breadcrumb }) => (
             <LocationListItem
               key={location.id}
