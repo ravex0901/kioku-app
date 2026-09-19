@@ -6,8 +6,8 @@ import { resolveLocationName } from "@/lib/format";
 import { Header } from "@/components/Header";
 import { DispositionBadge } from "@/components/DispositionBadge";
 import { ItemsFilterBar } from "@/components/ItemsFilterBar";
-import { CATEGORY_OPTIONS, labelFor } from "@/lib/constants";
-import type { CategoryMajor, Disposition } from "@/lib/types";
+import { CATEGORY_OPTIONS, ITEM_STATUS_BADGE_STYLE, ITEM_STATUS_OPTIONS, labelFor } from "@/lib/constants";
+import type { CategoryMajor, Disposition, ItemStatus } from "@/lib/types";
 
 function first(value: string | string[] | undefined) {
   return Array.isArray(value) ? value[0] : value;
@@ -20,6 +20,7 @@ export default async function ItemsPage({
   const category = first(params.category) ?? "";
   const locationId = first(params.location) ?? "";
   const disposition = first(params.disposition) ?? "";
+  const status = first(params.status) ?? "";
   const keyword = first(params.q) ?? "";
   const bulkAdded = first(params.bulkAdded);
 
@@ -46,6 +47,7 @@ export default async function ItemsPage({
   if (category) query = query.eq("category_major", category as CategoryMajor);
   if (locationId) query = query.eq("location_id", locationId);
   if (disposition) query = query.eq("disposition", disposition as Disposition);
+  if (status) query = query.eq("status", status as ItemStatus);
   if (keyword) query = query.ilike("name", `%${keyword}%`);
 
   const { data: items } = await query;
@@ -74,6 +76,7 @@ export default async function ItemsPage({
             category,
             location: locationId,
             disposition,
+            status,
             q: keyword,
           }}
         />
@@ -114,6 +117,13 @@ export default async function ItemsPage({
                   </span>
                   <div className="flex flex-wrap items-center gap-1.5">
                     <DispositionBadge disposition={item.disposition} />
+                    <span
+                      className={`rounded-full px-2 py-0.5 text-[11px] font-semibold ${
+                        ITEM_STATUS_BADGE_STYLE[item.status ?? "photo_registered"]
+                      }`}
+                    >
+                      {labelFor(ITEM_STATUS_OPTIONS, item.status ?? "photo_registered")}
+                    </span>
                     {item.estimated_price_range && (
                       <span className="rounded-full bg-gold/20 px-2 py-0.5 text-[11px] font-semibold text-green-800">
                         {item.estimated_price_range}
