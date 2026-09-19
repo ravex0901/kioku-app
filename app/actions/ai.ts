@@ -1,6 +1,9 @@
 "use server";
 
 import Anthropic from "@anthropic-ai/sdk";
+import { createClient } from "@/lib/supabase/server";
+import { resolveLocationName } from "@/lib/format";
+import { CATEGORY_OPTIONS, DISPOSITION_OPTIONS, labelFor } from "@/lib/constants";
 import type { CategoryMajor } from "@/lib/types";
 
 const CATEGORY_VALUES: CategoryMajor[] = [
@@ -132,5 +135,114 @@ export async function analyzeItemPhoto(
   } catch (err) {
     console.error("analyzeItemPhoto error", err);
     return { ok: false, error: "判定に失敗しました。手動で入力してください。" };
+  }
+}
+
+export type AskAboutItemsResult =
+  | { ok: true; answer: string }
+  | { ok: false; error: string };
+
+type ItemRow = {
+  name: string;
+  category_major: CategoryMajor | null;
+  category_minor: string | null;
+  disposition: string | null;
+  memo: string | null;
+  location: { name: string } | { name: string }[] | null;
+};
+
+const ASK_SYSTEM_PROMPT =
+  "あなたは生前整理を支援するアプリ「きおく」の音声アシスタントです。" +
+  "ユーザーは音声、またはテキストで質問します。以下に渡される、ユーザーが登録済みの持ち物データだけを根拠に、" +
+  "日本語でやさしく、簡潔に答えてください。データに書かれていないことは推測せず、" +
+  "わからない場合は「登録されている情報からはわかりません」と正直に答えてください。" +
+  "一覧で答えるほうがわかりやすい場合は、箇条書きを使ってください。";
+
+/**
+ * 「AIに話しかける」機能: 登録済みの持ち物データをもとに、音声/テキストの質問にAIが答える。
+ */
+export async function askAboutItems(
+  question: string
+): Promise<AskAboutItemsResult> {
+  const trimmed = question.trim();
+  if (!trimmed) {
+    return { ok: false, error: "質問を入力してください。" };
+  }
+
+  const apiKey = process.env.ANTHROPIC_API_KEY;
+  if (!apiKey) {
+    return { ok: false, error: "AI機能が設定されていません。" };
+  }
+
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    return { ok: false, error: "ログインが必要です。" };
+  }
+
+  const { data } = await supabase
+    .from("items")
+    .select(
+      "name, category_major, category_minor, disposition, memo, location:locations(name)"
+    )
+    .eq("user_id", user.id)
+    .order("created_at", { ascending: false })
+    .limit(200);
+
+  const rows = (data ?? []) as ItemRow[];
+
+  if (rows.length === 0) {
+    return {
+      ok: true,
+      answer:
+        "まだ何も登録されていません。まずは「ものを登録する」から1品登録してみましょう。",
+    };
+  }
+
+  const dataText = rows
+    .map((item) => {
+      const locationName = resolveLocationName(item.location);
+      const categoryLabel = labelFor(CATEGORY_OPTIONS, item.category_major);
+      const category = item.category_minor
+        ? `${categoryLabel}(${item.category_minor})`
+        : categoryLabel;
+      const dispositionLabel = labelFor(
+        DISPOSITION_OPTIONS,
+        item.disposition as (typeof DISPOSITION_OPTIONS)[number]["value"] | null
+      );
+      const memoText = item.memo ? ` / メモ:${item.memo}` : "";
+      return `・${item.name} / ジャンル:${category} / 場所:${locationName} / 処分方針:${dispositionLabel}${memoText}`;
+    })
+    .join("\n");
+
+  try {
+    const client = new Anthropic({ apiKey });
+    const message = await client.messages.create({
+      model: "claude-sonnet-5",
+      max_tokens: 512,
+      system: ASK_SYSTEM_PROMPT,
+      messages: [
+        {
+          role: "user",
+          content: `【登録されている持ち物一覧】\n${dataText}\n\n【質問】\n${trimmed}`,
+        },
+      ],
+    });
+
+    const textBlock = message.content.find((block) => block.type === "text");
+    if (!textBlock || textBlock.type !== "text") {
+      throw new Error("AIから有効な応答がありませんでした。");
+    }
+
+    return { ok: true, answer: textBlock.text.trim() };
+  } catch (err) {
+    console.error("askAboutItems error", err);
+    return {
+      ok: false,
+      error: "回答の取得に失敗しました。もう一度お試しください。",
+    };
   }
 }
