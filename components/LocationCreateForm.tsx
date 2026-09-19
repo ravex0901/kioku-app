@@ -7,18 +7,15 @@ import type { Location, LocationType } from "@/lib/types";
 
 export function LocationCreateForm({
   userId,
-  locations,
   onCreated,
   onCancel,
 }: {
   userId: string;
-  locations: Location[];
   onCreated: (location: Location) => void;
   onCancel?: () => void;
 }) {
   const [name, setName] = useState("");
   const [locationType, setLocationType] = useState<LocationType>("room");
-  const [parentId, setParentId] = useState<string>("");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -38,7 +35,7 @@ export function LocationCreateForm({
         user_id: userId,
         name: name.trim(),
         location_type: locationType,
-        parent_location_id: parentId || null,
+        parent_location_id: null,
       })
       .select()
       .single();
@@ -52,7 +49,6 @@ export function LocationCreateForm({
 
     onCreated(data);
     setName("");
-    setParentId("");
   }
 
   return (
@@ -83,24 +79,6 @@ export function LocationCreateForm({
           ))}
         </select>
       </div>
-      <div className="flex flex-col gap-1.5">
-        <label className="text-sm font-medium text-ink/80">
-          親の場所(任意)
-        </label>
-        <select
-          value={parentId}
-          onChange={(e) => setParentId(e.target.value)}
-          className="rounded-lg border border-black/10 bg-white px-3 py-2 text-sm outline-none focus:border-green-400 focus:ring-2 focus:ring-green-100"
-        >
-          <option value="">なし</option>
-          {locations.map((loc) => (
-            <option key={loc.id} value={loc.id}>
-              {loc.name}
-            </option>
-          ))}
-        </select>
-      </div>
-
       {error && <p className="text-sm text-red-600">{error}</p>}
 
       <div className="flex gap-2">
