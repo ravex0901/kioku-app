@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { analyzeItemPhoto } from "@/app/actions/ai";
 import { fileToBase64 } from "@/lib/fileToBase64";
+import { resizeImageFile } from "@/lib/resizeImage";
 
 export function BulkItemForm({ userId }: { userId: string }) {
   const router = useRouter();
@@ -37,9 +38,11 @@ export function BulkItemForm({ userId }: { userId: string }) {
     let successCount = 0;
 
     for (let i = 0; i < files.length; i++) {
-      const file = files[i];
+      const rawFile = files[i];
 
       try {
+        // AI判定・アップロードを高速化するため、大きな写真はここで軽量化する
+        const file = await resizeImageFile(rawFile);
         const mediaType = file.type || "image/jpeg";
         const base64 = await fileToBase64(file);
         const analysis = await analyzeItemPhoto(base64, mediaType);
@@ -54,6 +57,9 @@ export function BulkItemForm({ userId }: { userId: string }) {
           analysis.ok && analysis.suggestion.categoryMajor === "other"
             ? analysis.suggestion.categoryOther
             : null;
+        const estimatedPriceRange = analysis.ok
+          ? analysis.suggestion.estimatedPriceRange
+          : null;
 
         const ext = file.name.split(".").pop() ?? "jpg";
         const path = `${userId}/${crypto.randomUUID()}.${ext}`;
@@ -66,7 +72,7 @@ export function BulkItemForm({ userId }: { userId: string }) {
           continue;
         }
 
-        const { error: insertError } = await supabase.from("items").insert({
+        const baseInsert = {
           user_id: userId,
           recorded_by_user_id: userId,
           name,
@@ -78,7 +84,18 @@ export function BulkItemForm({ userId }: { userId: string }) {
           memo: null,
           photo_url: path,
           media_type: "image",
-        });
+        };
+
+        let { error: insertError } = await supabase
+          .from("items")
+          .insert({ ...baseInsert, estimated_price_range: estimatedPriceRange });
+
+        // estimated_price_range 列がまだ存在しない環境向けのフォールバック
+        if (insertError?.message?.includes("estimated_price_range")) {
+          ({ error: insertError } = await supabase
+            .from("items")
+            .insert(baseInsert));
+        }
 
         if (!insertError) {
           successCount += 1;
