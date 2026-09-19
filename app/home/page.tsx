@@ -133,6 +133,12 @@ export default async function HomePage() {
     redirect("/login");
   }
 
+  // 最終アクティブ日時を更新(「もしもの時」の非アクティブ判定の基準になる)
+  await supabase
+    .from("profiles")
+    .update({ last_active_at: new Date().toISOString() })
+    .eq("id", user.id);
+
   const [totalRes, locatedRes, dispositionRes, completedRes, recentRes] =
     await Promise.all([
       supabase
