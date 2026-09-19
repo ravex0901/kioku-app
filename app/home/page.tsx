@@ -5,6 +5,7 @@ import { getSignedUrlMap } from "@/lib/storage";
 import { resolveLocationName } from "@/lib/format";
 import { Header } from "@/components/Header";
 import { DispositionBadge } from "@/components/DispositionBadge";
+import { AiVoiceCard } from "@/components/AiVoiceCard";
 import type { Disposition } from "@/lib/types";
 
 type RecentItem = {
@@ -219,37 +220,7 @@ export default async function HomePage() {
           </Link>
         </div>
 
-        <div className="flex items-center gap-4 rounded-[1.75rem] border border-green-100 bg-white/70 p-5 shadow-sm">
-          <span
-            aria-hidden
-            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-green-50 text-green-700"
-          >
-            <svg viewBox="0 0 24 24" fill="none" className="h-5 w-5">
-              <path
-                d="M12 15a3 3 0 0 0 3-3V7a3 3 0 0 0-6 0v5a3 3 0 0 0 3 3Z"
-                stroke="currentColor"
-                strokeWidth={1.6}
-              />
-              <path
-                d="M7 11v1a5 5 0 0 0 10 0v-1M12 19v2"
-                stroke="currentColor"
-                strokeWidth={1.6}
-                strokeLinecap="round"
-              />
-            </svg>
-          </span>
-          <div className="flex-1">
-            <p className="flex items-center gap-2 text-sm font-bold text-ink">
-              AIに話しかける
-              <span className="rounded-full bg-gold/15 px-2 py-0.5 text-[10px] font-semibold text-gold">
-                コンセプト
-              </span>
-            </p>
-            <p className="mt-1 text-xs text-ink/60">
-              「押入れ、何が残ってる？」も音声で聞けます
-            </p>
-          </div>
-        </div>
+        <AiVoiceCard />
 
         <Link
           href="/progress"
