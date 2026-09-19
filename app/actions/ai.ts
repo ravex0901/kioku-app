@@ -4,6 +4,7 @@ import Anthropic from "@anthropic-ai/sdk";
 import { createClient } from "@/lib/supabase/server";
 import { resolveLocationName } from "@/lib/format";
 import { CATEGORY_OPTIONS, DISPOSITION_OPTIONS, labelFor } from "@/lib/constants";
+import { extractKeywords, filterByKeywords } from "@/lib/keywordSearch";
 import type { CategoryMajor } from "@/lib/types";
 
 const CATEGORY_VALUES: CategoryMajor[] = [
@@ -164,11 +165,14 @@ export async function analyzeItemPhoto(
   }
 }
 
+export type ReferencedItem = { id: string; name: string };
+
 export type AskAboutItemsResult =
-  | { ok: true; answer: string }
+  | { ok: true; answer: string; referencedItems: ReferencedItem[] }
   | { ok: false; error: string };
 
 type ItemRow = {
+  id: string;
   name: string;
   category_major: CategoryMajor | null;
   category_minor: string | null;
@@ -183,7 +187,10 @@ const ASK_SYSTEM_PROMPT =
   "ユーザーは音声、またはテキストで質問します。以下に渡される、ユーザーが登録済みの持ち物データだけを根拠に、" +
   "日本語でやさしく、簡潔に答えてください。データに書かれていないことは推測せず、" +
   "わからない場合は「登録されている情報からはわかりません」と正直に答えてください。" +
-  "一覧で答えるほうがわかりやすい場合は、箇条書きを使ってください。";
+  "一覧で答えるほうがわかりやすい場合は、箇条書きを使ってください。" +
+  "回答は必ず次のJSON形式のみで出力してください(説明文やコードブロックの記号は付けない):" +
+  '{"answer": "ユーザーへの回答本文(日本語)", "referenced_item_names": ["回答の根拠にした持ち物の名称を、渡された一覧の名称と完全一致する形でできるだけ挙げる"]}' +
+  "該当する持ち物がない場合、referenced_item_namesは空配列にしてください。";
 
 /**
  * 「AIに話しかける」機能: 登録済みの持ち物データをもとに、音声/テキストの質問にAIが答える。
@@ -217,15 +224,22 @@ export async function askAboutItems(
     .order("created_at", { ascending: false })
     .limit(200);
 
-  const rows = (data ?? []) as ItemRow[];
+  const allRows = (data ?? []) as ItemRow[];
 
-  if (rows.length === 0) {
+  if (allRows.length === 0) {
     return {
       ok: true,
       answer:
         "まだ何も登録されていません。まずは「ものを登録する」から1品登録してみましょう。",
+      referencedItems: [],
     };
   }
+
+  // キーワード検索＋メタデータ絞り込み(請求項1)。真のベクトル検索は未実装(lib/keywordSearch.ts参照)。
+  const keywords = extractKeywords(trimmed);
+  const rows = filterByKeywords(allRows, keywords, (item) =>
+    [item.name, item.category_minor, item.memo].filter(Boolean).join(" ")
+  );
 
   const dataText = rows
     .map((item) => {
@@ -265,7 +279,29 @@ export async function askAboutItems(
       throw new Error("AIから有効な応答がありませんでした。");
     }
 
-    return { ok: true, answer: textBlock.text.trim() };
+    let answer = textBlock.text.trim();
+    let referencedItems: ReferencedItem[] = [];
+    try {
+      const parsed = extractJson(textBlock.text) as {
+        answer?: unknown;
+        referenced_item_names?: unknown;
+      };
+      if (typeof parsed.answer === "string" && parsed.answer.trim()) {
+        answer = parsed.answer.trim();
+      }
+      if (Array.isArray(parsed.referenced_item_names)) {
+        const names = parsed.referenced_item_names.filter(
+          (n): n is string => typeof n === "string"
+        );
+        referencedItems = rows
+          .filter((r) => names.includes(r.name))
+          .map((r) => ({ id: r.id, name: r.name }));
+      }
+    } catch {
+      // JSON形式で返らなかった場合は、テキストそのものを回答として使う(フォールバック)
+    }
+
+    return { ok: true, answer, referencedItems };
   } catch (err) {
     console.error("askAboutItems error", err);
     return {
