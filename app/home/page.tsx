@@ -192,32 +192,71 @@ export default async function HomePage() {
           </span>
         </div>
 
-        <div className="flex flex-col gap-2">
-          <Link
-            href="/items/new"
-            className="flex flex-col gap-3 rounded-[1.75rem] bg-green-700 px-6 py-7 text-cream shadow-md transition hover:bg-green-800"
-          >
+        <div className="relative overflow-hidden rounded-[1.75rem] bg-green-700 px-6 py-7 text-cream shadow-md">
+          <span
+            aria-hidden
+            className="pointer-events-none absolute -right-10 -top-10 h-32 w-32 rounded-full bg-white/5"
+          />
+          <span
+            aria-hidden
+            className="pointer-events-none absolute right-12 top-8 h-2 w-2 rounded-full bg-gold/70"
+          />
+          <span
+            aria-hidden
+            className="pointer-events-none absolute right-20 top-16 h-1.5 w-1.5 rounded-full bg-cream/40"
+          />
+
+          <div className="relative flex items-start justify-between gap-3">
             <p className="text-xs tracking-widest text-cream/60">
               TODAY&apos;S ONE
             </p>
-            <span className="block font-serif-jp text-xl font-bold leading-snug">
-              ものを、ひとつ
-              <br />
-              登録してみましょう
+            <span
+              aria-hidden
+              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-white/15 text-gold"
+            >
+              <svg viewBox="0 0 24 24" fill="none" className="h-4 w-4">
+                <path
+                  d="M12 3v4M12 17v4M4.2 12H8M16 12h3.8M6 6l2.5 2.5M15.5 15.5 18 18M18 6l-2.5 2.5M8.5 15.5 6 18"
+                  stroke="currentColor"
+                  strokeWidth={1.6}
+                  strokeLinecap="round"
+                />
+              </svg>
             </span>
-            <p className="text-sm text-cream/70">
-              写真を選ぶだけで、AIがジャンルと保管の目安まで自動で入力します。
-            </p>
-            <span className="mt-1 inline-flex w-fit items-center gap-2 rounded-full bg-cream px-4 py-2 text-sm font-semibold text-green-800">
+          </div>
+
+          <span className="relative mt-3 block font-serif-jp text-xl font-bold leading-snug">
+            ものを、ひとつ
+            <br />
+            登録してみましょう
+          </span>
+          <p className="relative mt-2 text-sm text-cream/70">
+            写真を選ぶだけで、AIがジャンルと保管の目安まで自動で入力します。
+          </p>
+
+          <div className="relative mt-4 flex flex-wrap items-center gap-2.5">
+            <Link
+              href="/items/new"
+              className="inline-flex items-center gap-2 rounded-full bg-cream px-5 py-2.5 text-sm font-semibold text-green-800 shadow-sm transition hover:bg-white"
+            >
+              <svg viewBox="0 0 24 24" fill="none" className="h-4 w-4">
+                <path
+                  d="M4 8.5A1.5 1.5 0 0 1 5.5 7h2l1-2h7l1 2h2A1.5 1.5 0 0 1 20 8.5V17a1.5 1.5 0 0 1-1.5 1.5h-13A1.5 1.5 0 0 1 4 17V8.5Z"
+                  stroke="currentColor"
+                  strokeWidth={1.6}
+                  strokeLinejoin="round"
+                />
+                <circle cx="12" cy="12.5" r="3.2" stroke="currentColor" strokeWidth={1.6} />
+              </svg>
               写真から登録する
-            </span>
-          </Link>
-          <Link
-            href="/items/new"
-            className="text-center text-sm text-green-700 underline underline-offset-2"
-          >
-            写真なしで登録する
-          </Link>
+            </Link>
+            <Link
+              href="/items/new"
+              className="inline-flex items-center gap-2 rounded-full border border-cream/40 px-5 py-2.5 text-sm font-medium text-cream/90 transition hover:bg-white/10"
+            >
+              写真なしで登録する
+            </Link>
+          </div>
         </div>
 
         <AiVoiceCard />
