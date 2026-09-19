@@ -338,7 +338,7 @@ export default async function HomePage() {
           </section>
         )}
 
-        <div className="grid gap-4 sm:grid-cols-2">
+        <div className="grid gap-4 sm:grid-cols-3">
           <Link
             href="/items"
             className="rounded-[1.75rem] border border-green-100 bg-white/70 p-6 shadow-sm transition hover:shadow"
@@ -355,6 +355,22 @@ export default async function HomePage() {
             <h3 className="text-base font-bold text-ink">場所を管理する</h3>
             <p className="mt-1 text-sm text-ink/60">
               建物・部屋・収納場所を整理できます。
+            </p>
+          </Link>
+          <Link
+            href="/digital"
+            className="rounded-[1.75rem] border border-green-100 bg-white/70 p-6 shadow-sm transition hover:shadow"
+          >
+            <h3 className="flex items-center gap-1.5 text-base font-bold text-ink">
+              <svg viewBox="0 0 24 24" fill="none" className="h-4 w-4 text-green-700">
+                <rect x="3" y="7" width="7" height="7" rx="1.5" stroke="currentColor" strokeWidth={1.6} />
+                <rect x="14" y="7" width="7" height="7" rx="1.5" stroke="currentColor" strokeWidth={1.6} />
+                <rect x="8.5" y="14" width="7" height="7" rx="1.5" stroke="currentColor" strokeWidth={1.6} />
+              </svg>
+              デジタル情報
+            </h3>
+            <p className="mt-1 text-sm text-ink/60">
+              契約やアカウントの所在を残せます。
             </p>
           </Link>
         </div>
