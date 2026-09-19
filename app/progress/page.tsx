@@ -4,6 +4,8 @@ import { createClient } from "@/lib/supabase/server";
 import { Header } from "@/components/Header";
 import { ProgressBar } from "@/components/ProgressBar";
 import { getDescendantIds } from "@/lib/locationTree";
+import { ITEM_STATUS_OPTIONS } from "@/lib/constants";
+import type { ItemStatus } from "@/lib/types";
 
 function statusOf(roomTotal: number, ratio: number) {
   if (roomTotal === 0) {
@@ -32,7 +34,7 @@ export default async function ProgressPage() {
     supabase.from("locations").select("*").eq("user_id", user.id),
     supabase
       .from("items")
-      .select("id, location_id, disposition")
+      .select("id, location_id, disposition, status")
       .eq("user_id", user.id),
   ]);
 
@@ -48,6 +50,14 @@ export default async function ProgressPage() {
     (i) => i.location_id !== null && i.disposition !== null
   ).length;
   const overallRatio = total > 0 ? completed / total : 0;
+
+  // 整理進捗ワークフロー(請求項7)のステージ別件数集計
+  const statusCounts = ITEM_STATUS_OPTIONS.map((opt) => ({
+    ...opt,
+    count: allItems.filter(
+      (i) => (i.status ?? "photo_registered") === (opt.value as ItemStatus)
+    ).length,
+  }));
 
   const roomLocations = allLocations.filter(
     (l) => l.location_type === "room" || l.location_type === "storage"
@@ -92,6 +102,37 @@ export default async function ProgressPage() {
               </p>
               <p className="text-xs text-ink/60">③方針が決定</p>
             </div>
+          </div>
+        </section>
+
+        <section className="mb-8">
+          <h2 className="mb-3 text-lg font-bold text-ink">
+            整理ステータス別の件数
+          </h2>
+          <div className="rounded-[1.75rem] border border-green-100 bg-white/70 p-5 shadow-sm">
+            <ul className="flex flex-col gap-2">
+              {statusCounts.map((s) => (
+                <li key={s.value} className="flex items-center gap-3">
+                  <span className="w-28 shrink-0 text-xs font-medium text-ink/60">
+                    {s.label}
+                  </span>
+                  <div className="h-2 flex-1 overflow-hidden rounded-full bg-black/5">
+                    <div
+                      className="h-full rounded-full bg-green-500"
+                      style={{
+                        width:
+                          total > 0
+                            ? `${Math.round((s.count / total) * 100)}%`
+                            : "0%",
+                      }}
+                    />
+                  </div>
+                  <span className="w-10 shrink-0 text-right text-xs font-semibold text-ink/70">
+                    {s.count}件
+                  </span>
+                </li>
+              ))}
+            </ul>
           </div>
         </section>
 
