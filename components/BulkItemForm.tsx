@@ -79,7 +79,7 @@ export function BulkItemForm({ userId }: { userId: string }) {
           category_major: categoryMajor,
           category_minor: categoryMinor,
           location_id: null,
-          disposition: "undecided",
+          disposition: "undecided" as const,
           disposition_tags: null,
           memo: null,
           photo_url: path,
