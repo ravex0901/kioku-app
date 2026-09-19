@@ -14,6 +14,9 @@ create table if not exists public.digital_items (
 
 create index if not exists digital_items_user_id_idx on public.digital_items(user_id);
 
+-- RLSポリシーだけでは不十分で、テーブル自体への権限付与も必要
+grant select, insert, update, delete on public.digital_items to authenticated;
+
 alter table public.digital_items enable row level security;
 
 drop policy if exists "digital_items_select_own" on public.digital_items;
@@ -51,4 +54,3 @@ create trigger digital_items_set_updated_at
   before update on public.digital_items
   for each row
   execute function public.set_digital_items_updated_at();
-
