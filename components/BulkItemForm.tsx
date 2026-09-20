@@ -6,6 +6,7 @@ import { createClient } from "@/lib/supabase/client";
 import { analyzeItemPhoto } from "@/app/actions/ai";
 import { fileToBase64 } from "@/lib/fileToBase64";
 import { resizeImageFile } from "@/lib/resizeImage";
+import { formatPriceDisplay } from "@/lib/priceRange";
 import { CATEGORY_OPTIONS } from "@/lib/constants";
 import type { CategoryMajor } from "@/lib/types";
 
@@ -293,7 +294,7 @@ export function BulkItemForm({ userId }: { userId: string }) {
                       </select>
                       {d.estimatedPriceRange && (
                         <span className="text-xs text-ink/50">
-                          推定価格:{d.estimatedPriceRange}
+                          推定価格:{formatPriceDisplay(d.estimatedPriceRange)}
                         </span>
                       )}
                       <button
