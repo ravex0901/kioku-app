@@ -8,7 +8,7 @@ import {
   buildFamilyBurdenTasks,
   summarizeBurdenTasks,
 } from "@/lib/familyBurdenTasks";
-import { estimateMaxYen, isSellCandidate } from "@/lib/priceRange";
+import { estimateMaxYen, isSellCandidate, formatPriceDisplay } from "@/lib/priceRange";
 import type {
   CategoryMajor,
   Disposition,
@@ -347,7 +347,8 @@ export default async function DashboardPage() {
                   >
                     <span className="font-medium text-ink">{item.name}</span>
                     <span className="text-xs font-semibold text-green-800">
-                      {item.professional_appraisal ?? item.estimated_price_range}
+                      {item.professional_appraisal ??
+                        formatPriceDisplay(item.estimated_price_range)}
                     </span>
                   </Link>
                 </li>
