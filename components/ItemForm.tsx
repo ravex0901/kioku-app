@@ -409,7 +409,7 @@ export function ItemForm({
 
       <fieldset className="flex flex-col gap-2">
         <legend className="mb-1 text-sm font-medium text-ink/80">
-          処分の方針
+          整理の方針
         </legend>
         {DISPOSITION_OPTIONS.map((opt) => (
           <label
