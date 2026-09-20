@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { Header } from "@/components/Header";
+import { BackButton } from "@/components/BackButton";
 import { DigitalItemsClient } from "@/components/DigitalItemsClient";
 import type { DigitalItem } from "@/lib/types";
 
@@ -26,6 +27,7 @@ export default async function DigitalPage() {
     <div className="min-h-screen bg-cream">
       <Header />
       <main className="mx-auto max-w-3xl px-4 py-8 sm:px-6">
+        <BackButton fallbackHref="/home" />
         <div className="mb-6">
           <p className="text-xs font-semibold tracking-[0.2em] text-ink/40">
             DIGITAL
