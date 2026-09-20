@@ -61,7 +61,7 @@ export function ItemsFilterBar({
         onChange={(e) => updateParam("disposition", e.target.value)}
         className="rounded-lg border border-black/10 bg-white px-3 py-2 text-sm"
       >
-        <option value="">処分方針(すべて)</option>
+        <option value="">整理方針(すべて)</option>
         {DISPOSITION_OPTIONS.map((opt) => (
           <option key={opt.value} value={opt.value}>
             {opt.label}
