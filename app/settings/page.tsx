@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { Header } from "@/components/Header";
+import { BackButton } from "@/components/BackButton";
 import { SettingsClient } from "@/components/SettingsClient";
 import type { FamilyMember, HandoverSettings, Will } from "@/lib/types";
 
@@ -44,6 +45,7 @@ export default async function SettingsPage() {
   return (
     <div className="min-h-screen bg-cream">
       <Header />
+              <BackButton fallbackHref="/home" />
       <main className="mx-auto max-w-3xl px-4 py-8 sm:px-6">
         <div className="mb-6">
           <p className="text-xs font-semibold tracking-[0.2em] text-ink/40">
