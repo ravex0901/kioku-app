@@ -45,12 +45,14 @@ export type ItemStatus =
   | "completed";
 
 // ご依頼(買取・回収・整理サービス)の種別(特許図面【図2】【図18】の「ご依頼」に対応)
+// appraisal: 品物ごとの「査定を依頼する」ボタンから送信される、自社スタッフによる本査定の依頼
 export type ServiceType =
   | "all_in_one"
   | "buyback"
   | "junk_removal"
   | "estate_cleanup"
-  | "pre_death_cleanup";
+  | "pre_death_cleanup"
+  | "appraisal";
 
 export type ServiceRequestStatus = "pending" | "in_progress" | "done";
 
@@ -134,10 +136,12 @@ export type DigitalItem = {
 };
 
 // ご依頼(特許図面【図2】【図18】に対応)
+// item_id: 品物ごとの「査定を依頼する」から送信された場合に対象の品物を紐づける(自社査定への一次窓口)
 export type ServiceRequest = {
   id: string;
   user_id: string;
   service_type: ServiceType;
+  item_id: string | null;
   note: string | null;
   status: ServiceRequestStatus;
   created_at: string;
