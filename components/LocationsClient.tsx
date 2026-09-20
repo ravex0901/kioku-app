@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { LocationCreateForm } from "@/components/LocationCreateForm";
+import ConfirmDialog from "@/components/ConfirmDialog";
 import { flattenLocationTree } from "@/lib/locationTree";
 import { LOCATION_TYPE_OPTIONS, labelFor } from "@/lib/constants";
 import type { Location, LocationType } from "@/lib/types";
@@ -109,6 +110,7 @@ function LocationListItem({
   const [submitting, setSubmitting] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [confirmOpen, setConfirmOpen] = useState(false);
 
   const style = LOCATION_TYPE_STYLE[location.location_type];
 
@@ -142,14 +144,6 @@ function LocationListItem({
   }
 
   async function handleDelete() {
-    if (
-      !window.confirm(
-        `「${location.name}」を削除します。この場所を使っているものがある場合は削除できません。よろしいですか?`
-      )
-    ) {
-      return;
-    }
-
     setDeleting(true);
     setError(null);
     const supabase = createClient();
@@ -273,13 +267,23 @@ function LocationListItem({
         </button>
         <button
           type="button"
-          onClick={handleDelete}
+          onClick={() => setConfirmOpen(true)}
           disabled={deleting}
           className="rounded-full border border-red-200 px-3 py-1.5 text-xs font-semibold text-red-600 transition hover:bg-red-50 disabled:opacity-60"
         >
           {deleting ? "削除中…" : "削除"}
         </button>
       </div>
+      <ConfirmDialog
+        open={confirmOpen}
+        title="この場所を削除しますか?"
+        description={`「${location.name}」を削除します。この場所を使っているものがある場合は削除できません。`}
+        onConfirm={() => {
+          setConfirmOpen(false);
+          handleDelete();
+        }}
+        onCancel={() => setConfirmOpen(false)}
+      />
     </li>
   );
 }
@@ -321,6 +325,7 @@ export function LocationsClient({
       {showForm && (
         <LocationCreateForm
           userId={userId}
+          existingLocations={locations}
           onCreated={(loc) => {
             setLocations((prev) => [...prev, loc]);
             setShowForm(false);
