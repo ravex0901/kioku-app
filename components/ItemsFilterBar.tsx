@@ -1,7 +1,7 @@
 "use client";
 
 import { usePathname, useRouter } from "next/navigation";
-import { CATEGORY_OPTIONS, DISPOSITION_OPTIONS } from "@/lib/constants";
+import { CATEGORY_OPTIONS, DISPOSITION_OPTIONS, ITEM_STATUS_OPTIONS } from "@/lib/constants";
 import type { Location } from "@/lib/types";
 
 export function ItemsFilterBar({
@@ -13,6 +13,7 @@ export function ItemsFilterBar({
     category: string;
     location: string;
     disposition: string;
+    status: string;
     q: string;
   };
 }) {
@@ -62,6 +63,19 @@ export function ItemsFilterBar({
       >
         <option value="">処分方針(すべて)</option>
         {DISPOSITION_OPTIONS.map((opt) => (
+          <option key={opt.value} value={opt.value}>
+            {opt.label}
+          </option>
+        ))}
+      </select>
+
+      <select
+        defaultValue={defaultValues.status}
+        onChange={(e) => updateParam("status", e.target.value)}
+        className="rounded-lg border border-black/10 bg-white px-3 py-2 text-sm"
+      >
+        <option value="">進捗ステータス(すべて)</option>
+        {ITEM_STATUS_OPTIONS.map((opt) => (
           <option key={opt.value} value={opt.value}>
             {opt.label}
           </option>
