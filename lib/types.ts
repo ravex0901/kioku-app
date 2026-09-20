@@ -7,16 +7,16 @@ export type CategoryMajor =
   | "tableware"
   | "books"
   | "jewelry"
+  | "watch"
   | "asset"
   | "subscription"
   | "insurance"
   | "other";
-export type Disposition =
-  | "keep"
-  | "keepsake"
-  | "sell"
-  | "discard"
-  | "undecided";
+// 処分の方針(整理の方針)。残す/整理する�わからない の3択。
+// 旧5択(keep/keepsake/sell/discard/undecided)で登録済みの既存データは
+// DB上の値はそのまま残り、表示側(lib/constants.tsのdispositionLabel等)で
+// 新しい3択に読み替えて表示する。
+export type Disposition = "keep" | "organize" | "unsure";
 export type DispositionTag = "heirloom" | "inherited" | "memory" | "other";
 
 // デジタル情報・契約情報の種別(特許図面【図10】〜【図13】に対応)
