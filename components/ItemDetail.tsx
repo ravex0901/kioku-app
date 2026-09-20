@@ -16,6 +16,7 @@ import {
   labelFor,
 } from "@/lib/constants";
 import { resizeImageFile } from "@/lib/resizeImage";
+import { formatPriceDisplay } from "@/lib/priceRange";
 import type {
   CategoryMajor,
   Disposition,
@@ -279,7 +280,7 @@ export function ItemDetail({
               </span>
               {item.estimated_price_range && (
                 <span className="inline-flex items-center gap-1 rounded-full bg-gold/20 px-3 py-1 text-xs font-semibold text-green-800">
-                  推定売却額 {item.estimated_price_range}
+                  推定売却額 {formatPriceDisplay(item.estimated_price_range)}
                 </span>
               )}
             </div>
@@ -314,7 +315,9 @@ export function ItemDetail({
               <dt className="text-ink/50">保管場所</dt>
               <dd className="text-ink">{locationName}</dd>
               <dt className="text-ink/50">売却額の目安</dt>
-              <dd className="text-ink">{item.estimated_price_range || "―"}</dd>
+              <dd className="text-ink">
+                {formatPriceDisplay(item.estimated_price_range) || "―"}
+              </dd>
               <dt className="text-ink/50">専門査定結果</dt>
               <dd className="text-ink">{item.professional_appraisal || "―"}</dd>
               {showTags && dispositionTags.length > 0 && (
@@ -523,7 +526,7 @@ export function ItemDetail({
         <input
           value={estimatedPriceRange}
           onChange={(e) => setEstimatedPriceRange(e.target.value)}
-          placeholder="例:3,000円〜5,000円 / 1万円前後"
+          placeholder="例:〜10,000円 / 値段がつきにくい"
           className="rounded-lg border border-black/10 bg-white px-4 py-2.5 outline-none focus:border-green-400 focus:ring-2 focus:ring-green-100"
         />
         <p className="text-xs text-ink/40">
