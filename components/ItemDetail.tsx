@@ -28,10 +28,6 @@ import type {
 
 const NEW_LOCATION_VALUE = "__new__";
 
-// 貴金属(K18等)は写真からの査定ができないため、お客さま自身が計測した重量から
-// 1gあたりの単価で概算額を計算する(手動入力時のみ・AIの写真判定では使わない)。
-const JEWELRY_YEN_PER_GRAM = 20000;
-
 export function ItemDetail({
   item,
   initialLocations,
@@ -66,7 +62,6 @@ export function ItemDetail({
   const [estimatedPriceRange, setEstimatedPriceRange] = useState(
     item.estimated_price_range ?? ""
   );
-  const [weightGrams, setWeightGrams] = useState("");
   const [professionalAppraisal, setProfessionalAppraisal] = useState(
     item.professional_appraisal ?? ""
   );
@@ -75,9 +70,6 @@ export function ItemDetail({
   );
   const [statusUpdating, setStatusUpdating] = useState(false);
   const [statusError, setStatusError] = useState<string | null>(null);
-  const [appraisalRequesting, setAppraisalRequesting] = useState(false);
-  const [appraisalRequested, setAppraisalRequested] = useState(false);
-  const [appraisalError, setAppraisalError] = useState<string | null>(null);
   const [photoFile, setPhotoFile] = useState<File | null>(null);
   const [photoPreview, setPhotoPreview] = useState<string | null>(
     signedPhotoUrl
@@ -91,24 +83,12 @@ export function ItemDetail({
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const showTags = disposition === "keep" || disposition === "keepsake";
-  const isJewelry = categoryMajor === "jewelry";
 
-  // 貴金属の重量(g)入力: グラム×20,000円で概算額を自動計算する(AIでは写真から
-  // 正確な査定ができない貴金属を、お客さま主導の実測値で補う機能)。
-  function handleWeightGramsChange(value: string) {
-    setWeightGrams(value);
-    const grams = parseFloat(value);
-    if (value.trim() !== "" && !Number.isNaN(grams) && grams > 0) {
-      const yen = Math.round(grams * JEWELRY_YEN_PER_GRAM);
-      setEstimatedPriceRange(`〜${yen.toLocaleString("ja-JP")}円`);
-    }
-  }
-
-  // 「査定を依頼する」ボタンの表示条件: AI概算はあるが専門査定結果がまだない場合のみ表示する。
+  // 専門査定結果の表示条件: AI概算はあるが専門査定結果がまだない場合のみ、
+  // 「見る・探す」でまとめて査定を依頼済みかどうかの案内を出す。
   const hasAiEstimate = Boolean(item.estimated_price_range);
   const hasProfessionalAppraisal = Boolean(item.professional_appraisal);
-  const appraisalAlreadyRequested =
-    appraisalRequested || status !== "photo_registered";
+  const appraisalAlreadyRequested = status !== "photo_registered";
 
   function toggleTag(tag: DispositionTag) {
     setDispositionTags((prev) =>
@@ -250,38 +230,6 @@ export function ItemDetail({
     router.refresh();
   }
 
-  // 「査定を依頼する」ボタン: AIによる概算金額をもとに、自社(運営)へ本査定を依頼する。
-  // 外部の査定会社ではなく service_requests テーブル(ご依頼と同じ窓口)に item_id 付きで登録する。
-  async function handleRequestAppraisal() {
-    setAppraisalRequesting(true);
-    setAppraisalError(null);
-    const supabase = createClient();
-
-    const { error: insertError } = await supabase
-      .from("service_requests")
-      .insert({
-        user_id: item.user_id,
-        service_type: "appraisal",
-        item_id: item.id,
-        note: `「${item.name}」の査定依頼(AI概算:${
-          formatPriceDisplay(item.estimated_price_range) ?? "―"
-        })`,
-      });
-
-    if (insertError) {
-      setAppraisalRequesting(false);
-      setAppraisalError("査定の依頼に失敗しました。もう一度お試しください。");
-      return;
-    }
-
-    setAppraisalRequested(true);
-    setAppraisalRequesting(false);
-
-    if (status === "photo_registered") {
-      handleStatusChange("appraisal_pending");
-    }
-  }
-
   async function handleDelete() {
     setDeleting(true);
     setError(null);
@@ -389,25 +337,14 @@ export function ItemDetail({
                           査定を依頼済み(担当より連絡をお待ちください)
                         </span>
                       ) : (
-                        <button
-                          type="button"
-                          onClick={handleRequestAppraisal}
-                          disabled={appraisalRequesting}
-                          className="rounded-full border border-green-600 px-3 py-1 text-xs font-semibold text-green-700 transition hover:bg-green-50 disabled:opacity-60"
-                        >
-                          {appraisalRequesting ? "依頼中…" : "査定を依頼する"}
-                        </button>
+                        <span className="text-xs text-ink/40">
+                          「見る・探す」でまとめて査定を依頼できます
+                        </span>
                       )
                     )}
                   </span>
                 )}
               </dd>
-              {appraisalError && (
-                <>
-                  <dt />
-                  <dd className="text-xs text-red-600">{appraisalError}</dd>
-                </>
-              )}
               {showTags && dispositionTags.length > 0 && (
                 <>
                   <dt className="text-ink/50">理由タグ</dt>
@@ -525,31 +462,6 @@ export function ItemDetail({
             className="mt-2 rounded-lg border border-black/10 bg-white px-4 py-2.5 outline-none focus:border-green-400 focus:ring-2 focus:ring-green-100"
           />
         )}
-        {isJewelry && (
-          <div className="mt-2 flex flex-col gap-1.5 rounded-lg bg-gold/10 p-3">
-            <label
-              htmlFor="weightGramsEdit"
-              className="text-xs font-medium text-ink/70"
-            >
-              重量(グラム・任意)
-            </label>
-            <input
-              id="weightGramsEdit"
-              type="number"
-              inputMode="decimal"
-              min="0"
-              step="0.1"
-              value={weightGrams}
-              onChange={(e) => handleWeightGramsChange(e.target.value)}
-              placeholder="例:15"
-              className="rounded-lg border border-black/10 bg-white px-4 py-2.5 outline-none focus:border-green-400 focus:ring-2 focus:ring-green-100"
-            />
-            <p className="text-xs text-ink/50">
-              貴金属は写真での査定ができないため、量りで測った重量(g)を入力すると、
-              1gあたり{JEWELRY_YEN_PER_GRAM.toLocaleString("ja-JP")}円で「売却額の目安」を自動計算します。
-            </p>
-          </div>
-        )}
       </div>
 
       <div className="flex flex-col gap-1.5">
@@ -585,7 +497,7 @@ export function ItemDetail({
 
       <fieldset className="flex flex-col gap-2">
         <legend className="mb-1 text-sm font-medium text-ink/80">
-          処分の方針
+          整理の方針
         </legend>
         {DISPOSITION_OPTIONS.map((opt) => (
           <label
