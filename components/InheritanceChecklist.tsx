@@ -124,6 +124,9 @@ export function InheritanceChecklist({
           );
         })}
       </div>
+      <p className="mt-4 border-t border-black/5 pt-3 text-[11px] leading-relaxed text-ink/40">
+        ※このチェックリストは、登録済みの情報をもとにルールエンジンが機械的に判定した目安であり、法的判断の確定結果ではありません。実際の手続きにあたっては、税理士・弁護士・司法書士などの専門家や、各窓口に必ずご確認ください。
+      </p>
     </div>
   );
 }
