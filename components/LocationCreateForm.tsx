@@ -3,21 +3,28 @@
 import { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { LOCATION_TYPE_OPTIONS } from "@/lib/constants";
+import { flattenLocationTree } from "@/lib/locationTree";
 import type { Location, LocationType } from "@/lib/types";
 
 export function LocationCreateForm({
   userId,
+  existingLocations = [],
   onCreated,
   onCancel,
 }: {
   userId: string;
+  // 親の場所を選べるようにするための、登録済みの場所一覧(請求項2・3の階層選択に対応)
+  existingLocations?: Location[];
   onCreated: (location: Location) => void;
   onCancel?: () => void;
 }) {
   const [name, setName] = useState("");
   const [locationType, setLocationType] = useState<LocationType>("room");
+  const [parentLocationId, setParentLocationId] = useState<string>("");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const parentOptions = flattenLocationTree(existingLocations);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -35,7 +42,7 @@ export function LocationCreateForm({
         user_id: userId,
         name: name.trim(),
         location_type: locationType,
-        parent_location_id: null,
+        parent_location_id: parentLocationId || null,
       })
       .select()
       .single();
@@ -49,6 +56,7 @@ export function LocationCreateForm({
 
     onCreated(data);
     setName("");
+    setParentLocationId("");
   }
 
   return (
@@ -79,6 +87,29 @@ export function LocationCreateForm({
           ))}
         </select>
       </div>
+      {parentOptions.length > 0 && (
+        <div className="flex flex-col gap-1.5">
+          <label className="text-sm font-medium text-ink/80">
+            親の場所(任意)
+          </label>
+          <select
+            value={parentLocationId}
+            onChange={(e) => setParentLocationId(e.target.value)}
+            className="rounded-lg border border-black/10 bg-white px-3 py-2 text-sm outline-none focus:border-green-400 focus:ring-2 focus:ring-green-100"
+          >
+            <option value="">親を設定しない(最上位)</option>
+            {parentOptions.map((node) => (
+              <option key={node.location.id} value={node.location.id}>
+                {"　".repeat(node.depth)}
+                {node.location.name}
+              </option>
+            ))}
+          </select>
+          <p className="text-xs text-ink/40">
+            例:「建物」の下に「部屋」、「部屋」の下に「収納」のように入れ子にできます。
+          </p>
+        </div>
+      )}
       {error && <p className="text-sm text-red-600">{error}</p>}
 
       <div className="flex gap-2">
