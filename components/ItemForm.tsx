@@ -28,10 +28,6 @@ import type {
 
 const NEW_LOCATION_VALUE = "__new__";
 
-// 貴金属(K18等)は写真からの査定ができないため、お客さま自身が計測した重量から
-// 1gあたりの単価で概算額を計算する(手動入力時のみ・AIの写真判定では使わない)。
-const JEWELRY_YEN_PER_GRAM = 20000;
-
 const initialFormState = {
   name: "",
   categoryMajor: "" as CategoryMajor | "",
@@ -41,7 +37,6 @@ const initialFormState = {
   dispositionTags: [] as DispositionTag[],
   memo: "",
   estimatedPriceRange: "",
-  weightGrams: "",
 };
 
 export function ItemForm({
@@ -68,22 +63,6 @@ export function ItemForm({
 
   const showTags =
     form.disposition === "keep" || form.disposition === "keepsake";
-  const isJewelry = form.categoryMajor === "jewelry";
-
-  // 貴金属の重量(g)入力: グラム×20,000円で概算額を自動計算する(請求項4の
-  // 「一定条件以上の推定価値を持つ遺品を売却候補として抽出する」を支える価格情報のうち、
-  // AIでは写真から正確な査定ができない貴金属を、お客さま主導の実測値で補う機能)。
-  function handleWeightGramsChange(value: string) {
-    setForm((prev) => {
-      const next = { ...prev, weightGrams: value };
-      const grams = parseFloat(value);
-      if (value.trim() !== "" && !Number.isNaN(grams) && grams > 0) {
-        const yen = Math.round(grams * JEWELRY_YEN_PER_GRAM);
-        next.estimatedPriceRange = `〜${yen.toLocaleString("ja-JP")}円`;
-      }
-      return next;
-    });
-  }
 
   function resetForm() {
     setForm(initialFormState);
@@ -399,31 +378,6 @@ export function ItemForm({
             placeholder="ジャンルを入力してください"
             className="mt-2 rounded-lg border border-black/10 bg-white px-4 py-2.5 outline-none focus:border-green-400 focus:ring-2 focus:ring-green-100"
           />
-        )}
-        {isJewelry && (
-          <div className="mt-2 flex flex-col gap-1.5 rounded-lg bg-gold/10 p-3">
-            <label
-              htmlFor="weightGrams"
-              className="text-xs font-medium text-ink/70"
-            >
-              重量(グラム・任意)
-            </label>
-            <input
-              id="weightGrams"
-              type="number"
-              inputMode="decimal"
-              min="0"
-              step="0.1"
-              value={form.weightGrams}
-              onChange={(e) => handleWeightGramsChange(e.target.value)}
-              placeholder="例:15"
-              className="rounded-lg border border-black/10 bg-white px-4 py-2.5 outline-none focus:border-green-400 focus:ring-2 focus:ring-green-100"
-            />
-            <p className="text-xs text-ink/50">
-              貴金属は写真での査定ができないため、量りで測った重量(g)を入力すると、
-              1gあたり{JEWELRY_YEN_PER_GRAM.toLocaleString("ja-JP")}円で「売却額の目安」を自動計算します。
-            </p>
-          </div>
         )}
       </div>
 
