@@ -29,7 +29,12 @@ export type HandoverStatus =
       requiresApproval: boolean;
       inactiveDays: number;
       thresholdDays: number;
-      will: { message: string | null; video_url: string | null } | null;
+      will: {
+        message: string | null;
+        video_url: string | null;
+        legal_will_note: string | null;
+        legal_disclaimer_acknowledged_at: string | null;
+      } | null;
       items: ItemRow[];
       digitalItems: DigitalItemRow[];
       checklistProgress: Record<string, boolean>;
@@ -166,10 +171,26 @@ export function HandoverView({
             rel="noreferrer"
             className="mt-4 inline-flex items-center gap-2 rounded-full border border-green-600 px-5 py-2 text-sm font-semibold text-green-700 transition hover:bg-green-50"
           >
-            遺言動画を見る
+            メッセージ動画を見る
           </a>
         )}
       </div>
+
+      {status.will?.legal_will_note && (
+        <div className="mt-4 rounded-[1.75rem] border border-red-200 bg-red-50/40 p-5 sm:p-6">
+          <h2 className="text-sm font-bold text-ink">
+            法的な遺言事項に関する記録(財産の分け方など)
+          </h2>
+          <div className="mt-2 rounded-lg border border-red-200 bg-white/80 p-3">
+            <p className="text-[11px] leading-relaxed text-red-700">
+              ※これは正式な遺言書ではありません。民法で定める方式(自筆証書遺言・公正証書遺言など)を満たしていないため、法的な効力はありません。実際の相続手続きにあたっては、必ず税理士・弁護士・司法書士などの専門家にご確認ください。ここに書かれている内容は、ご本人の意向を把握するための参考情報です。
+            </p>
+          </div>
+          <p className="mt-3 whitespace-pre-wrap text-sm leading-relaxed text-ink/80">
+            {status.will.legal_will_note}
+          </p>
+        </div>
+      )}
 
       <div className="mt-6">
         <h2 className="mb-3 text-lg font-bold text-ink">
