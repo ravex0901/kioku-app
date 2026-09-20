@@ -33,7 +33,7 @@ export function SettingsClient({
   const [inviteError, setInviteError] = useState<string | null>(null);
 
   const [inactiveDays, setInactiveDays] = useState(
-    String(initialHandover?.inactive_days ?? 14)
+    String(initialHandover?.inactive_days ?? 36500)
   );
   const [approverId, setApproverId] = useState(
     initialHandover?.approver_family_member_id ?? ""
@@ -335,6 +335,7 @@ export function SettingsClient({
               onChange={(e) => setInactiveDays(e.target.value)}
               className="rounded-lg border border-black/10 bg-white px-4 py-2.5 text-sm outline-none focus:border-green-400 focus:ring-2 focus:ring-green-100"
             >
+              <option value="36500">なし(自動開示しない)</option>
               <option value="7">7日</option>
               <option value="14">14日</option>
               <option value="30">30日</option>
