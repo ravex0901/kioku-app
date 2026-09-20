@@ -153,11 +153,17 @@ export type FamilyMember = {
 };
 
 // 遺言書・遺言動画による本人の意思伝達情報(特許図面「もしもの時」に対応)
+// 請求項8対応: 「本人の意思(想い)」と「法的な遺言事項」を明確に区別して保持する。
+// message/video_url = 本人の想い・感謝のメッセージ(法的効力を主張しない私的な記録)
+// legal_will_note = 財産分与など法的な遺言事項に関する記録(正式な遺言書の代替ではない旨の
+//   免責への同意を得たうえで保存する。legal_disclaimer_acknowledged_at が同意日時)
 export type Will = {
   id: string;
   user_id: string;
   message: string | null;
   video_url: string | null;
+  legal_will_note: string | null;
+  legal_disclaimer_acknowledged_at: string | null;
   updated_at: string;
 };
 
