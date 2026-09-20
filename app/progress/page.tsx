@@ -2,6 +2,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { Header } from "@/components/Header";
+import { BackButton } from "@/components/BackButton";
 import { ProgressBar } from "@/components/ProgressBar";
 import { getDescendantIds } from "@/lib/locationTree";
 import { ITEM_STATUS_OPTIONS } from "@/lib/constants";
@@ -79,6 +80,7 @@ export default async function ProgressPage() {
   return (
     <div className="min-h-screen bg-cream">
       <Header />
+              <BackButton fallbackHref="/home" />
       <main className="mx-auto max-w-3xl px-4 py-8 sm:px-6">
         <h1 className="mb-6 text-xl font-bold text-ink">片付けの進捗マップ</h1>
 
