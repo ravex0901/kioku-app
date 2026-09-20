@@ -3,6 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import { getSignedUrl } from "@/lib/storage";
 import { resolveLocationName } from "@/lib/format";
 import { Header } from "@/components/Header";
+import { BackButton } from "@/components/BackButton";
 import { ItemDetail } from "@/components/ItemDetail";
 
 export default async function ItemDetailPage({
@@ -38,6 +39,7 @@ export default async function ItemDetailPage({
     <div className="min-h-screen bg-cream">
       <Header />
       <main className="mx-auto max-w-2xl px-4 py-8 sm:px-6">
+        <BackButton fallbackHref="/items" />
         <ItemDetail
           item={item}
           initialLocations={locations ?? []}
