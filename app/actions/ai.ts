@@ -278,7 +278,7 @@ export async function askAboutItems(
       const priceText = item.estimated_price_range
         ? ` / 推定売却額:${formatPriceDisplay(item.estimated_price_range)}`
         : "";
-      return `・${item.name} / ジャンル:${category} / 場所:${locationName} / 処分方針:${dispositionLabel}${priceText}${memoText}`;
+      return `・${item.name} / ジャンル:${category} / 場所:${locationName} / 整理方針:${dispositionLabel}${priceText}${memoText}`;
     })
     .join("\n");
 
