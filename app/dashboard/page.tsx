@@ -2,6 +2,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { Header } from "@/components/Header";
+import { BackButton } from "@/components/BackButton";
 import { InheritanceTaxCalculator } from "@/components/InheritanceTaxCalculator";
 import { InheritanceChecklist } from "@/components/InheritanceChecklist";
 import {
@@ -240,6 +241,7 @@ export default async function DashboardPage() {
   return (
     <div className="min-h-screen bg-cream">
       <Header />
+              <BackButton fallbackHref="/home" />
       <main className="mx-auto flex max-w-3xl flex-col gap-6 px-4 py-8 sm:px-6">
         <div>
           <p className="text-xs font-semibold tracking-[0.2em] text-ink/40">
