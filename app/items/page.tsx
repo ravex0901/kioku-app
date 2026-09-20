@@ -67,7 +67,7 @@ export default async function ItemsPage({
 
         {bulkAdded && (
           <p className="mb-6 rounded-2xl border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-700">
-            {bulkAdded}件を仮登録しました。場所や処分方針は後で確認してください。
+            {bulkAdded}件を仮登録しました。場所や整理方針は後で確認してください。
           </p>
         )}
 
