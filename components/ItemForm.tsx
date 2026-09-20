@@ -18,6 +18,7 @@ import {
 } from "@/lib/constants";
 import { fileToBase64 } from "@/lib/fileToBase64";
 import { resizeImageFile } from "@/lib/resizeImage";
+import { formatPriceDisplay } from "@/lib/priceRange";
 import type {
   CategoryMajor,
   Disposition,
@@ -322,7 +323,7 @@ export function ItemForm({
                   <p className="mt-1">
                     推定売却額:{" "}
                     <span className="font-semibold">
-                      {form.estimatedPriceRange}
+                      {formatPriceDisplay(form.estimatedPriceRange)}
                     </span>
                   </p>
                 )}
@@ -470,7 +471,7 @@ export function ItemForm({
           onChange={(e) =>
             setForm((p) => ({ ...p, estimatedPriceRange: e.target.value }))
           }
-          placeholder="例:3,000円〜5,000円 / 1万円前後"
+          placeholder="例:〜10,000円 / 値段がつきにくい"
           className="rounded-lg border border-black/10 bg-white px-4 py-2.5 outline-none focus:border-green-400 focus:ring-2 focus:ring-green-100"
         />
         <p className="text-xs text-ink/40">
