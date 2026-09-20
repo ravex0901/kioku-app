@@ -7,6 +7,7 @@ import { resolveLocationName } from "@/lib/format";
 import { Header } from "@/components/Header";
 import { DispositionBadge } from "@/components/DispositionBadge";
 import { AiVoiceCard } from "@/components/AiVoiceCard";
+import { formatPriceDisplay } from "@/lib/priceRange";
 import type { Disposition } from "@/lib/types";
 
 type RecentItem = {
@@ -363,7 +364,7 @@ export default async function HomePage() {
                       <DispositionBadge disposition={item.disposition} />
                       {item.estimated_price_range && (
                         <span className="truncate rounded-full bg-gold/20 px-2 py-0.5 text-[10px] font-semibold text-green-800">
-                          {item.estimated_price_range}
+                          {formatPriceDisplay(item.estimated_price_range)}
                         </span>
                       )}
                     </div>
