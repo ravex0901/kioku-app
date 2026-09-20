@@ -46,21 +46,28 @@ const PROMPT = `あなたは中古品の査定・生前整理の専門家です�
 2. 文字やロゴが読み取れない、または不鮮明な場合のみ、形状・素材・デザインの特徴から
    一般的な品名(例: 「木製の学習机」「ステンレス製の鍋」)を推定する。曖昧な当て推量はしない。
 3. 品目のジャンル、状態(良好・使用感あり・要修理)を判定する。
+   ただし、金・プラチナなどの貴金属やK18/K10/K24などの刻印がある(と思われる)
+   ネックレス・指輪・腕時計などは、写真だけでは本物か・純度・重量を正確に判定できず、
+   誤った前提で扱うとトラブルの原因になるため、category_major は "jewelry" にせず
+   "other" とし、category_other には "貴金属・アクセサリー" と設定すること。
 4. 日本国内の中古市場(メルカリ・ジモティー・リサイクルショップなど)の実勢価格感を踏まえ、
    売却した場合のおおよその上限額を見積もる。下限〜上限のような「幅」を提示すると、
    実際の売却額との差でユーザーに誤解や不信を与えるリスクがあるため、
-   必ず上限額1つのみを見積もること。ブランド品や高価なものほど根拠を持って高めに、
+   必ず上限額1つのみを見積もること。ブランド品や高価なものほど根拠を持ちて高めに、
    一般的な日用品は控えめに見積もる。売却価値がほぼ無いと判断される場合は
    "値段がつきにくい" のように正直に答えてよい。
+   ただし手順3で貴金属・アクセサリーと判定した場合は、写真からの金額推定は行わず、
+   estimated_price_range には "重量(グラム)を量って貴金属として登録すると概算額を計算できます"
+   という趣旨の案内文のみを設定し、具体的な金額は書かないこと。
 
 説明文などは一切付けず、次の形式のJSONオブジェクトのみを出力してください。
 
 {
   "name": "品名(30文字以内の日本語。可能な限りブランド名・製品名・型番を含める)",
-  "category_major": "furniture" | "appliance" | "clothing" | "tableware" | "books" | "jewelry" | "asset" | "subscription" | "insurance" | "other" のいずれか,
+  "category_major": "furniture" | "appliance" | "clothing" | "tableware" | "books" | "asset" | "subscription" | "insurance" | "other" のいずれか(貴金属・アクセサリーと思われる場合も含め "jewelry" は使わないこと),
   "category_other": "category_majorがotherの場合のみ具体的なジャンル名(日本語)。それ以外はnull",
   "condition": "good" | "used" | "needs_repair" のいずれか(良好・使用感あり・要修理),
-  "estimated_price_range": "売却した場合のおおよその上限額のみ(幅は示さない。日本語、例: '〜10,000円', '〜3,000円', '値段がつきにくい')"
+  "estimated_price_range": "売却した場合のおおよその上限額のみ(幅は示さない。日本語、例: '〜10,000円', '〜3,000円', '値段がつきにくい'。貴金属・アクセサリーの場合は重量計測を促す案内文)"
 }`;
 
 function extractJson(text: string): unknown {
@@ -307,6 +314,72 @@ export async function askAboutItems(
     return { ok: true, answer, referencedItems };
   } catch (err) {
     console.error("askAboutItems error", err);
+    return {
+      ok: false,
+      error: "回答の取得に失敗しました。もう一度お試しください。",
+    };
+  }
+}
+
+export type AskAboutProcedureResult =
+  | { ok: true; answer: string }
+  | { ok: false; error: string };
+
+const PROCEDURE_SYSTEM_PROMPT =
+  "あなたは生前整理を支援するアプリ「きおく」の相続手続きサポートAIです。" +
+  "相続手続きのやり方がわからない方向けに、今から提示する「手続きの名称・期限・必要書類」について、" +
+  "具体的な進め方(何から始めるか、書類をどこで入手するか、どこに提出するか等)を、" +
+  "専門用語をできるだけ避け、やさしく簡潔な日本語で説明してください。" +
+  "断定的な法的判断・税務判断は行わず、個別の状況によって扱いが変わる可能性がある場合は、" +
+  "税理士・弁護士・司法書士や市区町村の窓口などの専門家に確認するよう案内を添えてください。" +
+  "説明文以外の前置きや挨拶は不要です。";
+
+/**
+ * 相続手続きチェックリストの各項目について、やり方がわからないユーザーがAIに質問できる機能。
+ * (請求項の相続レポート機能を補助するぁ手続き支援のためのQ&A。判定エンジン自体は
+ *  lib/inheritanceProcedures.ts のルールベース判定を用い、ここでは会話的な説明のみを行う)
+ */
+export async function askAboutInheritanceProcedure(
+  procedure: { title: string; deadline: string; documents: string[] },
+  question: string
+): Promise<AskAboutProcedureResult> {
+  const trimmed = question.trim();
+  if (!trimmed) {
+    return { ok: false, error: "質問を入力してください。" };
+  }
+
+  const apiKey = process.env.ANTHROPIC_API_KEY;
+  if (!apiKey) {
+    return { ok: false, error: "AI機能が設定されていません。" };
+  }
+
+  const contextText =
+    `【手続き名】${procedure.title}\n` +
+    `【期限】${procedure.deadline}\n` +
+    `【必要書類】${procedure.documents.join("、") || "特になし"}`;
+
+  try {
+    const client = new Anthropic({ apiKey });
+    const message = await client.messages.create({
+      model: "claude-sonnet-5",
+      max_tokens: 512,
+      system: PROCEDURE_SYSTEM_PROMPT,
+      messages: [
+        {
+          role: "user",
+          content: `${contextText}\n\n【質問】\n${trimmed}`,
+        },
+      ],
+    });
+
+    const textBlock = message.content.find((block) => block.type === "text");
+    if (!textBlock || textBlock.type !== "text") {
+      throw new Error("AIから有効な応答がありませんでした。");
+    }
+
+    return { ok: true, answer: textBlock.text.trim() };
+  } catch (err) {
+    console.error("askAboutInheritanceProcedure error", err);
     return {
       ok: false,
       error: "回答の取得に失敗しました。もう一度お試しください。",
