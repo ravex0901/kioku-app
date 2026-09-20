@@ -147,6 +147,12 @@ export const SERVICE_TYPE_OPTIONS: {
     label: "生前整理",
     description: "ご自身の持ち物を、元気なうちから整理するお手伝いをします。",
   },
+  {
+    value: "appraisal",
+    label: "査定を依頼する",
+    description:
+      "AIによる概算金額をもとに、当社スタッフが実際に品物を確認して本査定を行います。",
+  },
 ];
 
 export const FAMILY_RELATION_OPTIONS: {
