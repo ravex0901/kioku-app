@@ -70,6 +70,9 @@ export function ItemDetail({
   );
   const [statusUpdating, setStatusUpdating] = useState(false);
   const [statusError, setStatusError] = useState<string | null>(null);
+  const [appraisalRequesting, setAppraisalRequesting] = useState(false);
+  const [appraisalRequested, setAppraisalRequested] = useState(false);
+  const [appraisalError, setAppraisalError] = useState<string | null>(null);
   const [photoFile, setPhotoFile] = useState<File | null>(null);
   const [photoPreview, setPhotoPreview] = useState<string | null>(
     signedPhotoUrl
@@ -83,6 +86,11 @@ export function ItemDetail({
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const showTags = disposition === "keep" || disposition === "keepsake";
+  // 「査定を依頼する」ボタンの表示条件: AI概算はあるが専門査定結果がまだない場合のみ表示する。
+  const hasAiEstimate = Boolean(item.estimated_price_range);
+  const hasProfessionalAppraisal = Boolean(item.professional_appraisal);
+  const appraisalAlreadyRequested =
+    appraisalRequested || status !== "photo_registered";
 
   function toggleTag(tag: DispositionTag) {
     setDispositionTags((prev) =>
@@ -224,6 +232,38 @@ export function ItemDetail({
     router.refresh();
   }
 
+  // 「査定を依頼する」ボタン: AIによる概算金額をもとに、自社(運営)へ本査定を依頼する。
+  // 外部の査定会社ではなく service_requests テーブル(ご依頼と同じ窓口)に item_id 付きで登録する。
+  async function handleRequestAppraisal() {
+    setAppraisalRequesting(true);
+    setAppraisalError(null);
+    const supabase = createClient();
+
+    const { error: insertError } = await supabase
+      .from("service_requests")
+      .insert({
+        user_id: item.user_id,
+        service_type: "appraisal",
+        item_id: item.id,
+        note: `「${item.name}」の査定依頼(AI概算:${
+          formatPriceDisplay(item.estimated_price_range) ?? "―"
+        })`,
+      });
+
+    if (insertError) {
+      setAppraisalRequesting(false);
+      setAppraisalError("査定の依頼に失敗しました。もう一度お試しください。");
+      return;
+    }
+
+    setAppraisalRequested(true);
+    setAppraisalRequesting(false);
+
+    if (status === "photo_registered") {
+      handleStatusChange("appraisal_pending");
+    }
+  }
+
   async function handleDelete() {
     setDeleting(true);
     setError(null);
@@ -319,7 +359,37 @@ export function ItemDetail({
                 {formatPriceDisplay(item.estimated_price_range) || "―"}
               </dd>
               <dt className="text-ink/50">専門査定結果</dt>
-              <dd className="text-ink">{item.professional_appraisal || "―"}</dd>
+              <dd className="text-ink">
+                {item.professional_appraisal ? (
+                  item.professional_appraisal
+                ) : (
+                  <span className="flex flex-wrap items-center gap-2">
+                    <span>―</span>
+                    {hasAiEstimate && !hasProfessionalAppraisal && (
+                      appraisalAlreadyRequested ? (
+                        <span className="text-xs font-medium text-green-700">
+                          査定を依頼済み(担当より連絡をお待ちください)
+                        </span>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={handleRequestAppraisal}
+                          disabled={appraisalRequesting}
+                          className="rounded-full border border-green-600 px-3 py-1 text-xs font-semibold text-green-700 transition hover:bg-green-50 disabled:opacity-60"
+                        >
+                          {appraisalRequesting ? "依頼中…" : "査定を依頼する"}
+                        </button>
+                      )
+                    )}
+                  </span>
+                )}
+              </dd>
+              {appraisalError && (
+                <>
+                  <dt />
+                  <dd className="text-xs text-red-600">{appraisalError}</dd>
+                </>
+              )}
               {showTags && dispositionTags.length > 0 && (
                 <>
                   <dt className="text-ink/50">理由タグ</dt>
