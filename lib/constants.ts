@@ -17,6 +17,7 @@ export const CATEGORY_OPTIONS: { value: CategoryMajor; label: string }[] = [
   { value: "tableware", label: "食器" },
   { value: "books", label: "書籍" },
   { value: "jewelry", label: "貴金属" },
+  { value: "watch", label: "時計" },
   { value: "asset", label: "資産" },
   { value: "subscription", label: "サブスク" },
   { value: "insurance", label: "保険" },
@@ -67,13 +68,45 @@ export const DIGITAL_ITEM_TITLE_HINTS: Partial<
   other: "例:その他残しておきたい情報",
 };
 
+// 整理の方針(旧:処分の方針)。残す/整理する/わからない の3択。
 export const DISPOSITION_OPTIONS: { value: Disposition; label: string }[] = [
-  { value: "keep", label: "残しておきたい" },
-  { value: "keepsake", label: "形見・記念として残す" },
-  { value: "sell", label: "売却・買取を検討したい" },
-  { value: "discard", label: "手放す・処分を検討したい" },
-  { value: "undecided", label: "まだ決めていない" },
+  { value: "keep", label: "残す" },
+  { value: "organize", label: "整理する" },
+  { value: "unsure", label: "わからない" },
 ];
+
+// 旧5択(keep/keepsake/sell/discard/undecided)で登録済みの既存データを、
+// 新しい3択のラベル・バッジ色に読み替えるための後方互換テーブル。
+// DB上の値そのものは変更しない。
+const LEGACY_DISPOSITION_LABEL: Record<string, string> = {
+  keepsake: "残す",
+  sell: "整理する",
+  discard: "整理する",
+  undecided: "わからない",
+};
+
+const LEGACY_DISPOSITION_BADGE_STYLE: Record<string, string> = {
+  keepsake: "bg-green-100 text-green-700",
+  sell: "bg-orange-100 text-orange-700",
+  discard: "bg-orange-100 text-orange-700",
+  undecided: "bg-black/5 text-ink/60",
+};
+
+export function dispositionLabel(value: string | null | undefined): string {
+  if (!value) return "未設定";
+  const found = DISPOSITION_OPTIONS.find((o) => o.value === value);
+  if (found) return found.label;
+  return LEGACY_DISPOSITION_LABEL[value] ?? "未設定";
+}
+
+export function dispositionBadgeStyle(value: string | null | undefined): string {
+  if (!value) return "bg-black/5 text-ink/60";
+  return (
+    DISPOSITION_BADGE_STYLE[value as Disposition] ??
+    LEGACY_DISPOSITION_BADGE_STYLE[value] ??
+    "bg-black/5 text-ink/60"
+  );
+}
 
 export const DISPOSITION_TAG_OPTIONS: {
   value: DispositionTag;
@@ -169,10 +202,8 @@ export const FAMILY_RELATION_OPTIONS: {
 
 export const DISPOSITION_BADGE_STYLE: Record<Disposition, string> = {
   keep: "bg-green-100 text-green-700",
-  keepsake: "bg-gold/25 text-green-800",
-  sell: "bg-sky-100 text-sky-700",
-  discard: "bg-orange-100 text-orange-700",
-  undecided: "bg-black/5 text-ink/60",
+  organize: "bg-orange-100 text-orange-700",
+  unsure: "bg-black/5 text-ink/60",
 };
 
 export function labelFor<T extends string>(
