@@ -48,6 +48,14 @@ export function SettingsClient({
   );
   const [savingWill, setSavingWill] = useState(false);
   const [willSaved, setWillSaved] = useState(false);
+  const [willError, setWillError] = useState<string | null>(null);
+
+  // 法的な遺言事項(財産分与など)。本人の想い・メッセージとは明確に分けて保持する(請求項8対応)。
+  const [legalWillNote, setLegalWillNote] = useState(
+    initialWill?.legal_will_note ?? ""
+  );
+  const [legalDisclaimerAcknowledged, setLegalDisclaimerAcknowledged] =
+    useState(!!initialWill?.legal_disclaimer_acknowledged_at);
 
   async function handleInvite() {
     const trimmed = name.trim();
@@ -101,20 +109,37 @@ export function SettingsClient({
   }
 
   async function handleSaveWill() {
-    setSavingWill(true);
     setWillSaved(false);
+    setWillError(null);
+
+    const trimmedLegalNote = legalWillNote.trim();
+    if (trimmedLegalNote && !legalDisclaimerAcknowledged) {
+      setWillError(
+        "法的な遺言事項を保存するには、下の注意事項を確認のうえチェックを入れてください。"
+      );
+      return;
+    }
+
+    setSavingWill(true);
     const supabase = createClient();
     const { error } = await supabase.from("wills").upsert(
       {
         user_id: userId,
         message: willMessage.trim() || null,
         video_url: willVideoUrl.trim() || null,
+        legal_will_note: trimmedLegalNote || null,
+        legal_disclaimer_acknowledged_at:
+          trimmedLegalNote && legalDisclaimerAcknowledged
+            ? new Date().toISOString()
+            : null,
       },
       { onConflict: "user_id" }
     );
     setSavingWill(false);
     if (!error) {
       setWillSaved(true);
+    } else {
+      setWillError("保存に失敗しました。もう一度お試しください。");
     }
   }
 
@@ -222,25 +247,28 @@ export function SettingsClient({
           ここに書いた遺言書・遺言動画は、下記の条件を満たしたときだけご家族に開示されます。ふだんは本人以外に見られません。
         </p>
 
-        <div className="mb-5 flex flex-col gap-3 rounded-xl border border-black/5 bg-white/70 p-4">
+        <div className="mb-4 flex flex-col gap-3 rounded-xl border border-black/5 bg-white/70 p-4">
           <p className="text-sm font-semibold text-ink/80">
-            本人の意思伝達情報(遺言書・遺言動画)
+            ① ご家族への想い・メッセージ(本人の意思)
+          </p>
+          <p className="text-[11px] text-ink/40">
+            財産分与などの法的な取り決めではなく、ご家族に伝えたい気持ちや感謝の言葉など、私的なメッセージを書く欄です。
           </p>
           <div className="flex flex-col gap-1.5">
             <label className="text-sm font-medium text-ink/80">
-              ご家族へのメッセージ・遺言の内容
+              ご家族へのメッセージ
             </label>
             <textarea
               value={willMessage}
               onChange={(e) => setWillMessage(e.target.value)}
               rows={4}
-              placeholder="ご家族に伝えたいこと、財産の分け方の希望などを自由にお書きください。"
+              placeholder="ご家族に伝えたい想い・感謝の気持ちなどを自由にお書きください。"
               className="rounded-lg border border-black/10 bg-white px-4 py-2.5 text-sm outline-none focus:border-green-400 focus:ring-2 focus:ring-green-100"
             />
           </div>
           <div className="flex flex-col gap-1.5">
             <label className="text-sm font-medium text-ink/80">
-              遺言動画のURL(任意)
+              メッセージ動画のURL(任意)
             </label>
             <input
               value={willVideoUrl}
@@ -249,6 +277,41 @@ export function SettingsClient({
               className="rounded-lg border border-black/10 bg-white px-4 py-2.5 text-sm outline-none focus:border-green-400 focus:ring-2 focus:ring-green-100"
             />
           </div>
+        </div>
+
+        <div className="mb-5 flex flex-col gap-3 rounded-xl border border-red-200 bg-red-50/40 p-4">
+          <p className="text-sm font-semibold text-ink/80">
+            ② 法的な遺言事項に関する記録(財産の分け方など)
+          </p>
+          <div className="rounded-lg border border-red-200 bg-white/80 p-3">
+            <p className="text-[11px] leading-relaxed text-red-700">
+              ※これは正式な遺言書ではありません。民法で定める方式(自筆証書遺言・公正証書遺言など)を満たさない記録には法的効力がなく、実際の相続手続きに使うことはできません。財産の分け方について確実な効力を持たせたい場合は、必ず公証役場・弁護士・司法書士にご相談のうえ、別途正式な遺言書を作成してください。ここはあくまで、ご家族が状況を把握するための参考メモとして開示されます。
+            </p>
+          </div>
+          <div className="flex flex-col gap-1.5">
+            <label className="text-sm font-medium text-ink/80">
+              財産の分け方などについてのメモ
+            </label>
+            <textarea
+              value={legalWillNote}
+              onChange={(e) => setLegalWillNote(e.target.value)}
+              rows={4}
+              placeholder="財産の分け方の希望など、法的な遺言事項に関する記録を書く場合はこちらに入力してください(正式な遺言書の代わりにはなりません)。"
+              className="rounded-lg border border-black/10 bg-white px-4 py-2.5 text-sm outline-none focus:border-green-400 focus:ring-2 focus:ring-green-100"
+            />
+          </div>
+          <label className="flex items-start gap-2 text-xs text-ink/70">
+            <input
+              type="checkbox"
+              checked={legalDisclaimerAcknowledged}
+              onChange={(e) =>
+                setLegalDisclaimerAcknowledged(e.target.checked)
+              }
+              className="mt-0.5 h-4 w-4 accent-red-600"
+            />
+            上記の注意事項(正式な遺言書ではないこと)を理解しました。
+          </label>
+          {willError && <p className="text-xs text-red-600">{willError}</p>}
           {willSaved && (
             <p className="text-xs text-green-700">保存しました。</p>
           )}
