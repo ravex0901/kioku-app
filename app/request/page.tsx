@@ -17,7 +17,8 @@ export default async function RequestPage() {
     .from("items")
     .select("id, name")
     .eq("user_id", user.id)
-    .eq("disposition", "discard")
+    // "organize"が新しい値、"discard"/"sell"は旧5択時代のデータとの互換のため
+    .in("disposition", ["organize", "discard", "sell"])
     .order("created_at", { ascending: false });
 
   const targetItems = (data ?? []).map((item) => ({
