@@ -5,6 +5,7 @@ import { createClient } from "@/lib/supabase/server";
 import { resolveLocationName } from "@/lib/format";
 import { CATEGORY_OPTIONS, DISPOSITION_OPTIONS, labelFor } from "@/lib/constants";
 import { extractKeywords, filterByKeywords } from "@/lib/keywordSearch";
+import { formatPriceDisplay } from "@/lib/priceRange";
 import type { CategoryMajor } from "@/lib/types";
 
 const CATEGORY_VALUES: CategoryMajor[] = [
@@ -46,7 +47,9 @@ const PROMPT = `あなたは中古品の査定・生前整理の専門家です�
    一般的な品名(例: 「木製の学習机」「ステンレス製の鍋」)を推定する。曖昧な当て推量はしない。
 3. 品目のジャンル、状態(良好・使用感あり・要修理)を判定する。
 4. 日本国内の中古市場(メルカリ・ジモティー・リサイクルショップなど)の実勢価格感を踏まえ、
-   売却した場合のおおよその価格帯を見積もる。ブランド品や高価なものほど根拠を持って高めに、
+   売却した場合のおおよその上限額を見積もる。下限〜上限のような「幅」を提示すると、
+   実際の売却額との差でユーザーに誤解や不信を与えるリスクがあるため、
+   必ず上限額1つのみを見積もること。ブランド品や高価なものほど根拠を持って高めに、
    一般的な日用品は控えめに見積もる。売却価値がほぼ無いと判断される場合は
    "値段がつきにくい" のように正直に答えてよい。
 
@@ -57,7 +60,7 @@ const PROMPT = `あなたは中古品の査定・生前整理の専門家です�
   "category_major": "furniture" | "appliance" | "clothing" | "tableware" | "books" | "jewelry" | "asset" | "subscription" | "insurance" | "other" のいずれか,
   "category_other": "category_majorがotherの場合のみ具体的なジャンル名(日本語)。それ以外はnull",
   "condition": "good" | "used" | "needs_repair" のいずれか(良好・使用感あり・要修理),
-  "estimated_price_range": "売却した場合のおおよその価格帯(日本語、例: '3,000円〜5,000円', '1万円〜2万円前後', '値段がつきにくい')"
+  "estimated_price_range": "売却した場合のおおよその上限額のみ(幅は示さない。日本語、例: '〜10,000円', '〜3,000円', '値段がつきにくい')"
 }`;
 
 function extractJson(text: string): unknown {
@@ -146,7 +149,7 @@ export async function analyzeItemPhoto(
     const estimatedPriceRange =
       typeof parsed.estimated_price_range === "string" &&
       parsed.estimated_price_range.trim()
-        ? parsed.estimated_price_range.trim().slice(0, 30)
+        ? formatPriceDisplay(parsed.estimated_price_range.trim().slice(0, 30))
         : null;
 
     return {
@@ -254,7 +257,7 @@ export async function askAboutItems(
       );
       const memoText = item.memo ? ` / メモ:${item.memo}` : "";
       const priceText = item.estimated_price_range
-        ? ` / 推定売却額:${item.estimated_price_range}`
+        ? ` / 推定売却額:${formatPriceDisplay(item.estimated_price_range)}`
         : "";
       return `・${item.name} / ジャンル:${category} / 場所:${locationName} / 処分方針:${dispositionLabel}${priceText}${memoText}`;
     })
