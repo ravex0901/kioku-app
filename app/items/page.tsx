@@ -7,6 +7,7 @@ import { Header } from "@/components/Header";
 import { DispositionBadge } from "@/components/DispositionBadge";
 import { ItemsFilterBar } from "@/components/ItemsFilterBar";
 import { CATEGORY_OPTIONS, ITEM_STATUS_BADGE_STYLE, ITEM_STATUS_OPTIONS, labelFor } from "@/lib/constants";
+import { formatPriceDisplay } from "@/lib/priceRange";
 import type { CategoryMajor, Disposition, ItemStatus } from "@/lib/types";
 
 function first(value: string | string[] | undefined) {
@@ -126,7 +127,7 @@ export default async function ItemsPage({
                     </span>
                     {item.estimated_price_range && (
                       <span className="rounded-full bg-gold/20 px-2 py-0.5 text-[11px] font-semibold text-green-800">
-                        {item.estimated_price_range}
+                        {formatPriceDisplay(item.estimated_price_range)}
                       </span>
                     )}
                   </div>
