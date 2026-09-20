@@ -5,11 +5,14 @@ import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { LocationCreateForm } from "@/components/LocationCreateForm";
 import { DispositionBadge } from "@/components/DispositionBadge";
+import ConfirmDialog from "@/components/ConfirmDialog";
 import {
   CATEGORY_MEMO_HINTS,
   CATEGORY_OPTIONS,
   DISPOSITION_OPTIONS,
   DISPOSITION_TAG_OPTIONS,
+  ITEM_STATUS_BADGE_STYLE,
+  ITEM_STATUS_OPTIONS,
   labelFor,
 } from "@/lib/constants";
 import { resizeImageFile } from "@/lib/resizeImage";
@@ -18,6 +21,7 @@ import type {
   Disposition,
   DispositionTag,
   Item,
+  ItemStatus,
   Location,
 } from "@/lib/types";
 
@@ -57,6 +61,14 @@ export function ItemDetail({
   const [estimatedPriceRange, setEstimatedPriceRange] = useState(
     item.estimated_price_range ?? ""
   );
+  const [professionalAppraisal, setProfessionalAppraisal] = useState(
+    item.professional_appraisal ?? ""
+  );
+  const [status, setStatus] = useState<ItemStatus>(
+    item.status ?? "photo_registered"
+  );
+  const [statusUpdating, setStatusUpdating] = useState(false);
+  const [statusError, setStatusError] = useState<string | null>(null);
   const [photoFile, setPhotoFile] = useState<File | null>(null);
   const [photoPreview, setPhotoPreview] = useState<string | null>(
     signedPhotoUrl
@@ -66,6 +78,7 @@ export function ItemDetail({
   const [submitting, setSubmitting] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const showTags = disposition === "keep" || disposition === "keepsake";
@@ -150,6 +163,7 @@ export function ItemDetail({
         .update({
           ...baseUpdate,
           estimated_price_range: estimatedPriceRange.trim() || null,
+          professional_appraisal: professionalAppraisal.trim() || null,
         })
         .eq("id", item.id)
         .eq("user_id", item.user_id);
@@ -176,11 +190,40 @@ export function ItemDetail({
     }
   }
 
-  async function handleDelete() {
-    if (!window.confirm(`「${item.name}」を削除します。よろしいですか?`)) {
+  // 整理進捗ステータスの変更(請求項7の標準ワークフロー・ステータス履歴に対応)。
+  // 変更前・変更後・変更者・日時を item_status_history に記録する。
+  async function handleStatusChange(next: ItemStatus) {
+    if (next === status) return;
+    setStatusUpdating(true);
+    setStatusError(null);
+    const supabase = createClient();
+
+    const { error: updateError } = await supabase
+      .from("items")
+      .update({ status: next })
+      .eq("id", item.id)
+      .eq("user_id", item.user_id);
+
+    if (updateError) {
+      setStatusUpdating(false);
+      setStatusError("状態の更新に失敗しました。もう一度お試しください。");
       return;
     }
 
+    await supabase.from("item_status_history").insert({
+      item_id: item.id,
+      user_id: item.user_id,
+      from_status: status,
+      to_status: next,
+      changed_by: item.user_id,
+    });
+
+    setStatus(next);
+    setStatusUpdating(false);
+    router.refresh();
+  }
+
+  async function handleDelete() {
     setDeleting(true);
     setError(null);
     const supabase = createClient();
@@ -229,10 +272,35 @@ export function ItemDetail({
             <h1 className="text-2xl font-bold text-ink">{item.name}</h1>
             <div className="flex flex-wrap items-center gap-2">
               <DispositionBadge disposition={item.disposition} />
+              <span
+                className={`rounded-full px-3 py-1 text-xs font-semibold ${ITEM_STATUS_BADGE_STYLE[status]}`}
+              >
+                {labelFor(ITEM_STATUS_OPTIONS, status)}
+              </span>
               {item.estimated_price_range && (
                 <span className="inline-flex items-center gap-1 rounded-full bg-gold/20 px-3 py-1 text-xs font-semibold text-green-800">
                   推定売却額 {item.estimated_price_range}
                 </span>
+              )}
+            </div>
+            <div className="flex flex-col gap-1.5">
+              <label className="text-xs font-medium text-ink/50">
+                整理の進捗ステータス
+              </label>
+              <select
+                value={status}
+                onChange={(e) => handleStatusChange(e.target.value as ItemStatus)}
+                disabled={statusUpdating}
+                className="w-fit rounded-lg border border-black/10 bg-white px-3 py-1.5 text-xs outline-none focus:border-green-400 focus:ring-2 focus:ring-green-100 disabled:opacity-60"
+              >
+                {ITEM_STATUS_OPTIONS.map((opt) => (
+                  <option key={opt.value} value={opt.value}>
+                    {opt.label}
+                  </option>
+                ))}
+              </select>
+              {statusError && (
+                <p className="text-xs text-red-600">{statusError}</p>
               )}
             </div>
             <dl className="mt-2 grid grid-cols-[auto_1fr] gap-x-4 gap-y-1 text-sm">
@@ -247,6 +315,8 @@ export function ItemDetail({
               <dd className="text-ink">{locationName}</dd>
               <dt className="text-ink/50">売却額の目安</dt>
               <dd className="text-ink">{item.estimated_price_range || "―"}</dd>
+              <dt className="text-ink/50">専門査定結果</dt>
+              <dd className="text-ink">{item.professional_appraisal || "―"}</dd>
               {showTags && dispositionTags.length > 0 && (
                 <>
                   <dt className="text-ink/50">理由タグ</dt>
@@ -285,13 +355,23 @@ export function ItemDetail({
           </button>
           <button
             type="button"
-            onClick={handleDelete}
+            onClick={() => setDeleteConfirmOpen(true)}
             disabled={deleting}
             className="rounded-full border border-red-200 px-5 py-2.5 text-sm font-semibold text-red-600 transition hover:bg-red-50 disabled:opacity-60"
           >
             {deleting ? "削除中…" : "削除する"}
           </button>
         </div>
+        <ConfirmDialog
+          open={deleteConfirmOpen}
+          title="この持ち物を削除しますか?"
+          description={`「${item.name}」を削除します。この操作は取り消せません。`}
+          onConfirm={() => {
+            setDeleteConfirmOpen(false);
+            handleDelete();
+          }}
+          onCancel={() => setDeleteConfirmOpen(false)}
+        />
       </div>
     );
   }
@@ -375,6 +455,7 @@ export function ItemDetail({
           <div className="mt-2">
             <LocationCreateForm
               userId={item.user_id}
+              existingLocations={locations}
               onCreated={(loc) => {
                 setLocations((prev) => [...prev, loc]);
                 setLocationId(loc.id);
@@ -443,6 +524,21 @@ export function ItemDetail({
           value={estimatedPriceRange}
           onChange={(e) => setEstimatedPriceRange(e.target.value)}
           placeholder="例:3,000円〜5,000円 / 1万円前後"
+          className="rounded-lg border border-black/10 bg-white px-4 py-2.5 outline-none focus:border-green-400 focus:ring-2 focus:ring-green-100"
+        />
+        <p className="text-xs text-ink/40">
+          AIによる推定価格です。確定した査定結果ではありません。
+        </p>
+      </div>
+
+      <div className="flex flex-col gap-1.5">
+        <label className="text-sm font-medium text-ink/80">
+          専門査定結果(任意)
+        </label>
+        <input
+          value={professionalAppraisal}
+          onChange={(e) => setProfessionalAppraisal(e.target.value)}
+          placeholder="例:〇〇買取店にて15,000円で査定(2026/9/1)"
           className="rounded-lg border border-black/10 bg-white px-4 py-2.5 outline-none focus:border-green-400 focus:ring-2 focus:ring-green-100"
         />
       </div>
