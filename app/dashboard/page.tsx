@@ -263,7 +263,7 @@ export default async function DashboardPage() {
           <div className="mt-5 flex flex-col gap-2.5">
             <ScoreBar label="登録" percent={registeredPercent} />
             <ScoreBar label="場所" percent={locatedPercent} />
-            <ScoreBar label="処分方針" percent={dispositionPercent} />
+            <ScoreBar label="整理方針" percent={dispositionPercent} />
             <ScoreBar label="デジタル資産" percent={digitalPercent} />
             <ScoreBar label="遺言書(意思伝達)" percent={endingNotePercent} />
             <ScoreBar label="遺言動画" percent={willVideoPercent} />
