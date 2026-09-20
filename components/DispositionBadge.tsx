@@ -1,4 +1,4 @@
-import { DISPOSITION_BADGE_STYLE, DISPOSITION_OPTIONS, labelFor } from "@/lib/constants";
+import { dispositionBadgeStyle, dispositionLabel } from "@/lib/constants";
 import type { Disposition } from "@/lib/types";
 
 export function DispositionBadge({
@@ -16,9 +16,9 @@ export function DispositionBadge({
 
   return (
     <span
-      className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${DISPOSITION_BADGE_STYLE[disposition]}`}
+      className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${dispositionBadgeStyle(disposition)}`}
     >
-      {labelFor(DISPOSITION_OPTIONS, disposition)}
+      {dispositionLabel(disposition)}
     </span>
   );
 }
