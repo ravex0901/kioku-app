@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
+import { askAboutInheritanceProcedure } from "@/app/actions/ai";
 import {
   buildInheritanceChecklist,
   type ProcedureItem,
@@ -27,7 +28,45 @@ export function InheritanceChecklist({
   const [openKey, setOpenKey] = useState<string | null>(null);
   const [saving, setSaving] = useState<string | null>(null);
 
+  // 「やり方がわからない」人向けのAI質問サポート(手続きごとに1つの質問文・回答を保持)
+  const [aiQuestions, setAiQuestions] = useState<Record<string, string>>({});
+  const [aiAnswers, setAiAnswers] = useState<Record<string, string>>({});
+  const [aiErrors, setAiErrors] = useState<Record<string, string>>({});
+  const [aiLoadingKey, setAiLoadingKey] = useState<string | null>(null);
+
   const doneCount = procedures.filter((p) => progress[p.key]).length;
+
+  async function handleAskAi(procedure: ProcedureItem) {
+    const question = (aiQuestions[procedure.key] ?? "").trim();
+    if (!question) return;
+
+    setAiLoadingKey(procedure.key);
+    setAiErrors((prev) => ({ ...prev, [procedure.key]: "" }));
+    setAiAnswers((prev) => ({ ...prev, [procedure.key]: "" }));
+
+    try {
+      const result = await askAboutInheritanceProcedure(
+        {
+          title: procedure.title,
+          deadline: procedure.deadline,
+          documents: procedure.documents,
+        },
+        question
+      );
+      if (result.ok) {
+        setAiAnswers((prev) => ({ ...prev, [procedure.key]: result.answer }));
+      } else {
+        setAiErrors((prev) => ({ ...prev, [procedure.key]: result.error }));
+      }
+    } catch {
+      setAiErrors((prev) => ({
+        ...prev,
+        [procedure.key]: "回答の取得に失敗しました。もう一度お試しください。",
+      }));
+    } finally {
+      setAiLoadingKey(null);
+    }
+  }
 
   async function toggle(procedure: ProcedureItem) {
     const next = !progress[procedure.key];
@@ -118,6 +157,61 @@ export function InheritanceChecklist({
                   <p className="text-[11px] text-ink/40">
                     判定理由:{procedure.reasons.join(" / ")}
                   </p>
+
+                  <div className="mt-3 border-t border-black/5 pt-3">
+                    <p className="mb-1.5 text-xs font-semibold text-ink/70">
+                      やり方がわからないときは、AIに質問できます
+                    </p>
+                    <div className="flex flex-col gap-2 sm:flex-row">
+                      <input
+                        type="text"
+                        value={aiQuestions[procedure.key] ?? ""}
+                        onChange={(e) =>
+                          setAiQuestions((prev) => ({
+                            ...prev,
+                            [procedure.key]: e.target.value,
+                          }))
+                        }
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter") {
+                            e.preventDefault();
+                            handleAskAi(procedure);
+                          }
+                        }}
+                        placeholder="例:戸籍謄本はどこで取れますか?"
+                        className="flex-1 rounded-full border border-black/10 bg-white px-4 py-2 text-xs text-ink outline-none focus:border-green-400"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => handleAskAi(procedure)}
+                        disabled={
+                          aiLoadingKey === procedure.key ||
+                          !(aiQuestions[procedure.key] ?? "").trim()
+                        }
+                        className="shrink-0 rounded-full bg-green-700 px-4 py-2 text-xs font-semibold text-white transition hover:bg-green-800 disabled:opacity-40"
+                      >
+                        {aiLoadingKey === procedure.key
+                          ? "考え中…"
+                          : "AIに質問する"}
+                      </button>
+                    </div>
+
+                    {aiLoadingKey === procedure.key && (
+                      <p className="mt-2 rounded-lg bg-green-50 px-3 py-2 text-[11px] text-green-700">
+                        考えています…
+                      </p>
+                    )}
+                    {aiAnswers[procedure.key] && aiLoadingKey !== procedure.key && (
+                      <p className="mt-2 whitespace-pre-wrap rounded-lg bg-green-50 px-3 py-2 text-xs text-green-800">
+                        {aiAnswers[procedure.key]}
+                      </p>
+                    )}
+                    {aiErrors[procedure.key] && aiLoadingKey !== procedure.key && (
+                      <p className="mt-2 rounded-lg bg-red-50 px-3 py-2 text-[11px] text-red-600">
+                        {aiErrors[procedure.key]}
+                      </p>
+                    )}
+                  </div>
                 </div>
               )}
             </div>
@@ -125,7 +219,7 @@ export function InheritanceChecklist({
         })}
       </div>
       <p className="mt-4 border-t border-black/5 pt-3 text-[11px] leading-relaxed text-ink/40">
-        ※このチェックリストは、登録済みの情報をもとにルールエンジンが機械的に判定した目安であり、法的判断の確定結果ではありません。実際の手続きにあたっては、税理士・弁護士・司法書士などの専門家や、各窓口に必ずご確認ください。
+        ※このチェックリストは、登録済みの情報をもとにルールエンジンが機械的に判定した目安であり、法的判断の確定結果はありません。実際の手続きにあたっては、税理士・弁護士・司法書士などの専門家や、各窓口に必ずご確認ください。
       </p>
     </div>
   );
