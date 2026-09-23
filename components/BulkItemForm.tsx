@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { analyzeItemPhoto } from "@/app/actions/ai";
@@ -42,6 +42,13 @@ export function BulkItemForm({ userId }: { userId: string }) {
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
 
+  // 画面遷移・アンマウント時にカメラを確実に停止する(つけっぱなし防止)
+  useEffect(() => {
+    return () => {
+      streamRef.current?.getTracks().forEach((t) => t.stop());
+    };
+  }, []);
+
   function draftFromFile(file: File): Draft {
     return {
       id: crypto.randomUUID(),
@@ -66,6 +73,12 @@ export function BulkItemForm({ userId }: { userId: string }) {
   async function openCamera() {
     setCameraError(null);
     setCameraShotCount(0);
+    if (!navigator.mediaDevices?.getUserMedia) {
+      setCameraError(
+        "このブラウザではカメラを利用できません。写真を選択してください。"
+      );
+      return;
+    }
     try {
       const stream = await navigator.mediaDevices.getUserMedia({
         video: { facingMode: "environment" },
@@ -73,13 +86,6 @@ export function BulkItemForm({ userId }: { userId: string }) {
       });
       streamRef.current = stream;
       setCameraOpen(true);
-      // videoタグがまだDOMに存在しない可能性があるため、次のtickで紐づける
-      setTimeout(() => {
-        if (videoRef.current) {
-          videoRef.current.srcObject = stream;
-          videoRef.current.play().catch(() => {});
-        }
-      }, 0);
     } catch {
       setCameraError(
         "カメラを起動できませんでした。ブラウザのカメラ権限をご確認ください。"
@@ -93,9 +99,34 @@ export function BulkItemForm({ userId }: { userId: string }) {
     setCameraOpen(false);
   }
 
+  // カメラ映像の紐づけ。videoタグはcameraOpenがtrueになってからDOMに現れるため、
+  // stateの反映を待つuseEffectで確実に紐づける(setTimeoutによる決め打ちは
+  // タイミング次第で失敗し、映像が真っ黒のまま撮影できなくなることがあった)。
+  useEffect(() => {
+    if (!cameraOpen) return;
+    const video = videoRef.current;
+    const stream = streamRef.current;
+    if (!video || !stream) return;
+
+    video.srcObject = stream;
+    // autoplayポリシー対策として、JSXの属性指定だけでなくプロパティとして明示的に設定する
+    video.muted = true;
+    video.playsInline = true;
+    video.play().catch(() => {
+      setCameraError(
+        "カメラ映像の再生に失敗しました。ページを再読み込みしてもう一度お試しください。"
+      );
+    });
+  }, [cameraOpen]);
+
   function captureShot() {
     const video = videoRef.current;
-    if (!video || video.videoWidth === 0) return;
+    if (!video || video.videoWidth === 0) {
+      setCameraError(
+        "カメラ映像の準備ができていません。少し待ってからもう一度お試しください。"
+      );
+      return;
+    }
     const canvas = document.createElement("canvas");
     canvas.width = video.videoWidth;
     canvas.height = video.videoHeight;
@@ -122,6 +153,8 @@ export function BulkItemForm({ userId }: { userId: string }) {
       setError("写真を選択してください。");
       return;
     }
+    // カメラを開いたまま次の画面に進むと、カメラが起動しっぱなしになってしまうため閉じる
+    if (cameraOpen) closeCamera();
     setError(null);
     setStep("review");
     setDrafts((prev) => prev.map((d) => ({ ...d, analyzing: true })));
@@ -267,7 +300,7 @@ export function BulkItemForm({ userId }: { userId: string }) {
           <p className="text-xs text-ink/40">
             各写真をAIが自動判定します。次の画面で品名・ジャンルを確認・修正してから登録します。
             カメラで連続撮影すると、シャッターを押した分だけ何枚でも追加できます。
-          </p>
+        </p>
         </div>
 
         {drafts.length > 0 && (
@@ -303,10 +336,16 @@ export function BulkItemForm({ userId }: { userId: string }) {
           <div className="fixed inset-0 z-30 flex flex-col bg-black">
             <video
               ref={videoRef}
+              autoPlay
               playsInline
               muted
               className="flex-1 w-full object-cover"
             />
+            {cameraError && (
+              <p className="bg-red-600/90 px-4 py-2 text-center text-xs text-white">
+                {cameraError}
+              </p>
+            )}
             <div className="flex items-center justify-center gap-6 bg-black/80 p-5 pb-[calc(env(safe-area-inset-bottom)+1.25rem)]">
               <button
                 type="button"
@@ -449,3 +488,4 @@ export function BulkItemForm({ userId }: { userId: string }) {
     </div>
   );
 }
+
