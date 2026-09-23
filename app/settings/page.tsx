@@ -3,7 +3,12 @@ import { createClient } from "@/lib/supabase/server";
 import { Header } from "@/components/Header";
 import { BackButton } from "@/components/BackButton";
 import { SettingsClient } from "@/components/SettingsClient";
-import type { FamilyMember, HandoverSettings, Will } from "@/lib/types";
+import type {
+  FamilyMember,
+  HandoverRecipient,
+  HandoverSettings,
+  Will,
+} from "@/lib/types";
 
 export default async function SettingsPage() {
   const supabase = await createClient();
@@ -20,6 +25,7 @@ export default async function SettingsPage() {
     { data: familyData },
     { data: willData },
     { data: handoverData },
+    { data: recipientsData },
   ] = await Promise.all([
     supabase.from("profiles").select("*").eq("id", user.id).maybeSingle(),
     supabase
@@ -33,6 +39,11 @@ export default async function SettingsPage() {
       .select("*")
       .eq("user_id", user.id)
       .maybeSingle(),
+    supabase
+      .from("handover_recipients")
+      .select("*")
+      .eq("user_id", user.id)
+      .order("created_at", { ascending: false }),
   ]);
 
   const rawName =
@@ -62,8 +73,10 @@ export default async function SettingsPage() {
           initialFamily={family}
           initialWill={(willData as Will | null) ?? null}
           initialHandover={(handoverData as HandoverSettings | null) ?? null}
+          initialRecipients={(recipientsData as HandoverRecipient[]) ?? []}
         />
       </main>
     </div>
   );
 }
+
