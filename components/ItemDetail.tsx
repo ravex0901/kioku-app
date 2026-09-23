@@ -82,7 +82,7 @@ export function ItemDetail({
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const showTags = disposition === "keep" || disposition === "keepsake";
+  const showTags = disposition === "keep";
 
   // 専門査定結果の表示条件: AI概算はあるが専門査定結果がまだない場合のみ、
   // 「見る・探す」でまとめて査定を依頼済みかどうかの案内を出す。
@@ -610,3 +610,4 @@ export function ItemDetail({
     </div>
   );
 }
+
