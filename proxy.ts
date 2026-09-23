@@ -33,15 +33,24 @@ export async function proxy(request: NextRequest) {
     }
   );
 
-  // getUser() でトークンを検証しつつセッションを更新する(getSession() だけでは検証されない)
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
   const { pathname } = request.nextUrl;
   const isProtected = PROTECTED_PREFIXES.some(
     (prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`)
   );
+
+  // getUser() でトークンを検証しつつセッションを更新する(getSession() だけでは検証されない)。
+  // ここで例外が発生する(ネットワーク不調・トークン破損など)とミドルウェアが
+  // クラッシュし、全ての保護ページが真っ白なサーバーエラーになってしまうため、
+  // 失敗時は未ログイン扱いにフォールバックして処理を継続する。
+  let user = null;
+  try {
+    const {
+      data: { user: fetchedUser },
+    } = await supabase.auth.getUser();
+    user = fetchedUser;
+  } catch {
+    user = null;
+  }
 
   if (!user && isProtected) {
     const url = request.nextUrl.clone();
@@ -57,3 +66,4 @@ export const config = {
     "/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)",
   ],
 };
+
