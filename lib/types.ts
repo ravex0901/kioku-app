@@ -12,7 +12,7 @@ export type CategoryMajor =
   | "subscription"
   | "insurance"
   | "other";
-// 処分の方針(整理の方針)。残す/整理する�わからない の3択。
+// 処分の方針(整理の方針)。残す/整理する/わからない の3択。
 // 旧5択(keep/keepsake/sell/discard/undecided)で登録済みの既存データは
 // DB上の値はそのまま残り、表示側(lib/constants.tsのdispositionLabel等)で
 // 新しい3択に読み替えて表示する。
@@ -181,6 +181,23 @@ export type HandoverSettings = {
   updated_at: string;
 };
 
+// 共有相手ごとの遺言動画・遺言書と専用共有リンク(複数人共有対応)。
+// 未設定の項目(message/video_url/legal_will_note が全てnull)の場合は、
+// 共有時に Will(デフォルトの内容)へフォールバックする。
+export type HandoverRecipient = {
+  id: string;
+  user_id: string;
+  family_member_id: string | null;
+  name: string;
+  message: string | null;
+  video_url: string | null;
+  legal_will_note: string | null;
+  legal_disclaimer_acknowledged_at: string | null;
+  share_token: string;
+  created_at: string;
+  updated_at: string;
+};
+
 // 相続手続きチェックリストの完了状況(請求項1の相続レポート機能に対応)
 export type ChecklistProgress = {
   user_id: string;
@@ -310,6 +327,22 @@ export type Database = {
           },
         ];
       };
+      handover_recipients: {
+        Row: HandoverRecipient;
+        Insert: Partial<
+          Omit<HandoverRecipient, "id" | "share_token" | "created_at" | "updated_at">
+        > & { user_id: string; name: string };
+        Update: Partial<Omit<HandoverRecipient, "id" | "user_id" | "created_at">>;
+        Relationships: [
+          {
+            foreignKeyName: "handover_recipients_family_member_id_fkey";
+            columns: ["family_member_id"];
+            isOneToOne: false;
+            referencedRelation: "family_members";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       inheritance_checklist_progress: {
         Row: ChecklistProgress;
         Insert: Partial<Omit<ChecklistProgress, "updated_at">> & {
@@ -335,3 +368,4 @@ export type Database = {
     };
   };
 };
+
