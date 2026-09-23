@@ -11,7 +11,7 @@ import { CATEGORY_OPTIONS } from "@/lib/constants";
 import type { CategoryMajor } from "@/lib/types";
 
 // 一括登録の各写真の下書き(AI解析後、ユーザーが確認・修正できる状態)。
-// 特許請求項1「ユーザー確認後、個人別遺品DBへ登録する。自動確定ではなく修正可能とする」に対応するため、
+// 特許請求項1「ユーザー確認後、個人別遺品DBへ登録する。自動確定ではなく修正可能とするため、
 // 解析結果を即保存せず、必ずこの下書き状態を経由してユーザーが確認・修正してから保存する。
 type Draft = {
   id: string;
@@ -63,11 +63,43 @@ export function BulkItemForm({ userId }: { userId: string }) {
     };
   }
 
-  function handleFilesChange(e: React.ChangeEvent<HTMLInputElement>) {
+  // 複数の非同期処理を、同時実行数を絞って少しずつ進めるためのヘルパー。
+  // 写真を一度に大量に選択した場合でも、端末のメモリやAPIへの同時アクセス数を
+  // 使い切ってしまわないようにし、「たくさん入れると処理できない」状態を防ぐ。
+  async function processWithConcurrency<T>(
+    items: T[],
+    limit: number,
+    worker: (item: T) => Promise<void>
+  ) {
+    let cursor = 0;
+    async function runNext(): Promise<void> {
+      const index = cursor++;
+      if (index >= items.length) return;
+      await worker(items[index]);
+      return runNext();
+    }
+    await Promise.all(
+      Array.from({ length: Math.min(limit, items.length) }, () => runNext())
+    );
+  }
+
+  async function handleFilesChange(e: React.ChangeEvent<HTMLInputElement>) {
     const files = Array.from(e.target.files ?? []);
-    setDrafts((prev) => [...prev, ...files.map(draftFromFile)]);
-    setError(null);
     e.target.value = "";
+    if (files.length === 0) return;
+    setError(null);
+    // 元画像のままプレビューに追加すると、特に多数枚選択した際に
+    // 端末のメモリを圧迫してフリーズ・クラッシュの原因になるため、
+    // 選択直後に軽量化してから下書きに追加する(同時実行数も制限する)。
+    await processWithConcurrency(files, 3, async (file) => {
+      let resized = file;
+      try {
+        resized = await resizeImageFile(file);
+      } catch {
+        // 軽量化に失敗しても元ファイルで続行する
+      }
+      setDrafts((prev) => [...prev, draftFromFile(resized)]);
+    });
   }
 
   async function openCamera() {
@@ -159,38 +191,49 @@ export function BulkItemForm({ userId }: { userId: string }) {
     setStep("review");
     setDrafts((prev) => prev.map((d) => ({ ...d, analyzing: true })));
 
-    const results = await Promise.all(
-      drafts.map(async (draft) => {
+    // 全件を一度にPromise.allで走らせると、件数が多いときに端末の処理能力や
+    // AIサーバーへの同時アクセス数を使い切ってしまぁ、処理が固まったり
+    // 失敗したりする原因になる。同時実行数を絞り、1件ずつ結果が届き次第
+    // 画面に反映することで、件数が多くても安定して・進捗が見える形で処理する。
+    const targets = [...drafts];
+    try {
+      await processWithConcurrency(targets, 3, async (draft) => {
         try {
           const resized = await resizeImageFile(draft.file);
           const mediaType = resized.type || "image/jpeg";
           const base64 = await fileToBase64(resized);
           const analysis = await analyzeItemPhoto(base64, mediaType);
           if (analysis.ok) {
-            return {
-              ...draft,
+            updateDraft(draft.id, {
               file: resized,
               name: analysis.suggestion.name,
               categoryMajor: analysis.suggestion.categoryMajor,
               estimatedPriceRange: analysis.suggestion.estimatedPriceRange,
               analyzing: false,
               analyzeFailed: false,
-            };
+            });
+          } else {
+            updateDraft(draft.id, {
+              file: resized,
+              name: "",
+              analyzing: false,
+              analyzeFailed: true,
+            });
           }
-          return {
-            ...draft,
-            file: resized,
-            name: "",
-            analyzing: false,
-            analyzeFailed: true,
-          };
         } catch {
-          return { ...draft, analyzing: false, analyzeFailed: true };
+          updateDraft(draft.id, { analyzing: false, analyzeFailed: true });
         }
-      })
-    );
-
-    setDrafts(results);
+      });
+    } catch {
+      // 想定外のエラーが起きても、判定中のまま画面が固まらないよう
+      // 未処理分は失敗扱いにして手動入力を促す
+      setDrafts((prev) =>
+        prev.map((d) =>
+          d.analyzing ? { ...d, analyzing: false, analyzeFailed: true } : d
+        )
+      );
+      setError("一部の写真の判定に失敗しました。品名を手動で入力してください。");
+    }
   }
 
   function updateDraft(id: string, patch: Partial<Draft>) {
@@ -488,4 +531,5 @@ export function BulkItemForm({ userId }: { userId: string }) {
     </div>
   );
 }
+
 
