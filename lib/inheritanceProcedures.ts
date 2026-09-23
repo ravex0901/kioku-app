@@ -100,6 +100,12 @@ export const CATEGORY_PROCEDURE_MAP: Partial<
     deadline: "法定期限なし(協議は早めが望ましい)",
     documents: ["査定書(必要な場合)", "遺産分割協議書"],
   },
+  watch: {
+    key: "valuables_division",
+    title: "貴金属・高価品の査定と遺産分割",
+    deadline: "法定期限なし(協議は早めが望ましい)",
+    documents: ["査定書(必要な場合)", "遺産分割協議書"],
+  },
 };
 
 // デジタル情報(digital_items)の item_type に応じて追加判定される手続き
@@ -136,6 +142,7 @@ export const DIGITAL_PROCEDURE_MAP: Partial<
 };
 
 const CATEGORY_LABEL: Record<CategoryMajor, string> = {
+  watch: "時計",
   furniture: "家具",
   appliance: "家電",
   clothing: "衣類",
@@ -196,3 +203,4 @@ export function buildInheritanceChecklist(
 
   return Array.from(map.values());
 }
+
