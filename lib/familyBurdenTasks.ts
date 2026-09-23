@@ -53,9 +53,17 @@ function itemSizeHours(categoryMajor: CategoryMajor | null | undefined): number 
   return 5 / 60;
 }
 
-// 品目の大きさによって作業時間が変わるタスクカテゴリ(処分・搬送)かどうか。
+// 品目の大きさによって作業時間が変わるタスクカテゴリかどうか。
+// 査定・売却・整理(処分)・搬送はいずれも実物を扱う作業であり、
+// 小物か大型かで所要時間が大きく変わるため、size別の工数を使う。
+// (家族確認・名義変更・契約解除は書類・連絡ベースの作業で品目の大きさに左右されないため対象外)
 function isSizeSensitiveCategory(category: TaskCategory): boolean {
-  return category === "discard" || category === "transport";
+  return (
+    category === "appraisal" ||
+    category === "sell" ||
+    category === "discard" ||
+    category === "transport"
+  );
 }
 
 function taskHours(
@@ -86,7 +94,7 @@ function itemTaskCategory(
     case "appraisal_done":
       return "family_confirm";
     case "family_confirmed":
-      // "organize"が現在の値。"sell"/"discard"は旧5択時代のデータとの互換のため引き続き判定する。
+      // "organize"が現在の値。"sell"/"discard"は旧5択時代のデータとの互換のため引き続き判定する
       if (disposition === "sell") return "sell";
       if (disposition === "organize" || disposition === "discard") return "discard";
       return "transport";
@@ -165,3 +173,4 @@ export function summarizeBurdenTasks(tasks: BurdenTask[]): BurdenSummary[] {
     }))
     .filter((s) => s.count > 0);
 }
+
