@@ -40,6 +40,10 @@ export type HandoverStatus =
       checklistProgress: Record<string, boolean>;
     };
 
+// 「なし」設定時のしきい値(SettingsClientの NONE_INACTIVE_DAYS と対応)。
+// この値以上の場合は「自動開示は設定されていません」の案内に切り替える。
+const DISABLED_THRESHOLD_DAYS = 36500;
+
 export function HandoverView({
   token,
   initialStatus,
@@ -87,6 +91,24 @@ export function HandoverView({
   }
 
   if (!status.unlocked) {
+    if (status.thresholdDays >= DISABLED_THRESHOLD_DAYS) {
+      return (
+        <div className="mx-auto max-w-md px-4 py-16">
+          <p className="text-xs font-semibold tracking-[0.2em] text-ink/40">
+            もしもの時
+          </p>
+          <h1 className="mt-2 font-serif-jp text-xl font-bold text-ink">
+            自動開示は設定されていません
+          </h1>
+          <div className="mt-6 rounded-2xl border border-gold/40 bg-gold/10 p-5">
+            <p className="text-sm text-ink/70">
+              本人は「非アクティブと判定するまでの日数」を「なし」に設定しているため、このリンクからの自動開示は行われません。
+            </p>
+          </div>
+        </div>
+      );
+    }
+
     const progressPercent = Math.min(
       100,
       Math.round((status.inactiveDays / Math.max(1, status.thresholdDays)) * 100)
@@ -259,3 +281,4 @@ export function HandoverView({
     </div>
   );
 }
+
