@@ -11,7 +11,7 @@ import { CATEGORY_OPTIONS } from "@/lib/constants";
 import type { CategoryMajor } from "@/lib/types";
 
 // 一括登録の各写真の下書き(AI解析後、ユーザーが確認・修正できる状態)。
-// 特許請求項1「ユーザー確認後、個人別遺品DBへ登録する。自動確定ではなく修正可能とするため、
+// 特許請求項1「ユーザー確認後、個人別遺品DBへ登録する。自動確定ではなく修正可能とする」に対応するため、
 // 解析結果を即保存せず、必ずこの下書き状態を経由してユーザーが確認・修正してから保存する。
 type Draft = {
   id: string;
@@ -91,7 +91,7 @@ export function BulkItemForm({ userId }: { userId: string }) {
     // 元画像のままプレビューに追加すると、特に多数枚選択した際に
     // 端末のメモリを圧迫してフリーズ・クラッシュの原因になるため、
     // 選択直後に軽量化してから下書きに追加する(同時実行数も制限する)。
-    await processWithConcurrency(files, 3, async (file) => {
+    await processWithConcurrency(files, 10, async (file) => {
       let resized = file;
       try {
         resized = await resizeImageFile(file);
@@ -192,12 +192,12 @@ export function BulkItemForm({ userId }: { userId: string }) {
     setDrafts((prev) => prev.map((d) => ({ ...d, analyzing: true })));
 
     // 全件を一度にPromise.allで走らせると、件数が多いときに端末の処理能力や
-    // AIサーバーへの同時アクセス数を使い切ってしまぁ、処理が固まったり
+    // AIサーバーへの同時アクセス数を使い切ってしまい、処理が固まったり
     // 失敗したりする原因になる。同時実行数を絞り、1件ずつ結果が届き次第
     // 画面に反映することで、件数が多くても安定して・進捗が見える形で処理する。
     const targets = [...drafts];
     try {
-      await processWithConcurrency(targets, 3, async (draft) => {
+      await processWithConcurrency(targets, 10, async (draft) => {
         try {
           const resized = await resizeImageFile(draft.file);
           const mediaType = resized.type || "image/jpeg";
