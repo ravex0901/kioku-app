@@ -50,8 +50,70 @@ export function SettingsClient({
   const [savingWill, setSavingWill] = useState(false);
   const [willSaved, setWillSaved] = useState(false);
   const [willError, setWillError] = useState<string | null>(null);
+  const [videoUploading, setVideoUploading] = useState(false);
+  const [videoUploadError, setVideoUploadError] = useState<string | null>(
+    null
+  );
 
-  // 法的な遺言事項(財産分与など)。本人の想い・メッスージとは明確に分けて保持する(請求項8対応)。
+  // 動画は非公開バケットに保存し、家族への共有リンクからも長期間閲覧できるよう
+  // 有効期限の長い署名付きURLを発行してvideo_urlに保存する(アップロード時点で発行)。
+  const VIDEO_SIGNED_URL_EXPIRES_IN = 60 * 60 * 24 * 365 * 10; // 10年
+  const MAX_VIDEO_SIZE_BYTES = 200 * 1024 * 1024; // 200MB
+
+  async function handleVideoFileChange(
+    e: React.ChangeEvent<HTMLInputElement>
+  ) {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file) return;
+
+    if (file.size > MAX_VIDEO_SIZE_BYTES) {
+      setVideoUploadError(
+        "動画ファイルが大きすぎます(200MBまで)。別のファイルをお選びください。"
+      );
+      return;
+    }
+
+    setVideoUploadError(null);
+    setVideoUploading(true);
+    try {
+      const supabase = createClient();
+      const ext = file.name.split(".").pop() ?? "mp4";
+      const path = `${userId}/will-video-${crypto.randomUUID()}.${ext}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from("item-media")
+        .upload(path, file);
+
+      if (uploadError) {
+        setVideoUploadError(
+          "動画のアップロードに失敗しました。もう一度お試しください。"
+        );
+        return;
+      }
+
+      const { data: signedData, error: signError } = await supabase.storage
+        .from("item-media")
+        .createSignedUrl(path, VIDEO_SIGNED_URL_EXPIRES_IN);
+
+      if (signError || !signedData) {
+        setVideoUploadError(
+          "動画のアップロードに失敗しました。もう一度お試しください。"
+        );
+        return;
+      }
+
+      setWillVideoUrl(signedData.signedUrl);
+    } catch {
+      setVideoUploadError(
+        "動画のアップロードに失敗しました。もう一度お試しください。"
+      );
+    } finally {
+      setVideoUploading(false);
+    }
+  }
+
+  // 法的な遺言事項(財産分业など)。本人の想い・メッスージとは明確に分けて保持する(請求項8対応)。
   const [legalWillNote, setLegalWillNote] = useState(
     initialWill?.legal_will_note ?? ""
   );
@@ -269,14 +331,50 @@ export function SettingsClient({
           </div>
           <div className="flex flex-col gap-1.5">
             <label className="text-sm font-medium text-ink/80">
-              メッセージ動画のURL(任意)
+              メッセージ動画(任意)
             </label>
-            <input
-              value={willVideoUrl}
-              onChange={(e) => setWillVideoUrl(e.target.value)}
-              placeholder="動画の保管先URLを入力(アップロード機能は今後対応予定)"
-              className="rounded-lg border border-black/10 bg-white px-4 py-2.5 text-sm outline-none focus:border-green-400 focus:ring-2 focus:ring-green-100"
-            />
+            {willVideoUrl ? (
+              <div className="flex flex-wrap items-center gap-3">
+                <a
+                  href={willVideoUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="inline-flex items-center gap-1.5 rounded-full border border-green-600 px-4 py-2 text-xs font-semibold text-green-700 transition hover:bg-green-50"
+                >
+                  動画を確認する
+                </a>
+                <label className="cursor-pointer text-xs font-medium text-ink/50 underline">
+                  動画を変更する
+                  <input
+                    type="file"
+                    accept="video/*"
+                    onChange={handleVideoFileChange}
+                    className="hidden"
+                  />
+                </label>
+                <button
+                  type="button"
+                  onClick={() => setWillVideoUrl("")}
+                  className="text-xs font-medium text-red-600 underline"
+                >
+                  削除する
+                </button>
+              </div>
+            ) : (
+              <input
+                type="file"
+                accept="video/*"
+                onChange={handleVideoFileChange}
+                disabled={videoUploading}
+                className="text-sm text-ink/70 file:mr-4 file:rounded-full file:border-0 file:bg-green-100 file:px-4 file:py-2 file:text-sm file:font-medium file:text-green-700 hover:file:bg-green-200 disabled:opacity-60"
+              />
+            )}
+            {videoUploading && (
+              <p className="text-xs text-ink/50">動画をアップロード中です…</p>
+            )}
+            {videoUploadError && (
+              <p className="text-xs text-red-600">{videoUploadError}</p>
+            )}
           </div>
         </div>
 
@@ -286,18 +384,18 @@ export function SettingsClient({
           </p>
           <div className="rounded-lg border border-red-200 bg-white/80 p-3">
             <p className="text-[11px] leading-relaxed text-red-700">
-              ※これは正式な遺言書ではありません。民法で定める方式(自筆証書遺言・公正証書遺言など)を満たさない記録には法的効力がなく、実際の相続手続きに使うことはできません。財産の分け方について確実な効力を持たせたい場合は、必ず公証役場・弁護士・司法書士にご相談のうえ、別途正式な遺言書を作成してください。ここはあくまで、ご家族が状況を把握するための参考メモとして開示されます。
-            </p>
+              ※これは正式な遺言書ではありません。民法で定める方式(自筆証書遺言・公正証書遺言など选
+              </p>
           </div>
           <div className="flex flex-col gap-1.5">
             <label className="text-sm font-medium text-ink/80">
-              財産の分け方などについてのメモ
+              資産の分け方などにいてのメア
             </label>
             <textarea
               value={legalWillNote}
               onChange={(e) => setLegalWillNote(e.target.value)}
               rows={4}
-              placeholder="財産の分け方の希望など、法的な遺言事項に関する記録を書く場合はこちらに入力してください(正式な遺言書の代わりにはなりません)。"
+              placeholder="資産の分け方の希望など、法的な遺言事項に関する記録を曏く場合はこちらに入力してください(正式な遺言書の代わりにはなりません)。"
               className="rounded-lg border border-black/10 bg-white px-4 py-2.5 text-sm outline-none focus:border-green-400 focus:ring-2 focus:ring-green-100"
             />
           </div>
@@ -398,9 +496,9 @@ export function SettingsClient({
                 {handover.approver_family_member_id
                   ? "、承認者の承認をもって内容が開示されます。"
                   : "に、自動的に内容が開示されます。"}
-              </p>
-            </div>
-          )}
+            </p>
+          </div>
+         )}
         </div>
       </section>
 
@@ -426,11 +524,12 @@ export function SettingsClient({
             href="/digital"
             className="rounded-xl border border-green-100 bg-white px-4 py-3 text-sm font-medium text-ink transition hover:bg-black/[0.02]"
           >
-            契約・情報のしおり(デジタル情報)
+            契約・情報のしおオ(デジタル情報)
           </Link>
         </div>
       </section>
     </div>
   );
 }
+
 
