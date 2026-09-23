@@ -10,6 +10,7 @@ import {
   summarizeBurdenTasks,
 } from "@/lib/familyBurdenTasks";
 import { estimateMaxYen, isSellCandidate, formatPriceDisplay } from "@/lib/priceRange";
+import { isKeepDisposition } from "@/lib/constants";
 import type {
   CategoryMajor,
   Disposition,
@@ -229,7 +230,9 @@ export default async function DashboardPage() {
   }[];
   const sellCandidates = priceItems
     .filter(
-      (i) => i.disposition !== "keep" && isSellCandidate(i.estimated_price_range)
+      (i) =>
+        !isKeepDisposition(i.disposition) &&
+        isSellCandidate(i.estimated_price_range)
     )
     .sort(
       (a, b) =>
@@ -364,3 +367,4 @@ export default async function DashboardPage() {
     </div>
   );
 }
+
