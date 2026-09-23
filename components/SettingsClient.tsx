@@ -4,6 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import { FAMILY_RELATION_OPTIONS, labelFor } from "@/lib/constants";
+import { VoiceSettings } from "@/components/VoiceSettings";
 import type {
   FamilyMember,
   FamilyRelation,
@@ -50,7 +51,7 @@ export function SettingsClient({
   const [willSaved, setWillSaved] = useState(false);
   const [willError, setWillError] = useState<string | null>(null);
 
-  // 法的な遺言事項(財産分与など)。本人の想い・メッセージとは明確に分けて保持する(請求項8対応)。
+  // 法的な遺言事項(財産分与など)。本人の想い・メッスージとは明確に分けて保持する(請求項8対応)。
   const [legalWillNote, setLegalWillNote] = useState(
     initialWill?.legal_will_note ?? ""
   );
@@ -386,7 +387,7 @@ export function SettingsClient({
                 <button
                   type="button"
                   onClick={handleCopyShareLink}
-                  className="shrink-0 rounded-full border border-black/10 px-2.5 py-1 text-[11px] font-medium text-ink/70 transition hover:bg-black/5"
+                  className="shrink-0 rounded-full border border-black/10 px-2.5 py-1 text-[11px] font-medium text-ink/70 transition hover:bg-black-5"
                 >
                   {copied ? "コピーしました" : "コピー"}
                 </button>
@@ -401,6 +402,13 @@ export function SettingsClient({
             </div>
           )}
         </div>
+      </section>
+
+      <section className="rounded-[1.75rem] border border-green-100 bg-white/70 p-5 shadow-sm sm:p-6">
+        <h2 className="mb-3 text-xs font-semibold tracking-[0.15em] text-ink/40">
+          AIの読み上げ音声
+        </h2>
+        <VoiceSettings />
       </section>
 
       <section className="rounded-[1.75rem] border border-green-100 bg-white/70 p-5 shadow-sm sm:p-6">
@@ -425,3 +433,4 @@ export function SettingsClient({
     </div>
   );
 }
+
