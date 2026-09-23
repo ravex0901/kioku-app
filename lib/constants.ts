@@ -99,6 +99,12 @@ export function dispositionLabel(value: string | null | undefined): string {
   return LEGACY_DISPOSITION_LABEL[value] ?? "未設定";
 }
 
+// 新3択の"keep"、または旧5択時代の"keepsake"(=残す)であればtrue。
+// 「残す」判定を行う箇所(売却候補の除外など)で、旧データを取りこぼさないために使う。
+export function isKeepDisposition(value: string | null | undefined): boolean {
+  return value === "keep" || value === "keepsake";
+}
+
 export function dispositionBadgeStyle(value: string | null | undefined): string {
   if (!value) return "bg-black/5 text-ink/60";
   return (
@@ -248,3 +254,4 @@ export const DIGITAL_ITEM_STATUS_OPTIONS: {
   { value: "in_progress", label: "対応中" },
   { value: "done", label: "完了" },
 ];
+
