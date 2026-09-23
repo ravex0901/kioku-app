@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { analyzeItemPhoto } from "@/app/actions/ai";
@@ -34,22 +34,86 @@ export function BulkItemForm({ userId }: { userId: string }) {
   const [error, setError] = useState<string | null>(null);
   const [saveProgress, setSaveProgress] = useState({ done: 0, total: 0 });
 
+  // カメラで連続撮影する機能(まとめて登録の際、都度カメラアプリを開き直さずに
+  // 何枚も続けて撮影できるようにする)。
+  const [cameraOpen, setCameraOpen] = useState(false);
+  const [cameraError, setCameraError] = useState<string | null>(null);
+  const [cameraShotCount, setCameraShotCount] = useState(0);
+  const videoRef = useRef<HTMLVideoElement | null>(null);
+  const streamRef = useRef<MediaStream | null>(null);
+
+  function draftFromFile(file: File): Draft {
+    return {
+      id: crypto.randomUUID(),
+      file,
+      preview: URL.createObjectURL(file),
+      name: "",
+      categoryMajor: "",
+      estimatedPriceRange: null,
+      analyzing: false,
+      analyzeFailed: false,
+      excluded: false,
+    };
+  }
+
   function handleFilesChange(e: React.ChangeEvent<HTMLInputElement>) {
     const files = Array.from(e.target.files ?? []);
-    setDrafts(
-      files.map((file) => ({
-        id: crypto.randomUUID(),
-        file,
-        preview: URL.createObjectURL(file),
-        name: "",
-        categoryMajor: "",
-        estimatedPriceRange: null,
-        analyzing: false,
-        analyzeFailed: false,
-        excluded: false,
-      }))
-    );
+    setDrafts((prev) => [...prev, ...files.map(draftFromFile)]);
     setError(null);
+    e.target.value = "";
+  }
+
+  async function openCamera() {
+    setCameraError(null);
+    setCameraShotCount(0);
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: "environment" },
+        audio: false,
+      });
+      streamRef.current = stream;
+      setCameraOpen(true);
+      // videoタグがまだDOMに存在しない可能性があるため、次のtickで紐づける
+      setTimeout(() => {
+        if (videoRef.current) {
+          videoRef.current.srcObject = stream;
+          videoRef.current.play().catch(() => {});
+        }
+      }, 0);
+    } catch {
+      setCameraError(
+        "カメラを起動できませんでした。ブラウザのカメラ権限をご確認ください。"
+      );
+    }
+  }
+
+  function closeCamera() {
+    streamRef.current?.getTracks().forEach((t) => t.stop());
+    streamRef.current = null;
+    setCameraOpen(false);
+  }
+
+  function captureShot() {
+    const video = videoRef.current;
+    if (!video || video.videoWidth === 0) return;
+    const canvas = document.createElement("canvas");
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+    canvas.toBlob(
+      (blob) => {
+        if (!blob) return;
+        const file = new File([blob], `camera-${Date.now()}.jpg`, {
+          type: "image/jpeg",
+        });
+        setDrafts((prev) => [...prev, draftFromFile(file)]);
+        setCameraShotCount((c) => c + 1);
+      },
+      "image/jpeg",
+      0.9
+    );
   }
 
   // ステップ1→2: 全ての写真をAI解析し、確認・修正画面へ進む
@@ -139,7 +203,7 @@ export function BulkItemForm({ userId }: { userId: string }) {
           category_major: draft.categoryMajor || null,
           category_minor: null,
           location_id: null,
-          disposition: "undecided" as const,
+          disposition: "unsure" as const,
           disposition_tags: null,
           memo: null,
           photo_url: path,
@@ -190,8 +254,19 @@ export function BulkItemForm({ userId }: { userId: string }) {
             onChange={handleFilesChange}
             className="text-sm text-ink/70 file:mr-4 file:rounded-full file:border-0 file:bg-green-100 file:px-4 file:py-2 file:text-sm file:font-medium file:text-green-700 hover:file:bg-green-200"
           />
+          <button
+            type="button"
+            onClick={openCamera}
+            className="mt-1 self-start rounded-full border border-green-600 px-4 py-2 text-sm font-semibold text-green-700 transition hover:bg-green-50"
+          >
+            カメラで連続撮影する
+          </button>
+          {cameraError && (
+            <p className="text-xs text-red-600">{cameraError}</p>
+          )}
           <p className="text-xs text-ink/40">
             各写真をAIが自動判定します。次の画面で品名・ジャンルを確認・修正してから登録します。
+            カメラで連続撮影すると、シャッターを押した分だけ何枚でも追加できます。
           </p>
         </div>
 
@@ -223,6 +298,32 @@ export function BulkItemForm({ userId }: { userId: string }) {
         >
           {`AIで判定する(${drafts.length}件)`}
         </button>
+
+        {cameraOpen && (
+          <div className="fixed inset-0 z-30 flex flex-col bg-black">
+            <video
+              ref={videoRef}
+              playsInline
+              muted
+              className="flex-1 w-full object-cover"
+            />
+            <div className="flex items-center justify-center gap-6 bg-black/80 p-5 pb-[calc(env(safe-area-inset-bottom)+1.25rem)]">
+              <button
+                type="button"
+                onClick={closeCamera}
+                className="rounded-full border border-white/40 px-4 py-2 text-sm font-medium text-white"
+              >
+                終了する({cameraShotCount}枚撮影)
+              </button>
+              <button
+                type="button"
+                onClick={captureShot}
+                aria-label="シャッター"
+                className="h-16 w-16 rounded-full border-4 border-white bg-white/20"
+              />
+            </div>
+          </div>
+        )}
       </div>
     );
   }
