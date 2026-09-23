@@ -229,7 +229,7 @@ export default async function DashboardPage() {
   }[];
   const sellCandidates = priceItems
     .filter(
-      (i) => i.disposition !== "discard" && isSellCandidate(i.estimated_price_range)
+      (i) => i.disposition !== "keep" && isSellCandidate(i.estimated_price_range)
     )
     .sort(
       (a, b) =>
@@ -333,7 +333,7 @@ export default async function DashboardPage() {
         <div className="rounded-[1.75rem] border border-green-100 bg-white/70 p-5 shadow-sm sm:p-6">
           <h2 className="mb-1 text-sm font-bold text-ink">資産価格・売却候補</h2>
           <p className="mb-4 text-xs text-ink/60">
-            AIが推定した価格帯をもとに、一定額以上の値がつきそうなものを売却候補として抽出しています。あくまで目安であり、確定査定ではありません。専門査定の結果は各遺品の詳細画面から登録できます。
+            AIが推定した価格帯をもとに、一定額以上の値がつきそうなものを売却候補として抽出しています。あくまで目安であり、確定査定はありません。専門査定の結果は各遺品の詳細画面から登録できます。
           </p>
           {sellCandidates.length === 0 ? (
             <p className="rounded-xl bg-black/[0.03] px-4 py-3 text-sm text-ink/60">
