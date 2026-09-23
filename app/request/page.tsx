@@ -19,7 +19,7 @@ export default async function RequestPage() {
     .select("id, name")
     .eq("user_id", user.id)
     // "organize"が新しい値、"discard"/"sell"は旧5択時代のデータとの互換のため
-    .in("disposition", ["organize", "discard", "sell"])
+    .in("disposition", ["organize", "discard", "sell"] as unknown as string[])
     .order("created_at", { ascending: false });
 
   const targetItems = (data ?? []).map((item) => ({
