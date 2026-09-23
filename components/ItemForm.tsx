@@ -61,8 +61,7 @@ export function ItemForm({
   const [aiCondition, setAiCondition] = useState<ItemCondition | null>(null);
   const [photoProcessing, setPhotoProcessing] = useState(false);
 
-  const showTags =
-    form.disposition === "keep" || form.disposition === "keepsake";
+  const showTags = form.disposition === "keep";
 
   function resetForm() {
     setForm(initialFormState);
@@ -509,3 +508,4 @@ export function ItemForm({
     </form>
   );
 }
+
