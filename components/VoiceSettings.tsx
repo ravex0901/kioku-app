@@ -19,15 +19,20 @@ export function VoiceSettings() {
     function loadVoices() {
       const list = window.speechSynthesis.getVoices();
       setVoices(list);
-      if (!selected) {
+      // onvoiceschangedはブラウザによって複数回発火することがあるため、
+      // setStateの関数形で常に最新のselectedを参照する(クロージャの古い値で
+      // ユーザーが選び直した声を上書きしてしまわないようにする)。
+      setSelected((prevSelected) => {
+        if (prevSelected && list.some((v) => v.voiceURI === prevSelected)) {
+          return prevSelected;
+        }
         const saved = getSavedVoiceURI();
         if (saved && list.some((v) => v.voiceURI === saved)) {
-          setSelected(saved);
-        } else {
-          const ja = list.find((v) => v.lang?.toLowerCase().startsWith("ja"));
-          if (ja) setSelected(ja.voiceURI);
+          return saved;
         }
-      }
+        const ja = list.find((v) => v.lang?.toLowerCase().startsWith("ja"));
+        return ja ? ja.voiceURI : prevSelected;
+      });
     }
     loadVoices();
     window.speechSynthesis.onvoiceschanged = loadVoices;
