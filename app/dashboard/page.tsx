@@ -251,29 +251,29 @@ export default async function DashboardPage() {
             DASHBOARD
           </p>
           <h1 className="mt-2 font-serif-jp text-2xl font-bold text-ink">
-            統合ダッシュボード
+            整理の状況
           </h1>
           <p className="mt-1 text-sm text-ink/60">
-            準備度スコア・手続きチェックリスト・相続税シミュレーション
+            今の準備状況、やることリスト、相続税の目安をまとめて確認できます。
           </p>
         </div>
 
         <div className="rounded-[1.75rem] border border-green-100 bg-white/70 p-5 shadow-sm sm:p-6">
           <div className="flex items-center gap-4">
             <ScoreRing percent={overallScore} />
-            <p className="text-sm text-ink/60">準備度スコア(0〜100)</p>
+            <p className="text-sm text-ink/60">準備の進み具合(100点満点)</p>
           </div>
           <div className="mt-5 flex flex-col gap-2.5">
-            <ScoreBar label="登録" percent={registeredPercent} />
-            <ScoreBar label="場所" percent={locatedPercent} />
-            <ScoreBar label="整理方針" percent={dispositionPercent} />
-            <ScoreBar label="デジタル資産" percent={digitalPercent} />
-            <ScoreBar label="遺言書(意思伝達)" percent={endingNotePercent} />
-            <ScoreBar label="遺言動画" percent={willVideoPercent} />
+            <ScoreBar label="モノの登録" percent={registeredPercent} />
+            <ScoreBar label="保管場所" percent={locatedPercent} />
+            <ScoreBar label="仕分けの方針" percent={dispositionPercent} />
+            <ScoreBar label="デジタルの情報" percent={digitalPercent} />
+            <ScoreBar label="エンディングノート" percent={endingNotePercent} />
+            <ScoreBar label="遺言のビデオ" percent={willVideoPercent} />
           </div>
           {locationsCount === 0 && (
             <p className="mt-3 text-xs text-ink/40">
-              まだ場所が登録されていません。場所を管理するから登録できます。
+              まだ保管場所が登録されていません。「場所を管理」から登録できます。
             </p>
           )}
         </div>
@@ -288,17 +288,17 @@ export default async function DashboardPage() {
         {/* SCR-08 家族負担(請求項6): 残作業量をカテゴリ別に表示 */}
         <div className="rounded-[1.75rem] border border-green-100 bg-white/70 p-5 shadow-sm sm:p-6">
           <div className="mb-1 flex items-center justify-between">
-            <h2 className="text-sm font-bold text-ink">家族負担・残作業量</h2>
+            <h2 className="text-sm font-bold text-ink">ご家族に残る作業</h2>
             <span className="text-xs font-medium text-ink/50">
               進捗 {burdenProgressRatio}%
             </span>
           </div>
           <p className="mb-4 text-xs text-ink/60">
-            登録済みの「もの」「デジタル情報」の現在の状態から、残っている作業をカテゴリ別に自動集計しています。想定工数の合計は目安です。
+            登録した「モノ」や「デジタルの情報」をもとに、ご家族にまだ残っている作業を種類ごとに自動で計算しています。かかる時間はあくまで目安です。
           </p>
           {burdenSummary.length === 0 ? (
             <p className="rounded-xl bg-green-50 px-4 py-3 text-sm text-green-700">
-              現時点で残っている作業はありません。
+              今のところ、残っている作業はありません。
             </p>
           ) : (
             <>
@@ -321,26 +321,26 @@ export default async function DashboardPage() {
                     </div>
                     <span className="w-24 shrink-0 text-right text-xs font-semibold text-ink/70">
                       {s.count}件・約{s.hours}h
-                    </span>
+                  </span>
                   </div>
                 ))}
               </div>
               <p className="mt-3 text-xs text-ink/50">
-                残作業合計:{remainingWorkUnits}件 / 推定残時間:約{Math.round(totalRemainingHours * 10) / 10}時間
+                残っている作業:合計{remainingWorkUnits}件・かかる時間の目安:約{Math.round(totalRemainingHours * 10) / 10}時間
               </p>
             </>
           )}
         </div>
 
-        {/* SCR-06 資産価格(請求項4、簡易版): 一定額以上の推定価格の遺品を売却候補として表示 */}
+        {/* SCR-06 資産価格(請求項4、簡易版): 一定額以上の推定価栬の遺品を売却候補として表示 */}
         <div className="rounded-[1.75rem] border border-green-100 bg-white/70 p-5 shadow-sm sm:p-6">
-          <h2 className="mb-1 text-sm font-bold text-ink">資産価格・売却候補</h2>
+          <h2 className="mb-1 text-sm font-bold text-ink">売れるかもしれないモノ</h2>
           <p className="mb-4 text-xs text-ink/60">
-            AIが推定した価格帯をもとに、一定額以上の値がつきそうなものを売却候補として抽出しています。あくまで目安であり、確定査定はありません。専門査定の結果は各遺品の詳細画面から登録できます。
+            AIが見積もった価格をもとに、一定額以上で売れそうなモノをリストアップしています。あくまで目安の金額です。正式な査定結果は、それぞれの品物の詳細画面から登録できます。
           </p>
           {sellCandidates.length === 0 ? (
             <p className="rounded-xl bg-black/[0.03] px-4 py-3 text-sm text-ink/60">
-              現時点で売却候補に該当するものはありません。
+              今のところ、売却候補になるものはありません。
             </p>
           ) : (
             <ul className="flex flex-col gap-2">
@@ -367,4 +367,5 @@ export default async function DashboardPage() {
     </div>
   );
 }
+
 
