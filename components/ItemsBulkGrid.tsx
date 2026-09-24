@@ -5,6 +5,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import { DispositionBadge } from "@/components/DispositionBadge";
+import { resolveLocationName } from "@/lib/format";
 import {
   CATEGORY_OPTIONS,
   DISPOSITION_OPTIONS,
@@ -34,12 +35,10 @@ export function ItemsBulkGrid({
   userId,
   items,
   photoMap,
-  locationLabel,
 }: {
   userId: string;
   items: GridItem[];
   photoMap: Record<string, string>;
-  locationLabel: (item: GridItem) => string;
 }) {
   const router = useRouter();
   const [selectMode, setSelectMode] = useState(false);
@@ -192,7 +191,7 @@ export function ItemsBulkGrid({
                   </span>
                   <span className="truncate text-xs text-ink/50">
                     {labelFor(CATEGORY_OPTIONS, item.category_major)} ・{" "}
-                    {locationLabel(item)}
+                    {resolveLocationName(item.location)}
                   </span>
                   <div className="flex flex-wrap items-center gap-1.5">
                     <DispositionBadge disposition={item.disposition} />
@@ -281,3 +280,98 @@ export function ItemsBulkGrid({
   );
 }
 
+"use client";
+
+import { useRouter } from "next/navigation";
+import { useState } from "react";
+import Link from "next/link";
+import { createClient } from "@/lib/supabase/client";
+import { DispositionBadge } from "@/components/DispositionBadge";
+import { resolveLocationName } from "@/lib/format";
+import {
+  CATEGORY_OPTIONS,
+  DISPOSITION_OPTIONS,
+  ITEM_STATUS_BADGE_STYLE,
+  ITEM_STATUS_OPTIONS,
+  labelFor,
+} from "@/lib/constants";
+import { formatPriceDisplay } from "@/lib/priceRange";
+import type { CategoryMajor, Disposition, ItemStatus } from "@/lib/types";
+
+type GridItem = {
+  id: string;
+  name: string;
+  category_major: CategoryMajor | null;
+  disposition: Disposition | null;
+  status: ItemStatus | null;
+  estimated_price_range: string | null;
+  professional_appraisal: string | null;
+  photo_url: string | null;
+  location: { name: string } | { name: string }[] | null;
+};
+
+// 「見る・探す」の一覧。通常時はタップで詳細ページへ、
+// 「選択する」モードでは複数選択してまとめて査定依頼・整理方針の変更ができる
+// (個別の「査定を依頼する」ボタンの代わり)。
+export function ItemsBulkGrid({
+  userId,
+  items,
+  photoMap,
+}: {
+  userId: string;
+  items: GridItem[];
+  photoMap: Record<string, string>;
+}) {
+  const router = useRouter();
+  const [selectMode, setSelectMode] = useState(false);
+  const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [busy, setBusy] = useState(false);
+  const [message, setMessage] = useState<string | null>(null);
+  const [bulkDisposition, setBulkDisposition] = useState<Disposition>(
+    DISPOSITION_OPTIONS[0].value
+  );
+
+  function toggle(id: string) {
+    setSelected((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }
+
+  function exitSelectMode() {
+    setSelectMode(false);
+    setSelected(new Set());
+    setMessage(null);
+  }
+
+  async function handleBulkAppraisal() {
+    if (selected.size === 0) return;
+    setBusy(true);
+    setMessage(null);
+    const supabase = createClient();
+    const ids = Array.from(selected);
+    const targetItems = items.filter((i) => ids.includes(i.id));
+
+    const { error } = await supabase.from("service_requests").insert(
+      targetItems.map((item) => ({
+        user_id: userId,
+        service_type: "appraisal" as const,
+        item_id: item.id,
+        note: `「${item.name}」の査定依頼(AI概算:${
+          formatPriceDisplay(item.estimated_price_range) ?? "―"
+        })`,
+      }))
+    );
+
+    if (error) {
+      setBusy(false);
+      setMessage("査定の依頼に失敗しました。もう一度お試しください。");
+      return;
+    }
+
+    const pendingIds = targetItems
+      .filter((i) => (i.status ?? "photo_registered") === "photo_registered")
+      .map((i) => i.id);
+    if (pendingIds.length > 0) {
