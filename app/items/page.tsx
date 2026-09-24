@@ -1,7 +1,6 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getSignedUrlMap } from "@/lib/storage";
-import { resolveLocationName } from "@/lib/format";
 import { Header } from "@/components/Header";
 import { ItemsFilterBar } from "@/components/ItemsFilterBar";
 import { ItemsBulkGrid } from "@/components/ItemsBulkGrid";
@@ -84,7 +83,6 @@ export default async function ItemsPage({
             userId={user.id}
             items={list}
             photoMap={photoMap}
-            locationLabel={(item) => resolveLocationName(item.location)}
           />
         </div>
       </main>
