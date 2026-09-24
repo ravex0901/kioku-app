@@ -26,14 +26,33 @@ export function ResetPasswordForm() {
       }
     });
 
-    // メールのリンクを開いた時点ですでにリカバリーセッションが
-    // 確立されている場合にも対応する。
-    supabase.auth.getSession().then(({ data }) => {
+    async function init() {
+      const params = new URLSearchParams(window.location.search);
+      const code = params.get("code");
+
+      // Supabaseの最新版はPKCEフローのため、メールのリンクは
+      // #access_token=... ではなく ?code=... の形式で届く。
+      // このcodeをセッションに交換しないとパスワード再設定ができない。
+      if (code) {
+        const { error: exchangeError } =
+          await supabase.auth.exchangeCodeForSession(code);
+        if (!exchangeError) {
+          setReady(true);
+          setChecking(false);
+          return;
+        }
+      }
+
+      // メールのリンクを開いた時点ですでにリカバリーセッションが
+      // 確立されている場合(旧形式のハッシュリンクなど)にも対応する。
+      const { data } = await supabase.auth.getSession();
       if (data.session) {
         setReady(true);
       }
       setChecking(false);
-    });
+    }
+
+    init();
 
     return () => subscription.unsubscribe();
   }, []);
