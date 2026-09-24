@@ -21,6 +21,7 @@ export type HandoverStatus =
       requiresApproval: boolean;
       inactiveDays: number;
       thresholdDays: number;
+      recipientName?: string | null;
     }
   | {
       found: true;
@@ -29,6 +30,7 @@ export type HandoverStatus =
       requiresApproval: boolean;
       inactiveDays: number;
       thresholdDays: number;
+      recipientName?: string | null;
       will: {
         message: string | null;
         video_url: string | null;
@@ -173,7 +175,9 @@ export function HandoverView({
         もしもの時
       </p>
       <h1 className="mt-2 font-serif-jp text-2xl font-bold text-ink">
-        ご本人からのメッセージ
+        {status.recipientName
+          ? `ご本人から${status.recipientName}様へのメッセージ`
+          : "ご本人からのメッセージ"}
       </h1>
 
       <div className="mt-6 rounded-[1.75rem] border border-gold/40 bg-gold/10 p-5 sm:p-6">
@@ -281,4 +285,5 @@ export function HandoverView({
     </div>
   );
 }
+
 
