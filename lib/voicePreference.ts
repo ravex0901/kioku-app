@@ -51,3 +51,53 @@ export function speakText(text: string) {
   window.speechSynthesis.speak(utterance);
 }
 
+// 読み上げに「端末標準の音声(ブラウザTTS)」を使うか、「自分の声(AIクローン)」を
+// 使うかの好み。voiceURIと同じくこの端末のlocalStorageのみに保存する。
+const MODE_STORAGE_KEY = "kioku_voice_mode";
+export type VoiceMode = "browser" | "custom";
+
+export function getVoiceMode(): VoiceMode {
+  if (typeof window === "undefined") return "browser";
+  try {
+    const saved = window.localStorage.getItem(MODE_STORAGE_KEY);
+    return saved === "custom" ? "custom" : "browser";
+  } catch {
+    return "browser";
+  }
+}
+
+export function saveVoiceMode(mode: VoiceMode) {
+  if (typeof window === "undefined") return;
+  try {
+    window.localStorage.setItem(MODE_STORAGE_KEY, mode);
+  } catch {
+    // localStorageが使えない環境では何もしない
+  }
+}
+
+/**
+ * 読み上げの好み設定(ブラウザ標準 / 自分の声)に応じてテキストを読み上げる。
+ * カスタム音声モードの場合はサーバーアクション経由で音声合成し<audio>で再生する。
+ * 生成に失敗した場合(未設定・API未設定・通信エラー等)はブラウザ標準の読み上げに
+ * フォールバックする。
+ */
+export async function speakTextSmart(text: string): Promise<void> {
+  if (getVoiceMode() === "custom") {
+    try {
+      const { synthesizeWithCustomVoice } = await import("@/app/actions/voice");
+      const result = await synthesizeWithCustomVoice(text);
+      if (result.ok) {
+        const audio = new Audio(`data:audio/mpeg;base64,${result.audioBase64}`);
+        await audio.play().catch(() => {
+          // 自動再生がブロックされた場合など。ブラウザ標準の読み上げにはフォールバックしない
+          // (ユーザー操作起点の呼び出しであれば通常ブロックされない)。
+        });
+        return;
+      }
+    } catch {
+      // フォールバックへ
+    }
+  }
+  speakText(text);
+}
+
