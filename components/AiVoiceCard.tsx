@@ -3,7 +3,7 @@
 import { useRef, useState } from "react";
 import Link from "next/link";
 import { askAboutItems, type ReferencedItem } from "@/app/actions/ai";
-import { speakText } from "@/lib/voicePreference";
+import { speakTextSmart } from "@/lib/voicePreference";
 
 type ChatTurn = {
   id: string;
@@ -92,7 +92,7 @@ export function AiVoiceCard() {
         )
       );
       if (result.ok && speakEnabled) {
-        speakText(result.answer);
+        void speakTextSmart(result.answer);
       }
     } catch {
       setTurns((prev) =>
@@ -227,7 +227,7 @@ export function AiVoiceCard() {
                       <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
                         <button
                           type="button"
-                          onClick={() => t.answer && speakText(t.answer)}
+                          onClick={() => t.answer && void speakTextSmart(t.answer)}
                           className="text-[11px] font-medium text-green-700 hover:underline"
                         >
                           🔊 読み上げる
