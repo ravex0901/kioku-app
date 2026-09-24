@@ -4,6 +4,7 @@ import { getSignedUrlMap } from "@/lib/storage";
 import { Header } from "@/components/Header";
 import { ItemsFilterBar } from "@/components/ItemsFilterBar";
 import { ItemsBulkGrid } from "@/components/ItemsBulkGrid";
+import { LEGACY_DISPOSITION_VALUES } from "@/lib/constants";
 import type { CategoryMajor, Disposition, ItemStatus } from "@/lib/types";
 
 function first(value: string | string[] | undefined) {
@@ -43,7 +44,10 @@ export default async function ItemsPage({
 
   if (category) query = query.eq("category_major", category as CategoryMajor);
   if (locationId) query = query.eq("location_id", locationId);
-  if (disposition) query = query.eq("disposition", disposition as Disposition);
+  if (disposition) {
+    const legacyValues = LEGACY_DISPOSITION_VALUES[disposition as Disposition] ?? [];
+    query = query.in("disposition", [disposition, ...legacyValues]);
+  }
   if (status) query = query.eq("status", status as ItemStatus);
   if (keyword) query = query.ilike("name", `%${keyword}%`);
 
