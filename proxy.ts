@@ -7,6 +7,7 @@ const PROTECTED_PREFIXES = [
   "/locations",
   "/progress",
   "/onboarding",
+  "/admin",
 ];
 
 export async function proxy(request: NextRequest) {
