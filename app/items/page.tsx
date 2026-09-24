@@ -46,7 +46,10 @@ export default async function ItemsPage({
   if (locationId) query = query.eq("location_id", locationId);
   if (disposition) {
     const legacyValues = LEGACY_DISPOSITION_VALUES[disposition as Disposition] ?? [];
-    query = query.in("disposition", [disposition, ...legacyValues]);
+    query = query.in(
+      "disposition",
+      [disposition, ...legacyValues] as Disposition[]
+    );
   }
   if (status) query = query.eq("status", status as ItemStatus);
   if (keyword) query = query.ilike("name", `%${keyword}%`);
