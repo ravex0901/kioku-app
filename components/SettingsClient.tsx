@@ -5,9 +5,11 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import { FAMILY_RELATION_OPTIONS, labelFor } from "@/lib/constants";
 import { VoiceSettings } from "@/components/VoiceSettings";
+import { RecipientWillEditor } from "@/components/RecipientWillEditor";
 import type {
   FamilyMember,
   FamilyRelation,
+  HandoverRecipient,
   HandoverSettings,
   Will,
 } from "@/lib/types";
@@ -19,6 +21,7 @@ export function SettingsClient({
   initialFamily,
   initialWill,
   initialHandover,
+  initialRecipients,
 }: {
   userId: string;
   displayName: string;
@@ -26,6 +29,7 @@ export function SettingsClient({
   initialFamily: FamilyMember[];
   initialWill: Will | null;
   initialHandover: HandoverSettings | null;
+  initialRecipients: HandoverRecipient[];
 }) {
   const [family, setFamily] = useState(initialFamily);
   const [name, setName] = useState("");
@@ -206,6 +210,49 @@ export function SettingsClient({
     }
   }
 
+  // 共有を複数人でき、共有者一人一人に遺言動画と遺言書を設定できるようにする機能。
+  // handover_recipients に登録した相手ごとに、専用の遺言内容と専用共有リンクを発行する。
+  const [recipients, setRecipients] = useState(initialRecipients);
+  const [newRecipientName, setNewRecipientName] = useState("");
+  const [newRecipientFamilyId, setNewRecipientFamilyId] = useState("");
+  const [addingRecipient, setAddingRecipient] = useState(false);
+  const [addRecipientError, setAddRecipientError] = useState<string | null>(
+    null
+  );
+
+  async function handleAddRecipient() {
+    const trimmed = newRecipientName.trim();
+    if (!trimmed) {
+      setAddRecipientError("お名前を入力してください。");
+      return;
+    }
+    setAddingRecipient(true);
+    setAddRecipientError(null);
+    const supabase = createClient();
+    const { data, error } = await supabase
+      .from("handover_recipients")
+      .insert({
+        user_id: userId,
+        family_member_id: newRecipientFamilyId || null,
+        name: trimmed,
+      })
+      .select()
+      .single();
+    setAddingRecipient(false);
+
+    if (error || !data) {
+      setAddRecipientError("追加に失敗しました。もう一度お試しください。");
+      return;
+    }
+    setRecipients((prev) => [data, ...prev]);
+    setNewRecipientName("");
+    setNewRecipientFamilyId("");
+  }
+
+  function handleRecipientDeleted(id: string) {
+    setRecipients((prev) => prev.filter((r) => r.id !== id));
+  }
+
   const [copied, setCopied] = useState(false);
   const sharePath = handover ? `/handover/${handover.share_token}` : null;
 
@@ -384,18 +431,18 @@ export function SettingsClient({
           </p>
           <div className="rounded-lg border border-red-200 bg-white/80 p-3">
             <p className="text-[11px] leading-relaxed text-red-700">
-              ※これは正式な遺言書ではありません。民法で定める方式(自筆証書遺言・公正証書遺言など选
-              </p>
+              ※これは正式な遺言書ではありません。民法で定める方式(自筆証書遺言・公正証書遺言など)を満たしていないため、法的な効力はありません。実際の相続手続きにあたっては、必ず税理士・弁護士・司法書士などの専門家にご確認ください。ここに書かれている内容は、ご本人の意向を把握するための参考情報です。
+            </p>
           </div>
           <div className="flex flex-col gap-1.5">
             <label className="text-sm font-medium text-ink/80">
-              資産の分け方などにいてのメア
+              資産の分け方などについてのメモ
             </label>
             <textarea
               value={legalWillNote}
               onChange={(e) => setLegalWillNote(e.target.value)}
               rows={4}
-              placeholder="資産の分け方の希望など、法的な遺言事項に関する記録を曏く場合はこちらに入力してください(正式な遺言書の代わりにはなりません)。"
+              placeholder="資産の分け方の希望など、法的な遺言事項に関する記録を書く場合はこちらに入力してください(正式な遺言書の代わりにはなりません)。"
               className="rounded-lg border border-black/10 bg-white px-4 py-2.5 text-sm outline-none focus:border-green-400 focus:ring-2 focus:ring-green-100"
             />
           </div>
@@ -502,6 +549,94 @@ export function SettingsClient({
         </div>
       </section>
 
+      <section
+        id="handover-recipients"
+        className="scroll-mt-20 rounded-[1.75rem] border border-gold/40 bg-gold/10 p-5 shadow-sm sm:p-6"
+      >
+        <h2 className="mb-1 text-xs font-semibold tracking-[0.15em] text-gold">
+          共有相手ごとの遺言動画・遺言書
+        </h2>
+        <p className="mb-4 text-xs text-ink/50">
+          複数のご家族に、それぞれ専用の共有リンクを発行できます。相手ごとに別々の遺言動画・メッセージ・遺言事項を設定でき、未設定の項目は上の①②の内容が使われます。
+        </p>
+
+        {!handover ? (
+          <p className="rounded-xl bg-black/[0.03] px-4 py-3 text-xs text-ink/50">
+            先に上の「この内容で設定する」から、もしもの時の開示条件を保存してください。
+          </p>
+        ) : (
+          <>
+            {recipients.length === 0 ? (
+              <p className="mb-4 text-sm text-ink/60">
+                まだ共有相手が追加されていません。
+              </p>
+            ) : (
+              <ul className="mb-4 flex flex-col gap-2">
+                {recipients.map((recipient) => (
+                  <li key={recipient.id}>
+                    <RecipientWillEditor
+                      userId={userId}
+                      recipient={recipient}
+                      onDeleted={handleRecipientDeleted}
+                    />
+                  </li>
+                ))}
+              </ul>
+            )}
+
+            <div className="flex flex-col gap-3 rounded-xl border border-black/5 bg-white/70 p-4">
+              <div className="flex flex-col gap-1.5">
+                <label className="text-sm font-medium text-ink/80">
+                  お名前
+                </label>
+                <input
+                  value={newRecipientName}
+                  onChange={(e) => setNewRecipientName(e.target.value)}
+                  placeholder="例:田中 花子"
+                  className="rounded-lg border border-black/10 bg-white px-4 py-2.5 text-sm outline-none focus:border-green-400 focus:ring-2 focus:ring-green-100"
+                />
+              </div>
+              {family.length > 0 && (
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-sm font-medium text-ink/80">
+                    登録済みの家族から選ぶ(任意)
+                  </label>
+                  <select
+                    value={newRecipientFamilyId}
+                    onChange={(e) => {
+                      const memberId = e.target.value;
+                      setNewRecipientFamilyId(memberId);
+                      const member = family.find((m) => m.id === memberId);
+                      if (member) setNewRecipientName(member.name);
+                    }}
+                    className="rounded-lg border border-black/10 bg-white px-4 py-2.5 text-sm outline-none focus:border-green-400 focus:ring-2 focus:ring-green-100"
+                  >
+                    <option value="">選択しない(直接入力)</option>
+                    {family.map((member) => (
+                      <option key={member.id} value={member.id}>
+                        {member.name}(
+                        {labelFor(FAMILY_RELATION_OPTIONS, member.relation)})
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
+              {addRecipientError && (
+                <p className="text-sm text-red-600">{addRecipientError}</p>
+              )}
+              <button
+                type="button"
+                onClick={handleAddRecipient}
+                disabled={addingRecipient}
+                className="self-start rounded-full bg-green-700 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-green-800 disabled:opacity-60"
+              >
+                {addingRecipient ? "追加中…" : "共有相手を追加する"}
+              </button>
+            </div>
+          </>
+        )}
+      </section>
+
       <section className="rounded-[1.75rem] border border-green-100 bg-white/70 p-5 shadow-sm sm:p-6">
         <h2 className="mb-3 text-xs font-semibold tracking-[0.15em] text-ink/40">
           AIの読み上げ音声
@@ -524,12 +659,13 @@ export function SettingsClient({
             href="/digital"
             className="rounded-xl border border-green-100 bg-white px-4 py-3 text-sm font-medium text-ink transition hover:bg-black/[0.02]"
           >
-            契約・情報のしおオ(デジタル情報)
+            契約・情報のしおり(デジタル情報)
           </Link>
         </div>
       </section>
     </div>
   );
 }
+
 
 
