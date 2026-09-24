@@ -266,9 +266,9 @@ export function ItemsBulkGrid({
                 className="rounded-full border border-green-600 px-4 py-2 text-sm font-semibold text-green-700 transition hover:bg-green-50 disabled:opacity-60"
               >
                 に一括変更
-            </button>
+              </button>
+            </div>
           </div>
-        </div>
           {message && (
             <p className="rounded-xl bg-white px-3 py-2 text-xs text-ink/70 shadow">
               {message}
