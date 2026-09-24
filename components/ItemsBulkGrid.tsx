@@ -266,9 +266,9 @@ export function ItemsBulkGrid({
                 className="rounded-full border border-green-600 px-4 py-2 text-sm font-semibold text-green-700 transition hover:bg-green-50 disabled:opacity-60"
               >
                 に一括変更
-              </button>
-            </div>
+            </button>
           </div>
+        </div>
           {message && (
             <p className="rounded-xl bg-white px-3 py-2 text-xs text-ink/70 shadow">
               {message}
@@ -280,98 +280,3 @@ export function ItemsBulkGrid({
   );
 }
 
-"use client";
-
-import { useRouter } from "next/navigation";
-import { useState } from "react";
-import Link from "next/link";
-import { createClient } from "@/lib/supabase/client";
-import { DispositionBadge } from "@/components/DispositionBadge";
-import { resolveLocationName } from "@/lib/format";
-import {
-  CATEGORY_OPTIONS,
-  DISPOSITION_OPTIONS,
-  ITEM_STATUS_BADGE_STYLE,
-  ITEM_STATUS_OPTIONS,
-  labelFor,
-} from "@/lib/constants";
-import { formatPriceDisplay } from "@/lib/priceRange";
-import type { CategoryMajor, Disposition, ItemStatus } from "@/lib/types";
-
-type GridItem = {
-  id: string;
-  name: string;
-  category_major: CategoryMajor | null;
-  disposition: Disposition | null;
-  status: ItemStatus | null;
-  estimated_price_range: string | null;
-  professional_appraisal: string | null;
-  photo_url: string | null;
-  location: { name: string } | { name: string }[] | null;
-};
-
-// 「見る・探す」の一覧。通常時はタップで詳細ページへ、
-// 「選択する」モードでは複数選択してまとめて査定依頼・整理方針の変更ができる
-// (個別の「査定を依頼する」ボタンの代わり)。
-export function ItemsBulkGrid({
-  userId,
-  items,
-  photoMap,
-}: {
-  userId: string;
-  items: GridItem[];
-  photoMap: Record<string, string>;
-}) {
-  const router = useRouter();
-  const [selectMode, setSelectMode] = useState(false);
-  const [selected, setSelected] = useState<Set<string>>(new Set());
-  const [busy, setBusy] = useState(false);
-  const [message, setMessage] = useState<string | null>(null);
-  const [bulkDisposition, setBulkDisposition] = useState<Disposition>(
-    DISPOSITION_OPTIONS[0].value
-  );
-
-  function toggle(id: string) {
-    setSelected((prev) => {
-      const next = new Set(prev);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
-      return next;
-    });
-  }
-
-  function exitSelectMode() {
-    setSelectMode(false);
-    setSelected(new Set());
-    setMessage(null);
-  }
-
-  async function handleBulkAppraisal() {
-    if (selected.size === 0) return;
-    setBusy(true);
-    setMessage(null);
-    const supabase = createClient();
-    const ids = Array.from(selected);
-    const targetItems = items.filter((i) => ids.includes(i.id));
-
-    const { error } = await supabase.from("service_requests").insert(
-      targetItems.map((item) => ({
-        user_id: userId,
-        service_type: "appraisal" as const,
-        item_id: item.id,
-        note: `「${item.name}」の査定依頼(AI概算:${
-          formatPriceDisplay(item.estimated_price_range) ?? "―"
-        })`,
-      }))
-    );
-
-    if (error) {
-      setBusy(false);
-      setMessage("査定の依頼に失敗しました。もう一度お試しください。");
-      return;
-    }
-
-    const pendingIds = targetItems
-      .filter((i) => (i.status ?? "photo_registered") === "photo_registered")
-      .map((i) => i.id);
-    if (pendingIds.length > 0) {
