@@ -117,7 +117,7 @@ export function SettingsClient({
     }
   }
 
-  // 法的な遺言事項(財産分业など)。本人の想い・メッスージとは明確に分けて保持する(請求項8対応)。
+  // 法的な遺言事項(財産分与など)。本人の想い・メッセージとは明確に分けて保持する(請求項8対応)。
   const [legalWillNote, setLegalWillNote] = useState(
     initialWill?.legal_will_note ?? ""
   );
@@ -427,7 +427,7 @@ export function SettingsClient({
 
         <div className="mb-5 flex flex-col gap-3 rounded-xl border border-red-200 bg-red-50/40 p-4">
           <p className="text-sm font-semibold text-ink/80">
-            ② 法的な遺言事項に関する記録(財産の分け方など)
+            ② 法的な遺言事項に関する記録(財産の分け方などど)
           </p>
           <div className="rounded-lg border border-red-200 bg-white/80 p-3">
             <p className="text-[11px] leading-relaxed text-red-700">
@@ -532,7 +532,7 @@ export function SettingsClient({
                 <button
                   type="button"
                   onClick={handleCopyShareLink}
-                  className="shrink-0 rounded-full border border-black/10 px-2.5 py-1 text-[11px] font-medium text-ink/70 transition hover:bg-black-5"
+                  className="shrink-0 rounded-full border border-black/10 px-2.5 py-1 text-[11px] font-medium text-ink/70 transition hover:bg-black/5"
                 >
                   {copied ? "コピーしました" : "コピー"}
                 </button>
