@@ -85,6 +85,15 @@ const LEGACY_DISPOSITION_LABEL: Record<string, string> = {
   undecided: "わからない",
 };
 
+// 新3択の値それぞれに対応する旧5択時代のDB値。
+// 絞り込み検索(見る・探す)で新旧どちらの値で保存されたデータも
+// 取りこぼさないように使う。
+export const LEGACY_DISPOSITION_VALUES: Record<Disposition, string[]> = {
+  keep: ["keepsake"],
+  organize: ["sell", "discard"],
+  unsure: ["undecided"],
+};
+
 const LEGACY_DISPOSITION_BADGE_STYLE: Record<string, string> = {
   keepsake: "bg-green-100 text-green-700",
   sell: "bg-orange-100 text-orange-700",
