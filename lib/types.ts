@@ -219,6 +219,18 @@ export type VoiceProfile = {
   updated_at: string;
 };
 
+// 「AIと日記」機能: 1日1問AIが質問を出し、テキストか音声で回答すると
+// 臦分史として蓄積されていく(家族の思い出を代々残すための土台になる記録)。
+export type JournalEntry = {
+  id: string;
+  user_id: string;
+  question: string;
+  answer_text: string | null;
+  answer_audio_path: string | null;
+  answered_at: string | null;
+  created_at: string;
+};
+
 export type Database = {
   public: {
     Tables: {
@@ -375,6 +387,15 @@ export type Database = {
         Update: Partial<Omit<VoiceProfile, "user_id" | "created_at">>;
         Relationships: [];
       };
+      journal_entries: {
+        Row: JournalEntry;
+        Insert: Partial<Omit<JournalEntry, "id" | "created_at">> & {
+          user_id: string;
+          question: string;
+        };
+        Update: Partial<Omit<JournalEntry, "id" | "user_id" | "created_at">>;
+        Relationships: [];
+      };
     };
     Views: Record<string, never>;
     Functions: {
@@ -389,4 +410,3 @@ export type Database = {
     };
   };
 };
-
