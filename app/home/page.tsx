@@ -401,6 +401,18 @@ export default async function HomePage() {
             }
           />
           <HomeGridCard
+            href="/capsule"
+            label="タイムカプセル"
+            bg="bg-gold/20"
+            fg="text-green-800"
+            icon={
+              <svg viewBox="0 0 24 24" fill="none" className="h-5 w-5">
+                <rect x="4" y="10" width="16" height="9.5" rx="1.6" stroke="currentColor" strokeWidth={1.6} />
+                <path d="M7.5 10V7.5a4.5 4.5 0 0 1 9 0V10" stroke="currentColor" strokeWidth={1.6} />
+              </svg>
+            }
+          />
+          <HomeGridCard
             href="/settings#family"
             label="家族と共有"
             bg="bg-green-50"
