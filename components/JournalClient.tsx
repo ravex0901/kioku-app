@@ -7,7 +7,7 @@ import type { JournalEntry } from "@/lib/types";
 const MAX_MS = 120000; // 最大2分
 
 /**
- * 「AIと日記」機能の画面。今日の質問にテキストか声で答えると、
+ * 「AIと日記」機能の画面。今週の質問にテキストか声で答えると、
  * これまでの記録として下に蓄積されていく。
  */
 export function JournalClient({
@@ -130,7 +130,7 @@ export function JournalClient({
     <div className="flex flex-col gap-8">
       <div className="rounded-[1.75rem] border border-green-100 bg-white/70 p-6 shadow-sm">
         <p className="text-xs font-semibold tracking-widest text-green-700/70">
-          きょうの質問
+          今週の質問
         </p>
 
         {currentEntry && !done ? (
@@ -197,7 +197,7 @@ export function JournalClient({
           </>
         ) : (
           <p className="mt-3 rounded-lg bg-green-50 px-4 py-3 text-sm text-green-700">
-            きょうの質問には答えました。また明日、あたらしい質問が届きます。
+            今週の質問には答えました。また来週、あたらしい質問が届きます。
           </p>
         )}
       </div>
@@ -206,7 +206,7 @@ export function JournalClient({
         <h2 className="mb-3 text-lg font-bold text-ink">これまでの記録</h2>
         {history.length === 0 ? (
           <p className="text-sm text-ink/50">
-            まだ記録がありません。今日の質問から始めてみましょう。
+            まだ記録がありません。今週の質問から始めてみましょう。
           </p>
         ) : (
           <div className="flex flex-col gap-4">
