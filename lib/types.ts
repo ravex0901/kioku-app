@@ -12,8 +12,8 @@ export type CategoryMajor =
   | "subscription"
   | "insurance"
   | "other";
-// 処分の方針(整理の方針)。残す/整理する/わからない の3択。
-// 旧5択(keep/keepsake/sell/discard/undecided)で登録済みの既存データは
+// 処分の方針(整理の方針)。残す/整理する�わからない の3択。
+// 旧5択(keep/keepsake/sell/discard/undecided)で登録みの既存データは
 // DB上の値はそのまま残り、表示側(lib/constants.tsのdispositionLabel等)で
 // 新しい3択に読み替えて表示する。
 export type Disposition = "keep" | "organize" | "unsure";
@@ -147,7 +147,7 @@ export type ServiceRequest = {
   created_at: string;
 };
 
-// 家族と共有(特許図面【図2】【図18】の「家族と共有」に対応)
+// 家族と共有(特許図面【図2】【図14】の「家族と共有」に対応)
 export type FamilyMember = {
   id: string;
   user_id: string;
@@ -206,7 +206,7 @@ export type ChecklistProgress = {
   updated_at: string;
 };
 
-// AIの声(カスタム音声)機能: 録音音声から作成した音声クローンの状態
+// AIの声(カスタユ音声)機能: 録音音声から作成した音声クローンの状態
 export type VoiceProfileStatusValue = "pending" | "ready" | "failed";
 export type VoiceProfile = {
   user_id: string;
@@ -220,7 +220,7 @@ export type VoiceProfile = {
 };
 
 // 「AIと日記」機能: 1日1問AIが質問を出し、テキストか音声で回答すると
-// 臦分史として蓄積されていく(家族の思い出を代々残すための土台になる記録)。
+// 臦分史として蓄積されていく(家族の思い出を代々残すそもの土台になる記録)。
 export type JournalEntry = {
   id: string;
   user_id: string;
@@ -228,6 +228,19 @@ export type JournalEntry = {
   answer_text: string | null;
   answer_audio_path: string | null;
   answered_at: string | null;
+  created_at: string;
+};
+
+// タイムカプセル機能: 未来の家族に向けたメッセージ(テキスト・音声)を、
+// 指定した開封日まで開けられない状態で残しておける機能。
+export type TimeCapsule = {
+  id: string;
+  user_id: string;
+  title: string;
+  recipient_name: string | null;
+  message_text: string | null;
+  message_audio_path: string | null;
+  open_at: string;
   created_at: string;
 };
 
@@ -394,6 +407,16 @@ export type Database = {
           question: string;
         };
         Update: Partial<Omit<JournalEntry, "id" | "user_id" | "created_at">>;
+        Relationships: [];
+      };
+      time_capsules: {
+        Row: TimeCapsule;
+        Insert: Partial<Omit<TimeCapsule, "id" | "created_at">> & {
+          user_id: string;
+          title: string;
+          open_at: string;
+        };
+        Update: Partial<Omit<TimeCapsule, "id" | "user_id" | "created_at">>;
         Relationships: [];
       };
     };
