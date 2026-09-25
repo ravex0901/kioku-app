@@ -4,6 +4,7 @@ import { getSignedUrlMap } from "@/lib/storage";
 import { Header } from "@/components/Header";
 import { ItemsFilterBar } from "@/components/ItemsFilterBar";
 import { ItemsBulkGrid } from "@/components/ItemsBulkGrid";
+import { AiSearchPanel } from "@/components/AiSearchPanel";
 import { LEGACY_DISPOSITION_VALUES } from "@/lib/constants";
 import type { CategoryMajor, Disposition, ItemStatus } from "@/lib/types";
 
@@ -73,6 +74,8 @@ export default async function ItemsPage({
             {bulkAdded}件を仮登録しました。場所や整理方針は後で確認してください。
           </p>
         )}
+
+        <AiSearchPanel />
 
         <ItemsFilterBar
           locations={locations ?? []}
