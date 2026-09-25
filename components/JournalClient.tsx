@@ -2,22 +2,37 @@
 
 import { useEffect, useRef, useState } from "react";
 import { submitJournalAnswer } from "@/app/actions/journal";
+import type { ConversationDayGroup } from "@/app/actions/conversationLog";
 import type { JournalEntry } from "@/lib/types";
 
 const MAX_MS = 120000; // 最大2分
 
+function formatJstDateLabel(dateKey: string): string {
+  const [y, m, d] = dateKey.split("-").map(Number);
+  return new Date(y, m - 1, d).toLocaleDateString("ja-JP", {
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+    weekday: "short",
+  });
+}
+
 /**
  * 「AIと日記」機能の画面。今週の質問にテキストか声で答えると、
  * これまでの記録として下に蓄積されていく。
+ * また、「AIと会話する」で交わした日々のやり取りも自分史の一部として
+ * 日付ごとにまとめて表示する。
  */
 export function JournalClient({
   currentEntry,
   history,
   audioMap,
+  conversationLogs = [],
 }: {
   currentEntry: JournalEntry | null;
   history: JournalEntry[];
   audioMap: Record<string, string>;
+  conversationLogs?: ConversationDayGroup[];
 }) {
   const [answerText, setAnswerText] = useState("");
   const [recording, setRecording] = useState(false);
@@ -241,6 +256,39 @@ export function JournalClient({
           </div>
         )}
       </div>
+
+      {conversationLogs.length > 0 && (
+        <div>
+          <h2 className="mb-1 text-lg font-bold text-ink">AIとの会話の記録</h2>
+          <p className="mb-3 text-xs text-ink/50">
+            「AIと会話する」でのやり取りも、この日はこんな話をしていた、として自動で記録されています。
+          </p>
+          <div className="flex flex-col gap-4">
+            {conversationLogs.map((day) => (
+              <div
+                key={day.date}
+                className="rounded-2xl border border-green-100 bg-white/70 p-5 shadow-sm"
+              >
+                <p className="text-xs font-semibold text-green-700/70">
+                  {formatJstDateLabel(day.date)}
+                </p>
+                <div className="mt-2 flex flex-col gap-3">
+                  {day.entries.map((entry) => (
+                    <div key={entry.id} className="flex flex-col gap-1">
+                      <p className="text-sm font-medium text-ink">
+                        Q. {entry.question}
+                      </p>
+                      <p className="whitespace-pre-wrap text-sm text-ink/70">
+                        A. {entry.answer}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
