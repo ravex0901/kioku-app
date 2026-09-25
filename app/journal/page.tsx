@@ -35,7 +35,7 @@ export default async function JournalPage() {
           AIと日記
         </h1>
         <p className="mb-6 text-sm text-ink/60">
-          毎日ひとつの質問に答えるだけで、あなたの思い出が少しずつ記録されていきます。
+          週にひとつの質問に答えるだけで、あなたの思い出が少しずつ記録されていきます。
         </p>
 
         {result.ok ? (
