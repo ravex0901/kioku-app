@@ -3,6 +3,7 @@
 import { useRef, useState } from "react";
 import Link from "next/link";
 import { askAboutItems, type ReferencedItem } from "@/app/actions/ai";
+import { logConversationTurn } from "@/app/actions/conversationLog";
 import { speakTextSmart } from "@/lib/voicePreference";
 
 type ChatTurn = {
@@ -36,6 +37,8 @@ type SpeechRecognitionLike = {
  * 登録済みの持ち物データをもとにAIが回答する。やり取りは会話形式(複数ターン)で
  * 画面に積み重なって表示され、回答はチェックを入れると音声で読み上げられる
  * (読み上げに使う声は設定画面のVoiceSettingsで選べる)。
+ * 会話の内容(質問と回答)は自分史用にも記録され、「この日はこういう会話をしていた」
+ * として後から振り返れるようになる(記録に失敗しても会話自体は継続できる)。
  */
 export function AiVoiceCard() {
   const [open, setOpen] = useState(false);
@@ -91,8 +94,12 @@ export function AiVoiceCard() {
             : t
         )
       );
-      if (result.ok && speakEnabled) {
-        void speakTextSmart(result.answer);
+      if (result.ok) {
+        // 自分史用の会話ログに記録する(失敗しても画面上の会話には影響させない)。
+        void logConversationTurn(trimmed, result.answer);
+        if (speakEnabled) {
+          void speakTextSmart(result.answer);
+        }
       }
     } catch {
       setTurns((prev) =>
@@ -190,7 +197,7 @@ export function AiVoiceCard() {
         <div className="flex-1">
           <p className="text-sm font-bold text-ink">AIと会話する</p>
           <p className="mt-1 text-xs text-ink/60">
-            「押入れ、何が残ってる？」も聞けます
+            「押入れ、何が残ってる?」も聞けます
           </p>
         </div>
       </button>
