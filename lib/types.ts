@@ -34,7 +34,6 @@ export type DigitalItemType =
 export type DigitalItemStatus = "not_started" | "in_progress" | "done";
 
 // 遺品の整理進捗ステータス(請求項7の標準ワークフローに対応)
-// 写真登録→AI解析/登録→査定待ち→査定完了→家族確認→処分方針の記録→搬送予定/搬出→完了
 export type ItemStatus =
   | "photo_registered"
   | "appraisal_pending"
@@ -44,98 +43,7 @@ export type ItemStatus =
   | "transport_scheduled"
   | "completed";
 
-// ご依頼(買取・回収・整理サービス)の種別(特許図面【図2】【図18】の「ご依頼」に対応)
-// appraisal: 品物ごとの「査定を依頼する」ボタンから送信される、自社スタッフによる本査定の依頼
-export type ServiceType =
-  | "all_in_one"
-  | "buyback"
-  | "junk_removal"
-  | "estate_cleanup"
-  | "pre_death_cleanup"
-  | "appraisal";
-
-export type ServiceRequestStatus = "pending" | "in_progress" | "done";
-
-export type FamilyRelation =
-  | "spouse"
-  | "eldest_son"
-  | "eldest_daughter"
-  | "son"
-  | "daughter"
-  | "other";
-
-export type Profile = {
-  id: string;
-  name: string | null;
-  purpose: string | null;
-  created_at: string;
-  last_active_at: string | null;
-};
-
-export type Json =
-  | string
-  | number
-  | boolean
-  | null
-  | { [key: string]: Json | undefined }
-  | Json[];
-
-export type Location = {
-  id: string;
-  user_id: string;
-  parent_location_id: string | null;
-  name: string;
-  location_type: LocationType;
-  sort_order: number | null;
-  created_at: string;
-};
-
-export type Item = {
-  id: string;
-  user_id: string;
-  recorded_by_user_id: string | null;
-  photo_url: string | null;
-  media_type: MediaType | null;
-  name: string;
-  category_major: CategoryMajor | null;
-  category_minor: string | null;
-  location_id: string | null;
-  disposition: Disposition | null;
-  disposition_tags: DispositionTag[] | null;
-  estimated_price_range: string | null;
-  professional_appraisal: string | null;
-  status: ItemStatus;
-  memo: string | null;
-  created_at: string;
-  updated_at: string;
-};
-
-// 遺品ステータス変更履歴(請求項7「ステータス履歴(変更前、変更後、変更者、日時)」に対応)
-export type ItemStatusHistory = {
-  id: string;
-  item_id: string;
-  user_id: string;
-  from_status: ItemStatus | null;
-  to_status: ItemStatus;
-  changed_by: string | null;
-  changed_at: string;
-};
-
-// デジタル・契約情報(特許図面【図10】〜【図13】、【図23】【図24】に対応)
-export type DigitalItem = {
-  id: string;
-  user_id: string;
-  item_type: DigitalItemType;
-  title: string;
-  memo: string | null;
-  contact_person: string | null;
-  related_documents: string | null;
-  status: DigitalItemStatus;
-  created_at: string;
-  updated_at: string;
-};
-
-// ご依頼(特許図面【図2】【図18】に対応)
+// ご依頼(特許図面【図2】【図18】の「ご依頼」に対応)
 // item_id: 品物ごとの「査定を依頼する」から送信された場合に対象の品物を紐づける(自社査定への一次窓口)
 export type ServiceRequest = {
   id: string;
@@ -241,6 +149,16 @@ export type TimeCapsule = {
   message_text: string | null;
   message_audio_path: string | null;
   open_at: string;
+  created_at: string;
+};
+
+// 「AIと会話する」機能の会話ログ: 持ち物について尋ねたやり取りを保存し、
+// 「この日はこういう会話をしていた」として自分史に組み込むための記録。
+export type ConversationLogEntry = {
+  id: string;
+  user_id: string;
+  question: string;
+  answer: string;
   created_at: string;
 };
 
@@ -417,6 +335,18 @@ export type Database = {
           open_at: string;
         };
         Update: Partial<Omit<TimeCapsule, "id" | "user_id" | "created_at">>;
+        Relationships: [];
+      };
+      conversation_logs: {
+        Row: ConversationLogEntry;
+        Insert: Partial<Omit<ConversationLogEntry, "id" | "created_at">> & {
+          user_id: string;
+          question: string;
+          answer: string;
+        };
+        Update: Partial<
+          Omit<ConversationLogEntry, "id" | "user_id" | "created_at">
+        >;
         Relationships: [];
       };
     };
