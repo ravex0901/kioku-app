@@ -5,6 +5,7 @@ import { Header } from "@/components/Header";
 import { BackButton } from "@/components/BackButton";
 import { JournalClient } from "@/components/JournalClient";
 import { getJournalState } from "@/app/actions/journal";
+import { getConversationHistory } from "@/app/actions/conversationLog";
 
 export default async function JournalPage() {
   const supabase = await createClient();
@@ -16,7 +17,10 @@ export default async function JournalPage() {
     redirect("/login");
   }
 
-  const result = await getJournalState();
+  const [result, conversationLogs] = await Promise.all([
+    getJournalState(),
+    getConversationHistory(),
+  ]);
 
   let audioMap: Record<string, string> = {};
   if (result.ok) {
@@ -43,6 +47,7 @@ export default async function JournalPage() {
             currentEntry={result.data.currentEntry}
             history={result.data.history}
             audioMap={audioMap}
+            conversationLogs={conversationLogs}
           />
         ) : (
           <p className="rounded-lg bg-red-50 px-4 py-3 text-sm text-red-600">
