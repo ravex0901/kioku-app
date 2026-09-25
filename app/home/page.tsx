@@ -427,6 +427,20 @@ export default async function HomePage() {
             }
           />
           <HomeGridCard
+            href="/family-tree"
+            label="家系図"
+            bg="bg-green-50"
+            fg="text-green-700"
+            icon={
+              <svg viewBox="0 0 24 24" fill="none" className="h-5 w-5">
+                <circle cx="12" cy="6" r="2.2" stroke="currentColor" strokeWidth={1.6} />
+                <circle cx="6" cy="18" r="2.2" stroke="currentColor" strokeWidth={1.6} />
+                <circle cx="18" cy="18" r="2.2" stroke="currentColor" strokeWidth={1.6} />
+                <path d="M12 8.2V12M12 12 6 15.8M12 12l6 3.8" stroke="currentColor" strokeWidth={1.6} strokeLinecap="round" />
+              </svg>
+            }
+          />
+          <HomeGridCard
             href="/request"
             label="ご依頼・買取"
             bg="bg-red-50"
