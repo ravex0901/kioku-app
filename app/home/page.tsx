@@ -389,6 +389,18 @@ export default async function HomePage() {
             }
           />
           <HomeGridCard
+            href="/journal"
+            label="AIと日記"
+            bg="bg-gold/20"
+            fg="text-green-800"
+            icon={
+              <svg viewBox="0 0 24 24" fill="none" className="h-5 w-5">
+                <path d="M4 6.5A2.5 2.5 0 0 1 6.5 4h11A2.5 2.5 0 0 1 20 6.5v7A2.5 2.5 0 0 1 17.5 16H10l-4 3.5V16H6.5A2.5 2.5 0 0 1 4 13.5v-7Z" stroke="currentColor" strokeWidth={1.6} strokeLinejoin="round" />
+                <path d="M8 9h8M8 12h5" stroke="currentColor" strokeWidth={1.6} strokeLinecap="round" />
+              </svg>
+            }
+          />
+          <HomeGridCard
             href="/settings#family"
             label="家族と共有"
             bg="bg-green-50"
