@@ -8,9 +8,9 @@ const JOURNAL_AUDIO_BUCKET = "journal-audio";
 
 const QUESTION_SYSTEM_PROMPT =
   "あなたは生前整理・家族の記憶を残すアプリ「きおく」の中で、ユーザーの人生の思い出や" +
-  "日々の出来事をやさしく引き出す聞き役です。1日1問、あたたかく具体的な質問を1つだけ" +
+  "日々の出来事をやさしく引き出す聞き役です。週に1問、あたたかく具体的な質問を1つだけ" +
   "日本語で作ってください。子どもの頃、家族、仕事、趣味、旅行、大切にしているもの、" +
-  "今日あった小さな出来事など、幅広いテーマからバランスよく選んでください。" +
+  "最近あった出来事など、幅広いテーマからバランスよく選んでください。" +
   "過去に聞いた質問と似た内容は避けてください。専門用語や難しい言い回しは避け、" +
   "説明や前置きは一切付けず、質問文だけを1文で出力してください。";
 
@@ -20,7 +20,7 @@ const FALLBACK_QUESTIONS = [
   "大切にしている宝物について教えてください。",
   "若い頃、夢中になっていたことは何ですか?",
   "家族との思い出で、一番好きなエピソードは何ですか?",
-  "今日一日で、ちょっと嬉しかったことはありますか?",
+  "今週、ちょっと嬉しかったことはありますか?",
   "これまでの人生で、一番感謝している人は誰ですか?",
   "学生時代の忘れられない出来事はありますか?",
   "初めて自分でお金を稼いだ時のことを覚えていますか?",
@@ -61,18 +61,23 @@ async function generateQuestion(pastQuestions: string[]): Promise<string> {
   }
 }
 
-// JSTの「今日」の開始・終了時刻をUTC ISO文字列で返す(1日1問の判定に使う)
-function todayRangeJst() {
+// JSTの「今週(月曜始まり)」の開始・終了時刻をUTC ISO文字列で返す(週1問の判定に使う)
+function weekRangeJst() {
   const now = new Date();
   const jstNow = new Date(now.getTime() + 9 * 60 * 60 * 1000);
   const y = jstNow.getUTCFullYear();
   const m = jstNow.getUTCMonth();
   const d = jstNow.getUTCDate();
-  const startJst = Date.UTC(y, m, d, 0, 0, 0) - 9 * 60 * 60 * 1000;
-  const endJst = startJst + 24 * 60 * 60 * 1000;
+  const dow = jstNow.getUTCDay(); // 0=日,1=月,...6=土
+  const diffToMonday = (dow + 6) % 7; // 直近の月曜日までの日数
+  const mondayJstMs =
+    Date.UTC(y, m, d, 0, 0, 0) -
+    diffToMonday * 24 * 60 * 60 * 1000 -
+    9 * 60 * 60 * 1000;
+  const nextMondayJstMs = mondayJstMs + 7 * 24 * 60 * 60 * 1000;
   return {
-    start: new Date(startJst).toISOString(),
-    end: new Date(endJst).toISOString(),
+    start: new Date(mondayJstMs).toISOString(),
+    end: new Date(nextMondayJstMs).toISOString(),
   };
 }
 
@@ -82,8 +87,8 @@ export type JournalState = {
 };
 
 /**
- * 「AIと日記」機能。1日1問、AIが質問を出し、テキストか音声で答えると
- * 自分史として蓄積されていく。今日分の未回答の質問があればそれを返し、
+ * 「AIと日記」機能。週に1問、AIが質問を出し、テキストか音声で答えると
+ * 自分史として蓄積されていく。今週分の未回答の質問があればそれを返し、
  * なければ新しく生成して保存する。
  */
 export async function getJournalState(): Promise<
@@ -103,12 +108,12 @@ export async function getJournalState(): Promise<
     .limit(60);
 
   const allEntries = (historyData ?? []) as JournalEntry[];
-  const { start, end } = todayRangeJst();
-  let todayEntry =
+  const { start, end } = weekRangeJst();
+  let weekEntry =
     allEntries.find((e) => e.created_at >= start && e.created_at < end) ??
     null;
 
-  if (!todayEntry) {
+  if (!weekEntry) {
     const pastQuestions = allEntries.map((e) => e.question);
     const question = await generateQuestion(pastQuestions);
     const { data: inserted, error } = await supabase
@@ -118,16 +123,14 @@ export async function getJournalState(): Promise<
       .single();
     if (error || !inserted) {
       console.error("getJournalState insert error", error);
-      return { ok: false, error: "今日の質問の準備に失敗しました。" };
+      return { ok: false, error: "今週の質問の準備に失敗しました。" };
     }
-    todayEntry = inserted as JournalEntry;
-    allEntries.unshift(todayEntry);
+    weekEntry = inserted as JournalEntry;
+    allEntries.unshift(weekEntry);
   }
 
   const currentEntry =
-    todayEntry.answer_text || todayEntry.answer_audio_path
-      ? null
-      : todayEntry;
+    weekEntry.answer_text || weekEntry.answer_audio_path ? null : weekEntry;
   const history = allEntries.filter(
     (e) => e.answer_text || e.answer_audio_path
   );
@@ -138,7 +141,7 @@ export async function getJournalState(): Promise<
 export type SubmitJournalResult = { ok: true } | { ok: false; error: string };
 
 /**
- * 今日の質問への回答を保存する(テキスト・音声のどちらか、または両方)。
+ * 今週の質問への回答を保存する(テキスト・音声のどちらか、または両方)。
  */
 export async function submitJournalAnswer(
   entryId: string,
