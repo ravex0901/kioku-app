@@ -2,13 +2,23 @@
 
 import { useEffect, useRef, useState } from "react";
 import {
-  askTroubleConsult,
-  getPersonalizedQuickPrompts,
-  DEFAULT_QUICK_PROMPTS,
+    askTroubleConsult,
+    getPersonalizedQuickPrompts,
 } from "@/app/actions/troubleConsult";
 
 // 仮の連絡先。実際の窓口番号が決まり次第、ここ(と components/RequestClient.tsx)を差し替えてください。
 const CONTACT_TEL = "0120000000";
+
+// AIが個人向けの候補を生成できるまでの初期表示、および生成に失敗した場合の
+// フォールバック候補(app/actions/troubleConsult.ts は "use server" のため
+// 定数をexportできず、ここにローカル定義している)。
+const DEFAULT_QUICK_PROMPTS = [
+    "電球を交換したい",
+    "重い家具を動かしたい",
+    "粗大ゴミの出し方",
+    "収納のコツを知りたい",
+    "庭の手入れをお願いしたい",
+  ];
 
 type Turn = {
   id: string;
