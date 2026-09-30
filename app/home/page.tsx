@@ -7,6 +7,7 @@ import { resolveLocationName } from "@/lib/format";
 import { Header } from "@/components/Header";
 import { DispositionBadge } from "@/components/DispositionBadge";
 import { AiVoiceCard } from "@/components/AiVoiceCard";
+import { TroubleConsultPanel } from "@/components/TroubleConsultPanel";
 import { formatPriceDisplay } from "@/lib/priceRange";
 import type { Disposition } from "@/lib/types";
 
@@ -296,6 +297,8 @@ export default async function HomePage() {
             </Link>
           </div>
         </div>
+
+        <TroubleConsultPanel />
 
         <AiVoiceCard />
 
