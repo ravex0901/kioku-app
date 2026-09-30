@@ -197,7 +197,7 @@ export function AiVoiceCard() {
         <div className="flex-1">
           <p className="text-sm font-bold text-ink">AIと会話する</p>
           <p className="mt-1 text-xs text-ink/60">
-            「押入れ、何が残ってる?」も聞けます
+            「押入れ、何が残ってる?」から世間話まで、何でも話しかけてください
           </p>
         </div>
       </button>
