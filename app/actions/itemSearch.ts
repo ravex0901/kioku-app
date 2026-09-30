@@ -39,16 +39,58 @@ type ItemRow = {
   location: { name: string } | { name: string }[] | null;
 };
 
+// AIが検索キーワードを生成できなかったことを示す専用エラー。
+// (写真が不鮮明・情報量が少ない、AIの応答形式が想定外だった場合などに投げる。
+//  Anthropic APIそのものが失敗したケースとはユーザーへの案内文を変えるため区別する)
+class KeywordGenerationError extends Error {}
+
 function extractJsonArray(text: string): string[] {
   const match = text.match(/\[[\s\S]*\]/);
   if (!match) {
-    throw new Error("AIの応答から検索キーワードを取得できませんでした。");
+    throw new KeywordGenerationError("AIの応答から検索キーワードを取得できませんでした。");
   }
   const parsed = JSON.parse(match[0]);
   if (!Array.isArray(parsed)) {
-    throw new Error("検索キーワードの形式が不正です。");
+    throw new KeywordGenerationError("検索キーワードの形式が不正です。");
   }
   return parsed.filter((k): k is string => typeof k === "string" && k.trim().length > 0);
+}
+
+// エラーの種類に応じて、ユーザーに表示する案内文を出し分ける。
+// (以前は原因を問わず一律「検索に失敗しました」だったため、暗い/不鮮明な写真での
+//  失敗なのか、AIサービス側の混雑なのかが利用者に伝わらず、次に何をすればよいか
+//  分からなかった。原因ごとに次の行動が分かるメッセージに変更)
+function describeSearchError(err: unknown, kind: "photo" | "text"): string {
+  if (err instanceof Anthropic.APIError) {
+    const status = err.status;
+    if (status === 400) {
+      return kind === "photo"
+        ? "写真を読み込めませんでした。別の写真、またはJPEG・PNG・GIF・WebP形式の画像でもう一度お試しください。"
+        : "検索リクエストを処理できませんでした。もう一度お試しください。";
+    }
+    if (status === 401 || status === 403) {
+      return "AI機能の設定に問題があるため検索できません。時間をおいても解決しない場合は管理者にご確認ください。";
+    }
+    if (status === 413) {
+      return "写真のサイズが大きすぎて検索できませんでした。別の写真でお試しください。";
+    }
+    if (status === 429) {
+      return "AIへのリクエストが混み合っています。少し時間をおいてもう一度お試しください。";
+    }
+    if (status === 529 || (typeof status === "number" && status >= 500)) {
+      return "AIサービスが一時的に混み合っています。少し時間をおいてもう一度お試しください。";
+    }
+  }
+
+  if (err instanceof KeywordGenerationError) {
+    return kind === "photo"
+      ? "写真から特徴を読み取れませんでした。明るい場所で、被写体がはっきり写った写真でもう一度お試しください。"
+      : "検索キーワードをうまく考えられませんでした。別の言い方で試してみてください。";
+  }
+
+  return kind === "photo"
+    ? "写真での検索に失敗しました。もう一度お試しください。"
+    : "検索に失敗しました。もう一度お試しください。";
 }
 
 const PHOTO_SEARCH_PROMPT = `あなたは生前整理・遺品整理アプリ「きおく」の検索アシスタントです。
@@ -82,7 +124,7 @@ export async function searchItemsByPhoto(
     "image/webp",
   ] as const;
   if (!supportedMediaTypes.includes(mediaType as (typeof supportedMediaTypes)[number])) {
-    return { ok: false, error: "この画像形式はAI検索に対応していません。" };
+    return { ok: false, error: "この画像形式はAI検索に対応していません。JPEG・PNG・GIF・WebP形式でお試しください。" };
   }
 
   try {
@@ -110,14 +152,14 @@ export async function searchItemsByPhoto(
 
     const textBlock = message.content.find((block) => block.type === "text");
     if (!textBlock || textBlock.type !== "text") {
-      throw new Error("AIから有効な応答がありませんでした。");
+      throw new KeywordGenerationError("AIから有効な応答がありませんでした。");
     }
 
     const keywords = extractJsonArray(textBlock.text);
     return await runKeywordSearch(keywords);
   } catch (err) {
     console.error("searchItemsByPhoto error", err);
-    return { ok: false, error: "写真での検索に失敗しました。もう一度お試しください。" };
+    return { ok: false, error: describeSearchError(err, "photo") };
   }
 }
 
@@ -160,14 +202,14 @@ export async function searchItemsByText(query: string): Promise<ItemSearchResult
 
     const textBlock = message.content.find((block) => block.type === "text");
     if (!textBlock || textBlock.type !== "text") {
-      throw new Error("AIから有効な応答がありませんでした。");
+      throw new KeywordGenerationError("AIから有効な応答がありませんでした。");
     }
 
     const keywords = extractJsonArray(textBlock.text);
     return await runKeywordSearch(keywords.length > 0 ? keywords : [trimmed]);
   } catch (err) {
     console.error("searchItemsByText error", err);
-    return { ok: false, error: "検索に失敗しました。もう一度お試しください。" };
+    return { ok: false, error: describeSearchError(err, "text") };
   }
 }
 
