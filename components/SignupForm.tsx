@@ -65,6 +65,21 @@ export function SignupForm() {
           className="rounded-lg border border-black/10 bg-white px-4 py-2.5 text-ink outline-none focus:border-green-400 focus:ring-2 focus:ring-green-100"
         />
       </div>
+      <div className="flex flex-col gap-1.5">
+        <label htmlFor="birthDate" className="text-sm font-medium text-ink/80">
+          生年月日(任意)
+        </label>
+        <input
+          id="birthDate"
+          name="birthDate"
+          type="date"
+          autoComplete="bday"
+          className="rounded-lg border border-black/10 bg-white px-4 py-2.5 text-ink outline-none focus:border-green-400 focus:ring-2 focus:ring-green-100"
+        />
+        <p className="text-xs text-ink/40">
+          タイムカプセルの「成人になったら」「送った本人と同じ歳になったら」などの開封条件に使われます。
+        </p>
+      </div>
 
       {state?.error && (
         <p className="rounded-lg bg-red-50 px-4 py-3 text-sm text-red-600">

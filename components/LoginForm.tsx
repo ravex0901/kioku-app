@@ -4,11 +4,18 @@ import Link from "next/link";
 import { useActionState } from "react";
 import { login } from "@/app/actions/auth";
 
-export function LoginForm({ infoMessage }: { infoMessage?: string }) {
+export function LoginForm({
+  infoMessage,
+  next,
+}: {
+  infoMessage?: string;
+  next?: string;
+}) {
   const [state, formAction, pending] = useActionState(login, undefined);
 
   return (
     <form action={formAction} className="flex flex-col gap-4">
+      {next && <input type="hidden" name="next" value={next} />}
       {infoMessage && (
         <p className="rounded-lg bg-green-50 px-4 py-3 text-sm text-green-700">
           {infoMessage}

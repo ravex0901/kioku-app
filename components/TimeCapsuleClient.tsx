@@ -1,10 +1,49 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
-import { createTimeCapsule } from "@/app/actions/timeCapsule";
-import type { TimeCapsule } from "@/lib/types";
+import { useEffect, useRef, useState, useTransition } from "react";
+import {
+  createTimeCapsule,
+  submitMarriageCertificate,
+} from "@/app/actions/timeCapsule";
+import type {
+  FamilyMember,
+  ReceivedTimeCapsule,
+  TimeCapsule,
+  TimeCapsuleUnlockConditionType,
+} from "@/lib/types";
 
 const MAX_MS = 120000; // 最大2分
+
+const UNLOCK_CONDITION_OPTIONS: {
+  value: TimeCapsuleUnlockConditionType;
+  label: string;
+  hint: string;
+}[] = [
+  {
+    value: "date",
+    label: "日付を指定する",
+    hint: "指定した日が来たら開封できます。",
+  },
+  {
+    value: "adulthood",
+    label: "成人になったら",
+    hint: "宛先の方が18歳になった時点で開封できます(宛先の方の生年月日の登録が必要です)。",
+  },
+  {
+    value: "marriage",
+    label: "結婚したら",
+    hint: "宛先の方が婚姻届等の画像を提出し、AIが確認できた時点で開封できます。",
+  },
+  {
+    value: "same_age_as_sender",
+    label: "送った本人と同じ歳になったら",
+    hint: "宛先の方が、あなたがこのタイムカプセルを送った時と同じ年齢になった時点で開封できます(あなた自身の生年月日の登録が必要です)。",
+  },
+];
+
+function conditionLabel(type: TimeCapsuleUnlockConditionType) {
+  return UNLOCK_CONDITION_OPTIONS.find((o) => o.value === type)?.label ?? type;
+}
 
 function formatDate(iso: string) {
   return new Date(iso).toLocaleDateString("ja-JP", {
@@ -28,14 +67,23 @@ export function TimeCapsuleClient({
   locked,
   unlocked,
   audioMap,
+  linkedFamilyMembers = [],
+  received = [],
+  receivedAudioMap = {},
 }: {
   locked: TimeCapsule[];
   unlocked: TimeCapsule[];
   audioMap: Record<string, string>;
+  linkedFamilyMembers?: FamilyMember[];
+  received?: ReceivedTimeCapsule[];
+  receivedAudioMap?: Record<string, string>;
 }) {
   const [showForm, setShowForm] = useState(false);
   const [title, setTitle] = useState("");
   const [recipientName, setRecipientName] = useState("");
+  const [recipientFamilyMemberId, setRecipientFamilyMemberId] = useState("");
+  const [unlockConditionType, setUnlockConditionType] =
+    useState<TimeCapsuleUnlockConditionType>("date");
   const [messageText, setMessageText] = useState("");
   const [openAt, setOpenAt] = useState("");
   const [recording, setRecording] = useState(false);
@@ -121,6 +169,8 @@ export function TimeCapsuleClient({
   function resetForm() {
     setTitle("");
     setRecipientName("");
+    setRecipientFamilyMemberId("");
+    setUnlockConditionType("date");
     setMessageText("");
     setOpenAt("");
     discardRecording();
@@ -131,8 +181,14 @@ export function TimeCapsuleClient({
       setError("タイトルを入力してください。");
       return;
     }
-    if (!openAt) {
+    if (unlockConditionType === "date" && !openAt) {
       setError("開封日を指定してください。");
+      return;
+    }
+    if (unlockConditionType !== "date" && !recipientFamilyMemberId) {
+      setError(
+        "年齢や結婚を条件にする場合は、紐付け済みの家族アカウント宛てに送る必要があります。"
+      );
       return;
     }
     if (!messageText.trim() && !blobRef.current) {
@@ -145,6 +201,8 @@ export function TimeCapsuleClient({
       const formData = new FormData();
       formData.append("title", title.trim());
       formData.append("recipientName", recipientName.trim());
+      formData.append("recipientFamilyMemberId", recipientFamilyMemberId);
+      formData.append("unlockConditionType", unlockConditionType);
       formData.append("messageText", messageText.trim());
       formData.append("openAt", openAt);
       if (blobRef.current) {
@@ -217,6 +275,60 @@ export function TimeCapsuleClient({
               placeholder="宛先(例: 孫のゆうたへ)・省略可"
               className="w-full rounded-xl border border-black/10 bg-white px-4 py-2.5 text-sm text-ink outline-none focus:border-green-400 focus:ring-2 focus:ring-green-100"
             />
+
+            {linkedFamilyMembers.length > 0 && (
+              <div className="flex flex-col gap-1">
+                <label className="text-xs font-medium text-ink/60">
+                  宛先の家族アカウント(成人・結婚などの条件を使う場合は必須)
+                </label>
+                <select
+                  value={recipientFamilyMemberId}
+                  onChange={(e) => setRecipientFamilyMemberId(e.target.value)}
+                  className="w-full rounded-xl border border-black/10 bg-white px-4 py-2.5 text-sm text-ink outline-none focus:border-green-400 focus:ring-2 focus:ring-green-100"
+                >
+                  <option value="">指定しない(日付のみで開封)</option>
+                  {linkedFamilyMembers.map((m) => (
+                    <option key={m.id} value={m.id}>
+                      {m.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
+
+            <div className="flex flex-col gap-1">
+              <label className="text-xs font-medium text-ink/60">
+                開封の条件
+              </label>
+              <select
+                value={unlockConditionType}
+                onChange={(e) =>
+                  setUnlockConditionType(
+                    e.target.value as TimeCapsuleUnlockConditionType
+                  )
+                }
+                disabled={linkedFamilyMembers.length === 0}
+                className="w-full rounded-xl border border-black/10 bg-white px-4 py-2.5 text-sm text-ink outline-none focus:border-green-400 focus:ring-2 focus:ring-green-100 disabled:opacity-50"
+              >
+                {UNLOCK_CONDITION_OPTIONS.map((o) => (
+                  <option
+                    key={o.value}
+                    value={o.value}
+                    disabled={o.value !== "date" && linkedFamilyMembers.length === 0}
+                  >
+                    {o.label}
+                  </option>
+                ))}
+              </select>
+              <p className="text-xs text-ink/50">
+                {
+                  UNLOCK_CONDITION_OPTIONS.find(
+                    (o) => o.value === unlockConditionType
+                  )?.hint
+                }
+              </p>
+            </div>
+
             <textarea
               value={messageText}
               onChange={(e) => setMessageText(e.target.value)}
@@ -261,18 +373,20 @@ export function TimeCapsuleClient({
               <audio src={previewUrl} controls className="w-full" />
             )}
 
-            <div className="flex flex-col gap-1">
-              <label className="text-xs font-medium text-ink/60">
-                開封日
-              </label>
-              <input
-                type="date"
-                value={openAt}
-                min={minOpenDate()}
-                onChange={(e) => setOpenAt(e.target.value)}
-                className="w-full rounded-xl border border-black/10 bg-white px-4 py-2.5 text-sm text-ink outline-none focus:border-green-400 focus:ring-2 focus:ring-green-100"
-              />
-            </div>
+            {unlockConditionType === "date" && (
+              <div className="flex flex-col gap-1">
+                <label className="text-xs font-medium text-ink/60">
+                  開封日
+                </label>
+                <input
+                  type="date"
+                  value={openAt}
+                  min={minOpenDate()}
+                  onChange={(e) => setOpenAt(e.target.value)}
+                  className="w-full rounded-xl border border-black/10 bg-white px-4 py-2.5 text-sm text-ink outline-none focus:border-green-400 focus:ring-2 focus:ring-green-100"
+                />
+              </div>
+            )}
 
             {error && <p className="text-xs text-red-600">{error}</p>}
 
@@ -301,6 +415,27 @@ export function TimeCapsuleClient({
           </div>
         )}
       </div>
+
+      {received.length > 0 && (
+        <div>
+          <h2 className="mb-3 text-lg font-bold text-ink">
+            家族から受け取ったタイムカプセル
+          </h2>
+          <div className="flex flex-col gap-4">
+            {received.map((c) => (
+              <ReceivedCapsuleCard
+                key={c.id}
+                capsule={c}
+                audioUrl={
+                  c.unlocked && c.messageAudioPath
+                    ? receivedAudioMap[c.messageAudioPath]
+                    : undefined
+                }
+              />
+            ))}
+          </div>
+        </div>
+      )}
 
       {unlocked.length > 0 && (
         <div>
@@ -408,6 +543,162 @@ export function TimeCapsuleClient({
           </div>
         )}
       </div>
+    </div>
+  );
+}
+
+function ReceivedCapsuleCard({
+  capsule,
+  audioUrl,
+}: {
+  capsule: ReceivedTimeCapsule;
+  audioUrl?: string;
+}) {
+  const [isOpen, setIsOpen] = useState(false);
+  const [file, setFile] = useState<File | null>(null);
+  const [pending, startTransition] = useTransition();
+  const [error, setError] = useState<string | null>(null);
+  const [verifyResult, setVerifyResult] = useState<
+    { verified: boolean; reason: string } | null
+  >(null);
+
+  if (capsule.unlocked) {
+    return (
+      <div className="rounded-2xl border border-gold/40 bg-white/70 p-5 shadow-sm">
+        <div className="flex items-center justify-between gap-3">
+          <div>
+            <p className="text-xs text-ink/40">
+              {conditionLabel(capsule.unlockConditionType)}・差出人:{" "}
+              {capsule.senderName}
+            </p>
+            <p className="mt-1 font-serif-jp text-base font-bold text-ink">
+              {capsule.title}
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={() => setIsOpen((v) => !v)}
+            className="shrink-0 rounded-full bg-gold/20 px-4 py-2 text-xs font-semibold text-green-800 transition hover:bg-gold/30"
+          >
+            {isOpen ? "閉じる" : "開封する"}
+          </button>
+        </div>
+        {isOpen && (
+          <div className="mt-3 border-t border-black/5 pt-3">
+            {capsule.messageText && (
+              <p className="whitespace-pre-wrap text-sm text-ink/80">
+                {capsule.messageText}
+              </p>
+            )}
+            {audioUrl && (
+              // eslint-disable-next-line jsx-a11y/media-has-caption
+              <audio src={audioUrl} controls className="mt-2 w-full" />
+            )}
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  async function handleSubmitCertificate() {
+    if (!file) {
+      setError("画像を選択してください。");
+      return;
+    }
+    setError(null);
+    startTransition(async () => {
+      const formData = new FormData();
+      formData.append("image", file);
+      const result = await submitMarriageCertificate(capsule.id, formData);
+      if (!result.ok) {
+        setError(result.error);
+        return;
+      }
+      setVerifyResult({ verified: result.verified, reason: result.reason });
+      if (result.verified) {
+        // AIが婚姻届と確認できた場合は自動開封されるため、画面を更新して反映する。
+        window.location.reload();
+      }
+    });
+  }
+
+  return (
+    <div className="flex flex-col gap-3 rounded-2xl border border-black/5 bg-black/[0.02] p-5">
+      <div className="flex items-center gap-4">
+        <span
+          aria-hidden
+          className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-black/5 text-ink/40"
+        >
+          <svg viewBox="0 0 24 24" fill="none" className="h-5 w-5">
+            <rect
+              x="5"
+              y="10.5"
+              width="14"
+              height="9"
+              rx="1.6"
+              stroke="currentColor"
+              strokeWidth={1.6}
+            />
+            <path
+              d="M8 10.5V8a4 4 0 0 1 8 0v2.5"
+              stroke="currentColor"
+              strokeWidth={1.6}
+            />
+          </svg>
+        </span>
+        <div className="min-w-0 flex-1">
+          <p className="truncate font-serif-jp text-sm font-bold text-ink">
+            {capsule.title}
+          </p>
+          <p className="text-xs text-ink/50">
+            差出人: {capsule.senderName} ・ 条件:{" "}
+            {conditionLabel(capsule.unlockConditionType)}
+          </p>
+        </div>
+      </div>
+
+      {capsule.unlockConditionType === "marriage" && (
+        <div className="rounded-xl border border-black/10 bg-white/70 p-3">
+          {capsule.marriageSubmitted && !verifyResult ? (
+            <p className="text-xs text-ink/60">
+              婚姻届等の画像を提出済みです。確認結果をお待ちください。
+            </p>
+          ) : (
+            <>
+              <p className="mb-2 text-xs text-ink/60">
+                結婚されたら、婚姻届(受理証明書)の画像を提出してください。AIが内容を確認し、問題がなければその場で開封されます。
+              </p>
+              <input
+                type="file"
+                accept="image/*"
+                onChange={(e) => setFile(e.target.files?.[0] ?? null)}
+                className="mb-2 block w-full text-xs"
+              />
+              {error && <p className="mb-2 text-xs text-red-600">{error}</p>}
+              {verifyResult && !verifyResult.verified && (
+                <p className="mb-2 text-xs text-red-600">
+                  AIが婚姻届として確認できませんでした: {verifyResult.reason}
+                  。別の画像で再度お試しください。
+                </p>
+              )}
+              <button
+                type="button"
+                onClick={handleSubmitCertificate}
+                disabled={pending}
+                className="rounded-full bg-green-700 px-4 py-2 text-xs font-semibold text-white transition hover:bg-green-800 disabled:opacity-60"
+              >
+                {pending ? "確認中…" : "画像を提出する"}
+              </button>
+            </>
+          )}
+        </div>
+      )}
+
+      {capsule.unlockConditionType !== "marriage" && (
+        <p className="text-xs text-ink/50">
+          {conditionLabel(capsule.unlockConditionType)}の条件を満たすと、自動的に開封できるようになります。
+        </p>
+      )}
     </div>
   );
 }

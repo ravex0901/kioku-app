@@ -268,6 +268,20 @@ export function SettingsClient({
     }
   }
 
+  // 家族招待リンク(ご家族がご自身のアカウントで紐付けるためのリンク)のコピー
+  const [copiedInviteId, setCopiedInviteId] = useState<string | null>(null);
+  async function handleCopyInviteLink(member: FamilyMember) {
+    if (!member.invite_token) return;
+    const fullUrl = `${window.location.origin}/invite/${member.invite_token}`;
+    try {
+      await navigator.clipboard.writeText(fullUrl);
+      setCopiedInviteId(member.id);
+      setTimeout(() => setCopiedInviteId(null), 2000);
+    } catch {
+      // クリップボードが使用できない場合は何もしない
+    }
+  }
+
   return (
     <div className="flex flex-col gap-6">
       <div className="flex items-center gap-3 rounded-[1.75rem] border border-green-100 bg-white/70 p-5 shadow-sm">
@@ -298,16 +312,39 @@ export function SettingsClient({
             {family.map((member) => (
               <li
                 key={member.id}
-                className="flex items-center justify-between rounded-xl border border-green-100 bg-white px-4 py-2.5 text-sm"
+                className="flex flex-col gap-2 rounded-xl border border-green-100 bg-white px-4 py-2.5 text-sm"
               >
-                <span className="font-medium text-ink">{member.name}</span>
-                <span className="text-xs text-ink/50">
-                  {labelFor(FAMILY_RELATION_OPTIONS, member.relation)}
-                </span>
+                <div className="flex items-center justify-between">
+                  <span className="font-medium text-ink">{member.name}</span>
+                  <span className="text-xs text-ink/50">
+                    {labelFor(FAMILY_RELATION_OPTIONS, member.relation)}
+                  </span>
+                </div>
+                {member.linked_user_id ? (
+                  <span className="inline-flex w-fit items-center gap-1 rounded-full bg-green-50 px-2.5 py-1 text-[11px] font-medium text-green-700">
+                    ✓ ご本人のアカウントとつながり済み
+                  </span>
+                ) : member.invite_token ? (
+                  <div className="flex items-center justify-between gap-2 rounded-lg border border-black/10 bg-white/70 px-2.5 py-1.5">
+                    <span className="truncate text-[11px] text-ink/50">
+                      {`/invite/${member.invite_token}`}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => handleCopyInviteLink(member)}
+                      className="shrink-0 rounded-full border border-black/10 px-2.5 py-1 text-[11px] font-medium text-ink/70 transition hover:bg-black/5"
+                    >
+                      {copiedInviteId === member.id ? "コピーしました" : "招待リンクをコピー"}
+                    </button>
+                  </div>
+                ) : null}
               </li>
             ))}
           </ul>
         )}
+        <p className="mb-3 text-xs text-ink/50">
+          招待リンクをご家族に送ると、ご家族がご自身のアカウントでサインアップ(またはログイン)してつながれます。アカウントを作らない場合でも、「もしもの時」の共有リンクはこれまで通り使えます。
+        </p>
         <div className="flex flex-col gap-3">
           <div className="flex flex-col gap-1.5">
             <label className="text-sm font-medium text-ink/80">お名前</label>

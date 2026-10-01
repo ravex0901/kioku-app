@@ -31,20 +31,30 @@ function PersonCard({
   name,
   subtitle,
   isRoot = false,
+  linkedHref,
 }: {
   name: string;
   subtitle?: string;
   isRoot?: boolean;
+  linkedHref?: string;
 }) {
   const initial = name.trim().slice(0, 1) || "?";
-  return (
+  const content = (
     <div className="flex w-20 shrink-0 flex-col items-center gap-1 sm:w-24">
       <span
-        className={`flex h-14 w-14 shrink-0 items-center justify-center rounded-full font-serif-jp text-lg font-bold shadow-sm sm:h-16 sm:w-16 sm:text-xl ${
+        className={`relative flex h-14 w-14 shrink-0 items-center justify-center rounded-full font-serif-jp text-lg font-bold shadow-sm sm:h-16 sm:w-16 sm:text-xl ${
           isRoot ? "bg-green-700 text-cream" : colorFor(name)
-        }`}
+        } ${linkedHref ? "ring-2 ring-green-500 ring-offset-2" : ""}`}
       >
         {initial}
+        {linkedHref && (
+          <span
+            aria-hidden
+            className="absolute -bottom-0.5 -right-0.5 flex h-5 w-5 items-center justify-center rounded-full bg-green-600 text-[10px] text-white shadow"
+          >
+            ✓
+          </span>
+        )}
       </span>
       <span className="w-full truncate text-center text-xs font-semibold text-ink sm:text-sm">
         {name}
@@ -54,8 +64,22 @@ function PersonCard({
           {subtitle}
         </span>
       )}
+      {linkedHref && (
+        <span className="whitespace-nowrap text-center text-[10px] font-semibold text-green-700">
+          日記を見る →
+        </span>
+      )}
     </div>
   );
+
+  if (linkedHref) {
+    return (
+      <Link href={linkedHref} className="rounded-xl transition hover:opacity-80">
+        {content}
+      </Link>
+    );
+  }
+  return content;
 }
 
 export function FamilyTreeClient({
@@ -106,6 +130,11 @@ export function FamilyTreeClient({
                   <PersonCard
                     name={spouse.name}
                     subtitle={relationLabel(spouse.relation)}
+                    linkedHref={
+                      spouse.linked_user_id
+                        ? `/journal/view/${spouse.linked_user_id}`
+                        : undefined
+                    }
                   />
                 </>
               )}
@@ -139,6 +168,11 @@ export function FamilyTreeClient({
                         <PersonCard
                           name={child.name}
                           subtitle={relationLabel(child.relation)}
+                          linkedHref={
+                            child.linked_user_id
+                              ? `/journal/view/${child.linked_user_id}`
+                              : undefined
+                          }
                         />
                       </div>
                     );
@@ -159,18 +193,33 @@ export function FamilyTreeClient({
                 key={member.id}
                 name={member.name}
                 subtitle={relationLabel(member.relation)}
+                linkedHref={
+                  member.linked_user_id
+                    ? `/journal/view/${member.linked_user_id}`
+                    : undefined
+                }
               />
             ))}
           </div>
         </div>
       )}
 
-      <Link
-        href="/settings#family"
-        className="self-start text-sm text-green-700 underline underline-offset-2"
-      >
-        家族を追加・編集する
-      </Link>
+      <div className="flex flex-wrap gap-x-5 gap-y-2">
+        <Link
+          href="/settings#family"
+          className="self-start text-sm text-green-700 underline underline-offset-2"
+        >
+          家族を追加・編集する
+        </Link>
+        {family.some((f) => f.linked_user_id) && (
+          <Link
+            href="/family/voice-checkin"
+            className="self-start text-sm text-green-700 underline underline-offset-2"
+          >
+            家族へボイスメッセージを送る
+          </Link>
+        )}
+      </div>
     </div>
   );
 }

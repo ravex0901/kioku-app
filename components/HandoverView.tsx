@@ -3,7 +3,13 @@
 import { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { buildInheritanceChecklist } from "@/lib/inheritanceProcedures";
-import type { CategoryMajor, DigitalItemType, Disposition } from "@/lib/types";
+import { submitDeathCertificate } from "@/app/actions/deathCertificate";
+import type {
+  CategoryMajor,
+  DigitalItemType,
+  Disposition,
+  HandoverDisclosureStatus,
+} from "@/lib/types";
 
 type ItemRow = {
   name: string;
@@ -35,9 +41,11 @@ export type HandoverStatus =
       unlocked: false;
       conditionMet: boolean;
       requiresApproval: boolean;
+      disclosureStatus: HandoverDisclosureStatus;
       inactiveDays: number;
       thresholdDays: number;
       recipientName?: string | null;
+      ownerUserId?: string;
     }
   | {
       found: true;
@@ -182,6 +190,14 @@ export function HandoverView({
               {approving ? "処理中…" : "開示を承認する"}
             </button>
           </div>
+        )}
+
+        {status.conditionMet && !status.requiresApproval && (
+          <DeathCertificateStage
+            token={token}
+            disclosureStatus={status.disclosureStatus}
+            onSubmitted={refresh}
+          />
         )}
       </div>
     );
@@ -401,6 +417,98 @@ export function HandoverView({
           </div>
         </div>
       )}
+    </div>
+  );
+}
+
+// 非アクティブ検知の条件を満たした後、本当に「もしもの時」かどうかを確認するための
+// 死亡届(または除籍謄本等)の画像提出〜運営確認の段階を表示する。
+function DeathCertificateStage({
+  token,
+  disclosureStatus,
+  onSubmitted,
+}: {
+  token: string;
+  disclosureStatus: HandoverDisclosureStatus;
+  onSubmitted: () => void;
+}) {
+  const [submittedByName, setSubmittedByName] = useState("");
+  const [file, setFile] = useState<File | null>(null);
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  if (disclosureStatus === "certificate_submitted") {
+    return (
+      <div className="mt-4 rounded-2xl border border-black/10 bg-white/70 p-4">
+        <p className="text-sm text-ink/70">
+          死亡届等の画像を受け付けました。運営が内容を確認しています。確認が完了するまで、今しばらくお待ちください。
+        </p>
+      </div>
+    );
+  }
+
+  async function handleSubmit() {
+    setError(null);
+    if (!submittedByName.trim()) {
+      setError("お名前を入力してください。");
+      return;
+    }
+    if (!file) {
+      setError("画像を選択してください。");
+      return;
+    }
+    setSubmitting(true);
+    const formData = new FormData();
+    formData.set("submittedByName", submittedByName.trim());
+    formData.set("image", file);
+    const result = await submitDeathCertificate(token, formData);
+    setSubmitting(false);
+    if (!result.ok) {
+      setError(result.error);
+      return;
+    }
+    onSubmitted();
+  }
+
+  return (
+    <div className="mt-4 rounded-2xl border border-black/10 bg-white/70 p-4">
+      <p className="mb-3 text-sm text-ink/70">
+        ご本人と長期間連絡が取れない状態が続いています。大変お手数ですが、本当に「もしもの時」であることを確認するため、死亡届(または除籍謄本等、死亡の事実が確認できる書類)の画像を提出してください。運営が内容を確認したうえで、内容を開示します。
+      </p>
+      {disclosureStatus === "rejected" && (
+        <p className="mb-3 rounded-lg bg-red-50 px-3 py-2 text-xs text-red-600">
+          前回の提出内容は確認できませんでした。お手数ですが、別の書類や、より鮮明な画像で再度提出してください。
+        </p>
+      )}
+      <div className="mb-3 flex flex-col gap-1.5">
+        <label className="text-xs font-medium text-ink/70">あなたのお名前</label>
+        <input
+          value={submittedByName}
+          onChange={(e) => setSubmittedByName(e.target.value)}
+          placeholder="例:田中 花子"
+          className="rounded-lg border border-black/10 bg-white px-3 py-2 text-sm outline-none focus:border-green-400 focus:ring-2 focus:ring-green-100"
+        />
+      </div>
+      <div className="mb-3 flex flex-col gap-1.5">
+        <label className="text-xs font-medium text-ink/70">
+          死亡届・除籍謄本等の画像
+        </label>
+        <input
+          type="file"
+          accept="image/*"
+          onChange={(e) => setFile(e.target.files?.[0] ?? null)}
+          className="text-sm"
+        />
+      </div>
+      {error && <p className="mb-2 text-xs text-red-600">{error}</p>}
+      <button
+        type="button"
+        onClick={handleSubmit}
+        disabled={submitting}
+        className="rounded-full bg-green-700 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-green-800 disabled:opacity-60"
+      >
+        {submitting ? "送信中…" : "画像を提出する"}
+      </button>
     </div>
   );
 }
