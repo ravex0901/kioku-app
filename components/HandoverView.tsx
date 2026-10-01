@@ -11,6 +11,22 @@ type ItemRow = {
   disposition: Disposition | null;
 };
 type DigitalItemRow = { title: string; item_type: DigitalItemType };
+type BucketListRow = { title: string; done: boolean };
+type MedicalInfoShared = {
+  doctor_name: string | null;
+  hospital_name: string | null;
+  doctor_phone: string | null;
+  conditions: string | null;
+  medications: string | null;
+} | null;
+type AlbumPhotoShared = { url: string | null; caption: string | null };
+type MoodRecentShared = { mood: "good" | "normal" | "bad"; log_date: string } | null;
+
+const MOOD_EMOJI: Record<"good" | "normal" | "bad", string> = {
+  good: "😊",
+  normal: "😐",
+  bad: "😟",
+};
 
 export type HandoverStatus =
   | { found: false }
@@ -40,6 +56,10 @@ export type HandoverStatus =
       items: ItemRow[];
       digitalItems: DigitalItemRow[];
       checklistProgress: Record<string, boolean>;
+      bucketList: BucketListRow[];
+      medical: MedicalInfoShared;
+      album: AlbumPhotoShared[];
+      moodRecent: MoodRecentShared;
     };
 
 // 「なし」設定時のしきい値(SettingsClientの NONE_INACTIVE_DAYS と対応)。
@@ -282,8 +302,105 @@ export function HandoverView({
           })}
         </div>
       </div>
+
+      {status.bucketList.length > 0 && (
+        <div className="mt-6">
+          <h2 className="mb-3 text-lg font-bold text-ink">
+            やりたいことリスト
+          </h2>
+          <ul className="flex flex-col gap-2">
+            {status.bucketList.map((b, i) => (
+              <li
+                key={i}
+                className="flex items-center gap-2 rounded-xl border border-green-100 bg-white/70 px-4 py-2.5 text-sm text-ink"
+              >
+                <span
+                  className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-full border text-[10px] font-bold ${
+                    b.done
+                      ? "border-green-600 bg-green-600 text-white"
+                      : "border-black/20 text-transparent"
+                  }`}
+                >
+                  ✓
+                </span>
+                <span className={b.done ? "text-ink/40 line-through" : ""}>
+                  {b.title}
+                </span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
+      {status.medical && (
+        <div className="mt-6">
+          <h2 className="mb-3 text-lg font-bold text-ink">
+            医療情報
+          </h2>
+          <div className="flex flex-col gap-1.5 rounded-xl border border-black/5 bg-white/80 p-4 text-sm text-ink/80">
+            {status.medical.hospital_name && (
+              <p>病院名:{status.medical.hospital_name}</p>
+            )}
+            {status.medical.doctor_name && (
+              <p>かかりつけ医:{status.medical.doctor_name}</p>
+            )}
+            {status.medical.doctor_phone && (
+              <p>電話番号:{status.medical.doctor_phone}</p>
+            )}
+            {status.medical.conditions && (
+              <div>
+                <p className="font-semibold text-ink">持病</p>
+                <p className="whitespace-pre-wrap text-ink/70">
+                  {status.medical.conditions}
+                </p>
+              </div>
+            )}
+            {status.medical.medications && (
+              <div>
+                <p className="font-semibold text-ink">今飲んでいる薬</p>
+                <p className="whitespace-pre-wrap text-ink/70">
+                  {status.medical.medications}
+                </p>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {status.album.length > 0 && (
+        <div className="mt-6">
+          <h2 className="mb-3 text-lg font-bold text-ink">アルバム</h2>
+          <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+            {status.album.map((photo, i) =>
+              photo.url ? (
+                <div
+                  key={i}
+                  className="aspect-square overflow-hidden rounded-xl border border-black/5 bg-white/60"
+                >
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={photo.url}
+                    alt={photo.caption ?? ""}
+                    className="h-full w-full object-cover"
+                  />
+                </div>
+              ) : null
+            )}
+          </div>
+        </div>
+      )}
+
+      {status.moodRecent && (
+        <div className="mt-6">
+          <h2 className="mb-3 text-lg font-bold text-ink">今日の調子</h2>
+          <div className="flex items-center gap-3 rounded-xl border border-black/5 bg-white/80 p-4">
+            <span className="text-3xl">{MOOD_EMOJI[status.moodRecent.mood]}</span>
+            <span className="text-sm text-ink/60">
+              {status.moodRecent.log_date}
+            </span>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
-
-
