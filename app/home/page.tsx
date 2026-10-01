@@ -8,7 +8,11 @@ import { Header } from "@/components/Header";
 import { DispositionBadge } from "@/components/DispositionBadge";
 import { AiVoiceCard } from "@/components/AiVoiceCard";
 import { TroubleConsultPanel } from "@/components/TroubleConsultPanel";
+import { TodayMoodCard } from "@/components/TodayMoodCard";
+import { VoiceCheckinCard } from "@/components/VoiceCheckinCard";
 import { formatPriceDisplay } from "@/lib/priceRange";
+import { getTodayMood } from "@/app/actions/mood";
+import { getCurrentVoiceCheckin } from "@/app/actions/voiceCheckins";
 import type { Disposition } from "@/lib/types";
 
 type RecentItem = {
@@ -141,8 +145,15 @@ export default async function HomePage() {
     .update({ last_active_at: new Date().toISOString() })
     .eq("id", user.id);
 
-  const [totalRes, locatedRes, dispositionRes, completedRes, recentRes] =
-    await Promise.all([
+  const [
+    totalRes,
+    locatedRes,
+    dispositionRes,
+    completedRes,
+    recentRes,
+    todayMoodResult,
+    voiceCheckinResult,
+  ] = await Promise.all([
       supabase
         .from("items")
         .select("id", { count: "exact", head: true })
@@ -169,6 +180,8 @@ export default async function HomePage() {
         .eq("user_id", user.id)
         .order("created_at", { ascending: false })
         .limit(5),
+      getTodayMood(),
+      getCurrentVoiceCheckin(),
     ]);
 
   const total = totalRes.count ?? 0;
@@ -176,6 +189,9 @@ export default async function HomePage() {
   const dispositionDecided = dispositionRes.count ?? 0;
   const completed = completedRes.count ?? 0;
   const recentItems = (recentRes.data ?? []) as RecentItem[];
+  const todayMood = todayMoodResult.ok ? todayMoodResult.mood : null;
+  const voiceCheckin =
+    voiceCheckinResult.ok && voiceCheckinResult.checkin ? voiceCheckinResult.checkin : null;
 
   const photoMap = await getSignedUrlMap(
     supabase,
@@ -230,6 +246,17 @@ export default async function HomePage() {
             </svg>
           </span>
         </div>
+
+        <TodayMoodCard initialMood={todayMood} />
+
+        {voiceCheckin && (
+          <VoiceCheckinCard
+            slot={voiceCheckin.time_slot}
+            speakerName={voiceCheckin.speaker_name}
+            messageText={voiceCheckin.message_text}
+            audioUrl={voiceCheckin.audioUrl}
+          />
+        )}
 
         <div className="relative overflow-hidden rounded-[1.75rem] bg-green-700 px-6 py-7 text-cream shadow-md">
           <span
@@ -491,6 +518,55 @@ export default async function HomePage() {
                   strokeWidth={1.6}
                   strokeLinecap="round"
                 />
+              </svg>
+            }
+          />
+          <HomeGridCard
+            href="/bucket-list"
+            label="やりたいことリスト"
+            bg="bg-gold/20"
+            fg="text-green-800"
+            icon={
+              <svg viewBox="0 0 24 24" fill="none" className="h-5 w-5">
+                <rect x="4.5" y="4.5" width="15" height="15" rx="2.5" stroke="currentColor" strokeWidth={1.6} />
+                <path d="M8 12.5l2.3 2.3L16 9" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+            }
+          />
+          <HomeGridCard
+            href="/medical"
+            label="医療情報"
+            bg="bg-red-50"
+            fg="text-red-500"
+            icon={
+              <svg viewBox="0 0 24 24" fill="none" className="h-5 w-5">
+                <rect x="4" y="4" width="16" height="16" rx="3" stroke="currentColor" strokeWidth={1.6} />
+                <path d="M12 8v8M8 12h8" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" />
+              </svg>
+            }
+          />
+          <HomeGridCard
+            href="/album"
+            label="アルバム"
+            bg="bg-green-50"
+            fg="text-green-700"
+            icon={
+              <svg viewBox="0 0 24 24" fill="none" className="h-5 w-5">
+                <rect x="4" y="5.5" width="16" height="13" rx="2" stroke="currentColor" strokeWidth={1.6} />
+                <circle cx="9" cy="10.5" r="1.6" stroke="currentColor" strokeWidth={1.4} />
+                <path d="M5 16l4.5-4 3 2.8L16 11l3 4" stroke="currentColor" strokeWidth={1.5} strokeLinejoin="round" />
+              </svg>
+            }
+          />
+          <HomeGridCard
+            href="/voice-checkins"
+            label="家族ボイスメッセージ"
+            bg="bg-gold/20"
+            fg="text-green-800"
+            icon={
+              <svg viewBox="0 0 24 24" fill="none" className="h-5 w-5">
+                <path d="M12 15a3 3 0 0 0 3-3V7a3 3 0 0 0-6 0v5a3 3 0 0 0 3 3Z" stroke="currentColor" strokeWidth={1.6} />
+                <path d="M7 11v1a5 5 0 0 0 10 0v-1M12 19v2" stroke="currentColor" strokeWidth={1.6} strokeLinecap="round" />
               </svg>
             }
           />
