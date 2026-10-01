@@ -128,10 +128,10 @@ export default async function AdminPage() {
 
       <section className="mb-8 rounded-[1.75rem] border border-red-100 bg-white/70 p-5 shadow-sm">
         <h2 className="mb-1 text-xs font-semibold tracking-[0.15em] text-red-500">
-          「もしもの時」開示承認待ち(死亡届等の確認)
+         「もしもの時」開示承認待ち(死亡確認書類の確認)
         </h2>
         <p className="mb-3 text-xs text-ink/50">
-          非アクティブ検知の条件を満たし、ご家族から死亡届(または除籍謄本等)の画像が提出された方の一覧です。内容を確認し、承認すると「もしもの時」の内容がご家族に開示されます。
+          非アクティブ検知の条件を満たし、ご家族から死亡診断書(死体検案書)・除籍謄本(戸籍)・死亡届記載事項証明書・死亡届等いずれかの画像が提出された方の一覧です。内容を確認し、承認すると「もしもの時」の内容がご家族に開示されます。
         </p>
         <AdminDeathCertReview items={pendingCertsWithUrls} />
       </section>
