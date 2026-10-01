@@ -32,7 +32,7 @@ const UNLOCK_CONDITION_OPTIONS: {
   {
     value: "marriage",
     label: "結婚したら",
-    hint: "宛先の方が婚姻届等の画像を提出し、AIが確認できた時点で開封できます。",
+        hint: "宛先の方が婚姻届(または婚姻届受理証明書・戸籍謄本・戸籍抄本等)の画像を提出し、AIが確認できた時点で開封できます。",
   },
   {
     value: "same_age_as_sender",
@@ -661,12 +661,12 @@ function ReceivedCapsuleCard({
         <div className="rounded-xl border border-black/10 bg-white/70 p-3">
           {capsule.marriageSubmitted && !verifyResult ? (
             <p className="text-xs text-ink/60">
-              婚姻届等の画像を提出済みです。確認結果をお待ちください。
+              婚姻届(または婚姻届受理証明書・戸籍謄本・戸籍抄本)の画像を提出済みです。確認結果をお待ちください。
             </p>
           ) : (
             <>
               <p className="mb-2 text-xs text-ink/60">
-                結婚されたら、婚姻届(受理証明書)の画像を提出してください。AIが内容を確認し、問題がなければその場で開封されます。
+                結婚されたら、婚姻届・婚姻届受理証明書・戸籍謄本(戸籍全部事項証明書)・戸籍抄本(戸籍個人事項証明書)のいずれかの画像を提出してください。AIが内容を確認し、問題がなければその場で開封されます。
               </p>
               <input
                 type="file"
@@ -677,7 +677,7 @@ function ReceivedCapsuleCard({
               {error && <p className="mb-2 text-xs text-red-600">{error}</p>}
               {verifyResult && !verifyResult.verified && (
                 <p className="mb-2 text-xs text-red-600">
-                  AIが婚姻届として確認できませんでした: {verifyResult.reason}
+                  AIが結婚を証明する書類として確認できませんでした: {verifyResult.reason}
                   。別の画像で再度お試しください。
                 </p>
               )}
