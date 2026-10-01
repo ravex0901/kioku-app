@@ -441,8 +441,7 @@ function DeathCertificateStage({
     return (
       <div className="mt-4 rounded-2xl border border-black/10 bg-white/70 p-4">
         <p className="text-sm text-ink/70">
-          死亡届等の画像を受け付けました。運営が内容を確認しています。確認が完了するまで、今しばらくお待ちください。
-        </p>
+         死亡診断書(死体検案書)・死亡届記載事項証明書・除籍謄本(戸籍)等の画像を受け付けました。運営が内容を確認しています。確認が完了するまで、今しばらくお待ちください。
       </div>
     );
   }
@@ -473,7 +472,7 @@ function DeathCertificateStage({
   return (
     <div className="mt-4 rounded-2xl border border-black/10 bg-white/70 p-4">
       <p className="mb-3 text-sm text-ink/70">
-        ご本人と長期間連絡が取れない状態が続いています。大変お手数ですが、本当に「もしもの時」であることを確認するため、死亡届(または除籍謄本等、死亡の事実が確認できる書類)の画像を提出してください。運営が内容を確認したうえで、内容を開示します。
+       ご本人と長期間連絡が取れない状態が続いています。大変お手数ですが、本当に「もしもの時」であることを確認するため、次のいずれかの画像を提出してください:「死亡診断書(死体検案書)」「除籍謄本(戸籍)」「死亡届記載事項証明書」、または死亡届そのものなど、死亡の事実が確認できる書類。運営が内容を確認したうえで、内容を開示します。
       </p>
       {disclosureStatus === "rejected" && (
         <p className="mb-3 rounded-lg bg-red-50 px-3 py-2 text-xs text-red-600">
@@ -491,7 +490,7 @@ function DeathCertificateStage({
       </div>
       <div className="mb-3 flex flex-col gap-1.5">
         <label className="text-xs font-medium text-ink/70">
-          死亡届・除籍謄本等の画像
+          死亡診断書(死体検案書)・除籍謄本(戸籍)・死亡届記載事項証明書等の画像
         </label>
         <input
           type="file"
