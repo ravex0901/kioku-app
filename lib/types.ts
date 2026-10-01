@@ -13,7 +13,7 @@ export type CategoryMajor =
   | "insurance"
   | "other";
 // 処分の方針(整理の方針)。残す/整理する/わからない の3択。
-// 旧5択(keep/keepsake/sell/discard/undecided)で登録済みの既存データは
+// 旧5択(keep/keepsake/sell/discard/undecided)で登録みの既存データは
 // DB上の値はそのまま残り、表示側(lib/constants.tsのdispositionLabel等)で
 // 新しい3択に読み替えて表示する。
 export type Disposition = "keep" | "organize" | "unsure";
@@ -228,7 +228,7 @@ export type VoiceProfile = {
 };
 
 // 「AIと日記」機能: 1日1問AIが質問を出し、テキストか音声で回答すると
-// 自分史として蓄積されていく(家族の思い出を代々残すための土台になる記録)。
+// 臦分史として蓄積されていく(家族の思い出を代々残すための土台になる記録)。
 export type JournalEntry = {
   id: string;
   user_id: string;
@@ -516,7 +516,7 @@ export type Database = {
       };
       medical_info: {
         Row: MedicalInfo;
-        Insert: Partial<Omit<MedicalInfo, "updated_at">> & {
+        Insert: Partial<MedicalInfo> & {
           user_id: string;
         };
         Update: Partial<Omit<MedicalInfo, "user_id">>;
@@ -534,7 +534,7 @@ export type Database = {
       daily_mood_logs: {
         Row: DailyMoodLog;
         Insert: Partial<
-          Omit<DailyMoodLog, "created_at" | "updated_at">
+          Omit<DailyMoodLog, "created_at">
         > & { user_id: string; log_date: string; mood: MoodValue };
         Update: Partial<
           Omit<DailyMoodLog, "user_id" | "log_date" | "created_at">
@@ -544,7 +544,7 @@ export type Database = {
       voice_checkins: {
         Row: VoiceCheckin;
         Insert: Partial<
-          Omit<VoiceCheckin, "id" | "created_at" | "updated_at">
+          Omit<VoiceCheckin, "id" | "created_at">
         > & { user_id: string; speaker_name: string; time_slot: VoiceCheckinSlot };
         Update: Partial<Omit<VoiceCheckin, "id" | "user_id" | "created_at">>;
         Relationships: [
