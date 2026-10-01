@@ -2,6 +2,8 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { isAdminEmail } from "@/lib/admin";
+import { AdminDeathCertReview } from "@/components/AdminDeathCertReview";
+import type { DeathCertificateSubmission } from "@/lib/types";
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
@@ -38,14 +40,45 @@ export default async function AdminPage() {
     );
   }
 
-  const [{ data: profilesData }, { data: itemsData }] = await Promise.all([
-    adminClient
+  const [{ data: profilesData }, { data: itemsData }, { data: pendingCertsData }] =
+    await Promise.all([
+      adminClient
+        .from("profiles")
+        .select("id, name, purpose, created_at, last_active_at")
+        .order("created_at", { ascending: false })
+        .limit(500),
+      adminClient.from("items").select("user_id"),
+      adminClient
+        .from("death_certificate_submissions")
+        .select("*")
+        .eq("status", "pending")
+        .order("submitted_at", { ascending: true }),
+    ]);
+
+  const pendingCerts = (pendingCertsData ?? []) as DeathCertificateSubmission[];
+  const certOwnerNames = new Map<string, string>();
+  if (pendingCerts.length > 0) {
+    const ownerIds = [...new Set(pendingCerts.map((c) => c.user_id))];
+    const { data: ownerProfiles } = await adminClient
       .from("profiles")
-      .select("id, name, purpose, created_at, last_active_at")
-      .order("created_at", { ascending: false })
-      .limit(500),
-    adminClient.from("items").select("user_id"),
-  ]);
+      .select("id, name")
+      .in("id", ownerIds);
+    for (const p of ownerProfiles ?? []) {
+      certOwnerNames.set(p.id, p.name || "(名前未設定)");
+    }
+  }
+  const pendingCertsWithUrls = await Promise.all(
+    pendingCerts.map(async (cert) => {
+      const { data } = await adminClient.storage
+        .from("death-certificates")
+        .createSignedUrl(cert.image_path, 60 * 10);
+      return {
+        submission: cert,
+        ownerName: certOwnerNames.get(cert.user_id) ?? "(名前未設定)",
+        imageUrl: data?.signedUrl ?? null,
+      };
+    })
+  );
 
   const profiles = profilesData ?? [];
   const now = Date.now();
@@ -92,6 +125,16 @@ export default async function AdminPage() {
         />
         <StatCard label="直近7日の新規登録" value={newUsers7d.toLocaleString()} />
       </div>
+
+      <section className="mb-8 rounded-[1.75rem] border border-red-100 bg-white/70 p-5 shadow-sm">
+        <h2 className="mb-1 text-xs font-semibold tracking-[0.15em] text-red-500">
+          「もしもの時」開示承認待ち(死亡届等の確認)
+        </h2>
+        <p className="mb-3 text-xs text-ink/50">
+          非アクティブ検知の条件を満たし、ご家族から死亡届(または除籍謄本等)の画像が提出された方の一覧です。内容を確認し、承認すると「もしもの時」の内容がご家族に開示されます。
+        </p>
+        <AdminDeathCertReview items={pendingCertsWithUrls} />
+      </section>
 
       <section className="mb-8 rounded-[1.75rem] border border-green-100 bg-white/70 p-5 shadow-sm">
         <h2 className="mb-3 text-xs font-semibold tracking-[0.15em] text-gold">
