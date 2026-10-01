@@ -13,7 +13,7 @@ export type CategoryMajor =
   | "insurance"
   | "other";
 // 処分の方針(整理の方針)。残す/整理する/わからない の3択。
-// 旧5択(keep/keepsake/sell/discard/undecided)で登録みの既存データは
+// 旧5択(keep/keepsake/sell/discard/undecided)で登録済みの既存データは
 // DB上の値はそのまま残り、表示側(lib/constants.tsのdispositionLabel等)で
 // 新しい3択に読み替えて表示する。
 export type Disposition = "keep" | "organize" | "unsure";
@@ -194,6 +194,14 @@ export type HandoverRecipient = {
   legal_will_note: string | null;
   legal_disclaimer_acknowledged_at: string | null;
   share_token: string;
+  // 共有相手ごとの機能別共有制限(どの情報をこの相手に見せるか)
+  share_items: boolean;
+  share_digital_items: boolean;
+  share_checklist: boolean;
+  share_bucket_list: boolean;
+  share_medical: boolean;
+  share_album: boolean;
+  share_mood: boolean;
   created_at: string;
   updated_at: string;
 };
@@ -220,7 +228,7 @@ export type VoiceProfile = {
 };
 
 // 「AIと日記」機能: 1日1問AIが質問を出し、テキストか音声で回答すると
-// 臦分史として蓄積されていく(家族の思い出を代々残すための土台になる記録)。
+// 自分史として蓄積されていく(家族の思い出を代々残すための土台になる記録)。
 export type JournalEntry = {
   id: string;
   user_id: string;
@@ -252,6 +260,63 @@ export type ConversationLogEntry = {
   question: string;
   answer: string;
   created_at: string;
+};
+
+// やりたいことリスト(チェックボックス式)
+export type BucketListItem = {
+  id: string;
+  user_id: string;
+  title: string;
+  done: boolean;
+  created_at: string;
+  updated_at: string;
+};
+
+// 医療情報: かかりつけ医・持病・今飲んでいる薬(ユーザーにつき1件)
+export type MedicalInfo = {
+  user_id: string;
+  doctor_name: string | null;
+  hospital_name: string | null;
+  doctor_phone: string | null;
+  conditions: string | null;
+  medications: string | null;
+  updated_at: string;
+};
+
+// アルバム: スマホの写真をこのシステム内にも複数保存できる機能
+export type AlbumPhoto = {
+  id: string;
+  user_id: string;
+  storage_path: string;
+  caption: string | null;
+  // 「もしもの時」共有ページで都度署名を発行せず表示できる長期有効の署名付きURL
+  long_lived_url: string | null;
+  created_at: string;
+};
+
+// 今日の調子(にこちゃんマークで1日1回、調子を記録する)
+export type MoodValue = "good" | "normal" | "bad";
+export type DailyMoodLog = {
+  user_id: string;
+  log_date: string;
+  mood: MoodValue;
+  created_at: string;
+  updated_at: string;
+};
+
+// 家族ボイスメッセージ: お昼・夕方・夜に家族の声(録音)で話しかけてくれる機能。
+// 現時点では家族本人が録音した音声をそのまま再生する(AI音声クローンではない)。
+export type VoiceCheckinSlot = "lunch" | "evening" | "night";
+export type VoiceCheckin = {
+  id: string;
+  user_id: string;
+  family_member_id: string | null;
+  speaker_name: string;
+  time_slot: VoiceCheckinSlot;
+  message_text: string | null;
+  storage_path: string | null;
+  created_at: string;
+  updated_at: string;
 };
 
 export type Database = {
@@ -440,6 +505,57 @@ export type Database = {
           Omit<ConversationLogEntry, "id" | "user_id" | "created_at">
         >;
         Relationships: [];
+      };
+      bucket_list_items: {
+        Row: BucketListItem;
+        Insert: Partial<
+          Omit<BucketListItem, "id" | "created_at" | "updated_at">
+        > & { user_id: string; title: string };
+        Update: Partial<Omit<BucketListItem, "id" | "user_id" | "created_at">>;
+        Relationships: [];
+      };
+      medical_info: {
+        Row: MedicalInfo;
+        Insert: Partial<Omit<MedicalInfo, "updated_at">> & {
+          user_id: string;
+        };
+        Update: Partial<Omit<MedicalInfo, "user_id">>;
+        Relationships: [];
+      };
+      album_photos: {
+        Row: AlbumPhoto;
+        Insert: Partial<Omit<AlbumPhoto, "id" | "created_at">> & {
+          user_id: string;
+          storage_path: string;
+        };
+        Update: Partial<Omit<AlbumPhoto, "id" | "user_id" | "created_at">>;
+        Relationships: [];
+      };
+      daily_mood_logs: {
+        Row: DailyMoodLog;
+        Insert: Partial<
+          Omit<DailyMoodLog, "created_at" | "updated_at">
+        > & { user_id: string; log_date: string; mood: MoodValue };
+        Update: Partial<
+          Omit<DailyMoodLog, "user_id" | "log_date" | "created_at">
+        >;
+        Relationships: [];
+      };
+      voice_checkins: {
+        Row: VoiceCheckin;
+        Insert: Partial<
+          Omit<VoiceCheckin, "id" | "created_at" | "updated_at">
+        > & { user_id: string; speaker_name: string; time_slot: VoiceCheckinSlot };
+        Update: Partial<Omit<VoiceCheckin, "id" | "user_id" | "created_at">>;
+        Relationships: [
+          {
+            foreignKeyName: "voice_checkins_family_member_id_fkey";
+            columns: ["family_member_id"];
+            isOneToOne: false;
+            referencedRelation: "family_members";
+            referencedColumns: ["id"];
+          },
+        ];
       };
     };
     Views: Record<string, never>;
