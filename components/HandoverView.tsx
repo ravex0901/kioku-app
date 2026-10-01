@@ -442,6 +442,7 @@ function DeathCertificateStage({
       <div className="mt-4 rounded-2xl border border-black/10 bg-white/70 p-4">
         <p className="text-sm text-ink/70">
          死亡診断書(死体検案書)・死亡届記載事項証明書・除籍謄本(戸籍)等の画像を受け付けました。運営が内容を確認しています。確認が完了するまで、今しばらくお待ちください。
+          </p>
       </div>
     );
   }
