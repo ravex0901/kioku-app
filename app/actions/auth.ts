@@ -16,6 +16,7 @@ export async function login(
 ): Promise<AuthFormState> {
   const email = String(formData.get("email") ?? "").trim();
   const password = String(formData.get("password") ?? "");
+  const next = String(formData.get("next") ?? "").trim();
 
   if (!email || !password) {
     return { error: "メールアドレスとパスワードを入力してください。" };
@@ -31,7 +32,8 @@ export async function login(
     return { error: "メールアドレスまたはパスワードが正しくありません。" };
   }
 
-  redirect("/home");
+  // next が自サイト内の相対パス(例: 家族招待リンク /invite/xxxx)の場合のみ、そこへ戻す
+  redirect(next.startsWith("/") ? next : "/home");
 }
 
 export async function signup(
@@ -42,6 +44,7 @@ export async function signup(
   const email = String(formData.get("email") ?? "").trim();
   const password = String(formData.get("password") ?? "");
   const passwordConfirm = String(formData.get("passwordConfirm") ?? "");
+  const birthDate = String(formData.get("birthDate") ?? "").trim();
 
   if (!name) {
     return { error: "お名前を入力してください。" };
@@ -76,7 +79,83 @@ export async function signup(
     redirect("/login?message=confirm-email");
   }
 
+  if (birthDate && data.user) {
+    await supabase.from("profiles").update({ birth_date: birthDate }).eq("id", data.user.id);
+  }
+
   redirect("/onboarding/purpose");
+}
+
+export type InviteSignupState = { error?: string } | undefined;
+
+/**
+ * 家族招待リンクからの新規登録。通常のsignup()と異なり、サインアップ直後に
+ * accept_family_invite RPC を呼んで招待者のアカウントと紐付け、/home へ遷移する
+ * (「設定の目的」選択などのオンボーディングは省略し、招待の文脈をそのまま活かす)。
+ */
+export async function signupAndAcceptInvite(
+  _prevState: InviteSignupState,
+  formData: FormData
+): Promise<InviteSignupState> {
+  const token = String(formData.get("token") ?? "").trim();
+  const name = String(formData.get("name") ?? "").trim();
+  const email = String(formData.get("email") ?? "").trim();
+  const password = String(formData.get("password") ?? "");
+  const passwordConfirm = String(formData.get("passwordConfirm") ?? "");
+  const birthDate = String(formData.get("birthDate") ?? "").trim();
+  const myRelation = String(formData.get("myRelation") ?? "other").trim();
+
+  if (!token) {
+    return { error: "招待リンクが正しくありません。" };
+  }
+  if (!name) {
+    return { error: "お名前を入力してください。" };
+  }
+  if (!email) {
+    return { error: "メールアドレスを入力してください。" };
+  }
+  if (password.length < 8) {
+    return { error: "パスワードは8文字以上で入力してください。" };
+  }
+  if (password !== passwordConfirm) {
+    return { error: "パスワード(確認)が一致しません。" };
+  }
+
+  const supabase = await createClient();
+  const { data, error } = await supabase.auth.signUp({
+    email,
+    password,
+    options: { data: { name } },
+  });
+
+  if (error) {
+    console.error("signupAndAcceptInvite signup error", error);
+    return {
+      error:
+        "登録に失敗しました。すでに登録済みのメールアドレスの可能性があります。",
+    };
+  }
+
+  if (!data.session || !data.user) {
+    redirect(`/login?message=confirm-email&next=/invite/${token}`);
+  }
+
+  if (birthDate) {
+    await supabase.from("profiles").update({ birth_date: birthDate }).eq("id", data.user.id);
+  }
+
+  const { data: acceptData, error: acceptError } = await supabase.rpc(
+    "accept_family_invite",
+    { p_token: token, p_my_relation_to_inviter: myRelation }
+  );
+
+  if (acceptError || !acceptData || !(acceptData as { ok?: boolean }).ok) {
+    console.error("accept_family_invite error", acceptError, acceptData);
+    // アカウント自体は作成できているので、ホームへは進める
+    redirect("/home?inviteError=1");
+  }
+
+  redirect("/home?invited=1");
 }
 
 export async function requestPasswordReset(

@@ -220,3 +220,111 @@ export async function deleteVoiceCheckin(timeSlot: VoiceCheckinSlot): Promise<Si
 
   return { ok: true };
 }
+
+export type VoiceCheckinTarget = { ownerUserId: string; ownerName: string };
+
+export type VoiceCheckinTargetsResult =
+  | { ok: true; targets: VoiceCheckinTarget[] }
+  | { ok: false; error: string };
+
+/**
+ * 紐付け済みの家族アカウントとして、自分がボイスメッセージを送れる相手(本人)の
+ * 一覧を取得する(get_voice_checkin_targets RPC経由)。
+ */
+export async function getVoiceCheckinTargets(): Promise<VoiceCheckinTargetsResult> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { ok: false, error: "ログインが必要です。" };
+
+  const { data, error } = await supabase.rpc("get_voice_checkin_targets");
+  if (error) {
+    console.error("getVoiceCheckinTargets error", error);
+    return { ok: false, error: "取得に失敗しました。" };
+  }
+
+  return { ok: true, targets: (data ?? []) as VoiceCheckinTarget[] };
+}
+
+/**
+ * 紐付け済みの家族アカウントが、本人(ownerId)宛てのボイスメッセージを
+ * 自分のアカウントから録音・登録する。RLS(voice_checkins_insert/update_linked_family)
+ * により、実際にリンクされた家族アカウントでなければ失敗する。
+ * FormData: timeSlot, speakerName, messageText(任意), audio(任意・録音ファイル)
+ */
+export async function saveFamilyVoiceCheckin(
+  ownerId: string,
+  formData: FormData
+): Promise<SaveCheckinResult> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { ok: false, error: "ログインが必要です。" };
+
+  const timeSlot = String(formData.get("timeSlot") ?? "");
+  if (timeSlot !== "lunch" && timeSlot !== "evening" && timeSlot !== "night") {
+    return { ok: false, error: "時間帯の指定が正しくありません。" };
+  }
+
+  const speakerName = String(formData.get("speakerName") ?? "").trim();
+  if (!speakerName) {
+    return { ok: false, error: "お名前を入力してください。" };
+  }
+
+  const messageText = String(formData.get("messageText") ?? "").trim() || null;
+
+  let storagePath: string | null = null;
+  const audio = formData.get("audio");
+  if (audio instanceof File && audio.size > 0) {
+    if (audio.size > MAX_AUDIO_BYTES) {
+      return { ok: false, error: "音声ファイルが大きすぎます。" };
+    }
+    const arrayBuffer = await audio.arrayBuffer();
+    const contentType = audio.type || "audio/webm";
+    const ext = contentType.includes("webm") ? "webm" : "mp4";
+    storagePath = `${ownerId}/${timeSlot}.${ext}`;
+    const { error: uploadError } = await supabase.storage
+      .from(VOICE_CHECKIN_BUCKET)
+      .upload(storagePath, arrayBuffer, { contentType, upsert: true });
+    if (uploadError) {
+      console.error("saveFamilyVoiceCheckin upload error", uploadError);
+      return { ok: false, error: "音声のアップロードに失敗しました。" };
+    }
+  }
+
+  const { data: existing } = await supabase
+    .from("voice_checkins")
+    .select("storage_path")
+    .eq("user_id", ownerId)
+    .eq("time_slot", timeSlot)
+    .maybeSingle();
+
+  const finalStoragePath = storagePath ?? existing?.storage_path ?? null;
+
+  if (!messageText && !finalStoragePath) {
+    return { ok: false, error: "メッセージ文か録音のどちらかを入力してください。" };
+  }
+
+  const { error } = await supabase.from("voice_checkins").upsert(
+    {
+      user_id: ownerId,
+      time_slot: timeSlot,
+      speaker_name: speakerName,
+      family_member_id: null,
+      message_text: messageText,
+      storage_path: finalStoragePath,
+      created_by_user_id: user.id,
+      updated_at: new Date().toISOString(),
+    },
+    { onConflict: "user_id,time_slot" }
+  );
+
+  if (error) {
+    console.error("saveFamilyVoiceCheckin upsert error", error);
+    return { ok: false, error: "保存に失敗しました。もう一度お試しください。(本人と紐付いていない可能性があります)" };
+  }
+
+  return { ok: true };
+}

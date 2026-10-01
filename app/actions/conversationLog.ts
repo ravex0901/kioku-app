@@ -81,3 +81,39 @@ export async function getConversationHistory(): Promise<ConversationDayGroup[]> 
     entries: dayEntries,
   }));
 }
+
+/**
+ * 紐付け済みの家族アカウントから、相手(ownerId)のAI会話ログを閲覧する。
+ * RLS(conversation_logs_select_linked_family)により、実際にリンクされた
+ * 家族アカウントでなければ0件になる。
+ */
+export async function getFamilyConversationHistory(
+  ownerId: string
+): Promise<ConversationDayGroup[]> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return [];
+
+  const { data } = await supabase
+    .from("conversation_logs")
+    .select("*")
+    .eq("user_id", ownerId)
+    .order("created_at", { ascending: false })
+    .limit(200);
+
+  const entries = (data ?? []) as ConversationLogEntry[];
+  const groups = new Map<string, ConversationLogEntry[]>();
+  for (const entry of entries) {
+    const key = toJstDateKey(entry.created_at);
+    const list = groups.get(key) ?? [];
+    list.push(entry);
+    groups.set(key, list);
+  }
+
+  return Array.from(groups.entries()).map(([date, dayEntries]) => ({
+    date,
+    entries: dayEntries,
+  }));
+}

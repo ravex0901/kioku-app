@@ -192,3 +192,48 @@ export async function submitJournalAnswer(
 
   return { ok: true };
 }
+
+export type FamilyJournalResult =
+  | { ok: true; ownerName: string; history: JournalEntry[] }
+  | { ok: false; error: string };
+
+/**
+ * 家系図から紐付け済みの家族アカウントとしてタップした相手の「AIと日記」を
+ * 閲覧する。RLS(journal_entries_select_linked_family)により、呼び出し元が
+ * 実際にその相手とリンクされた家族アカウントでなければ0件になる。
+ */
+export async function getFamilyJournalHistory(
+  ownerId: string
+): Promise<FamilyJournalResult> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { ok: false, error: "ログインが必要です。" };
+
+  const [{ data: ownerProfile }, { data: historyData, error }] =
+    await Promise.all([
+      supabase.from("profiles").select("name").eq("id", ownerId).maybeSingle(),
+      supabase
+        .from("journal_entries")
+        .select("*")
+        .eq("user_id", ownerId)
+        .order("created_at", { ascending: false })
+        .limit(100),
+    ]);
+
+  if (error) {
+    console.error("getFamilyJournalHistory error", error);
+    return { ok: false, error: "日記の取得に失敗しました。" };
+  }
+
+  const history = ((historyData ?? []) as JournalEntry[]).filter(
+    (e) => e.answer_text || e.answer_audio_path
+  );
+
+  return {
+    ok: true,
+    ownerName: ownerProfile?.name || "ご家族",
+    history,
+  };
+}
