@@ -68,6 +68,8 @@ export type Profile = {
   id: string;
   name: string | null;
   purpose: string | null;
+  // 年齢条件(成人になったら/本人と同じ歳になったら)の判定に使う生年月日
+  birth_date: string | null;
   created_at: string;
   last_active_at: string | null;
 };
@@ -148,11 +150,17 @@ export type ServiceRequest = {
 };
 
 // 家族と共有(特許図面【図2】【図18】の「家族と共有」に対応)
+// invite_token: この家族を「自分のアカウントで」紐付けるための招待リンクのトークン。
+// linked_user_id: 招待を受け入れ、実際にサインアップ/ログインして紐付いたアカウントのID
+// (未紐付けの場合はnull。その場合はこれまで通り共有リンクのみで内容を閲覧する)。
 export type FamilyMember = {
   id: string;
   user_id: string;
   name: string;
   relation: FamilyRelation;
+  invite_token: string | null;
+  linked_user_id: string | null;
+  linked_at: string | null;
   created_at: string;
 };
 
@@ -172,13 +180,37 @@ export type Will = {
 };
 
 // もしもの時(引き継ぎ)設定。開示条件(非アクティブ日数・承認者)と共有トークンを保持する
+// disclosure_status: 非アクティブ検知だけで即座に公開しないための開示ステップ。
+//   pending(通常時)→ awaiting_certificate(連絡・死亡届等の提出待ち)
+//   → certificate_submitted(運営確認待ち)→ approved(開示)/ rejected(却下・再提出可)
+export type HandoverDisclosureStatus =
+  | "pending"
+  | "awaiting_certificate"
+  | "certificate_submitted"
+  | "approved"
+  | "rejected";
 export type HandoverSettings = {
   user_id: string;
   inactive_days: number;
   approver_family_member_id: string | null;
   share_token: string;
   approved_at: string | null;
+  disclosure_status: HandoverDisclosureStatus;
   updated_at: string;
+};
+
+// 死亡届(または除籍謄本等)の画像提出。運営(管理者)が内容を確認し、承認すると
+// 「もしもの時」の内容が開示される。
+export type DeathCertificateSubmission = {
+  id: string;
+  user_id: string;
+  recipient_name: string | null;
+  image_path: string;
+  status: "pending" | "approved" | "rejected";
+  admin_note: string | null;
+  submitted_at: string;
+  reviewed_at: string | null;
+  reviewed_by: string | null;
 };
 
 // 共有相手ごとの遺言動画・遺言書と専用共有リンク(複数人共有対応)。
@@ -240,17 +272,54 @@ export type JournalEntry = {
 };
 
 // タイムカプセル機能: 未来の家族に向けたメッセージ(テキスト・音声)を、
-// 指定した開封日まで開けられない状態で残しておける機能。
+// 指定した開封日(または年齢・結婚などの条件)まで開けられない状態で残しておける機能。
+export type TimeCapsuleUnlockConditionType =
+  | "date"
+  | "adulthood"
+  | "marriage"
+  | "same_age_as_sender";
 export type TimeCapsule = {
   id: string;
   user_id: string;
   title: string;
   recipient_name: string | null;
+  // 紐付け済みの家族アカウント宛てに送る場合、その family_members.id(紐付け済みの行)
+  recipient_family_member_id: string | null;
   message_text: string | null;
   message_audio_path: string | null;
   open_at: string;
+  unlock_condition_type: TimeCapsuleUnlockConditionType;
+  // 「送った本人と同じ歳になったら」条件で使う、送信時点の本人の年齢
+  sender_age_at_creation: number | null;
+  marriage_certificate_path: string | null;
+  marriage_verified_at: string | null;
+  marriage_review_note: string | null;
   created_at: string;
 };
+
+// 受信者側(紐付け済みの家族アカウント)がget_received_time_capsules()で受け取る形
+export type ReceivedTimeCapsule =
+  | {
+      id: string;
+      title: string;
+      senderName: string;
+      unlocked: true;
+      unlockConditionType: TimeCapsuleUnlockConditionType;
+      messageText: string | null;
+      messageAudioPath: string | null;
+      openAt: string;
+      createdAt: string;
+    }
+  | {
+      id: string;
+      title: string;
+      senderName: string;
+      unlocked: false;
+      unlockConditionType: TimeCapsuleUnlockConditionType;
+      openAt: string;
+      createdAt: string;
+      marriageSubmitted: boolean;
+    };
 
 // 「AIと会話する」機能の会話ログ: 持ち物について尋ねたやり取りを保存し、
 // 「この日はこういう会話をしていた」として自分史に組み込むための記録
@@ -315,6 +384,8 @@ export type VoiceCheckin = {
   time_slot: VoiceCheckinSlot;
   message_text: string | null;
   storage_path: string | null;
+  // 紐付け済みの家族アカウントが自分でこのメッセージを送った場合、その人のユーザーID
+  created_by_user_id: string | null;
   created_at: string;
   updated_at: string;
 };
@@ -557,6 +628,14 @@ export type Database = {
           },
         ];
       };
+      death_certificate_submissions: {
+        Row: DeathCertificateSubmission;
+        Insert: Partial<
+          Omit<DeathCertificateSubmission, "id" | "submitted_at">
+        > & { user_id: string; image_path: string };
+        Update: Partial<Omit<DeathCertificateSubmission, "id" | "user_id">>;
+        Relationships: [];
+      };
     };
     Views: Record<string, never>;
     Functions: {
@@ -566,6 +645,31 @@ export type Database = {
       };
       approve_handover: {
         Args: { p_token: string };
+        Returns: boolean;
+      };
+      get_family_invite_info: {
+        Args: { p_token: string };
+        Returns: Json;
+      };
+      accept_family_invite: {
+        Args: { p_token: string; p_my_relation_to_inviter: string };
+        Returns: Json;
+      };
+      get_received_time_capsules: {
+        Args: Record<string, never>;
+        Returns: Json;
+      };
+      get_voice_checkin_targets: {
+        Args: Record<string, never>;
+        Returns: Json;
+      };
+      verify_marriage_certificate: {
+        Args: {
+          p_capsule_id: string;
+          p_image_path: string;
+          p_verified: boolean;
+          p_note: string;
+        };
         Returns: boolean;
       };
     };
