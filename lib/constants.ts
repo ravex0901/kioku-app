@@ -264,3 +264,11 @@ export const DIGITAL_ITEM_STATUS_OPTIONS: {
   { value: "done", label: "完了" },
 ];
 
+// 家族ボイスメッセージの時間帯ラベル(app/actions/voiceCheckins.tsはサーバーアクション専用の
+// ファイルのため非同期関数しかexportできない。この定数はクライアント側でも使うので
+// こちらに置く)。
+export const VOICE_CHECKIN_SLOT_LABELS: Record<"lunch" | "evening" | "night", string> = {
+  lunch: "お昼",
+  evening: "夕方",
+  night: "夜",
+};
