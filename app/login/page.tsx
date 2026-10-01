@@ -10,6 +10,8 @@ export default async function LoginPage({
     message === "confirm-email"
       ? "確認メールを送信しました。メール内のリンクから認証を完了してください。"
       : undefined;
+  const nextParam = params.next;
+  const next = typeof nextParam === "string" ? nextParam : undefined;
 
   return (
     <main className="flex min-h-screen items-center justify-center bg-cream px-4 py-12">
@@ -32,7 +34,7 @@ export default async function LoginPage({
         </p>
 
         <div className="mt-8">
-          <LoginForm infoMessage={infoMessage} />
+          <LoginForm infoMessage={infoMessage} next={next} />
         </div>
 
         <p className="mt-6 text-center text-sm text-ink/60">
