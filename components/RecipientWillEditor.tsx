@@ -27,6 +27,20 @@ export function RecipientWillEditor({
   const [legalAck, setLegalAck] = useState(
     !!recipient.legal_disclaimer_acknowledged_at
   );
+  // 機能ごとの共有制限(この方にどの情報を見せるか)
+  const [shareItems, setShareItems] = useState(recipient.share_items ?? true);
+  const [shareDigitalItems, setShareDigitalItems] = useState(
+    recipient.share_digital_items ?? true
+  );
+  const [shareChecklist, setShareChecklist] = useState(
+    recipient.share_checklist ?? true
+  );
+  const [shareBucketList, setShareBucketList] = useState(
+    recipient.share_bucket_list ?? true
+  );
+  const [shareMedical, setShareMedical] = useState(recipient.share_medical ?? true);
+  const [shareAlbum, setShareAlbum] = useState(recipient.share_album ?? true);
+  const [shareMood, setShareMood] = useState(recipient.share_mood ?? true);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -112,6 +126,13 @@ export function RecipientWillEditor({
         legal_will_note: trimmedLegalNote || null,
         legal_disclaimer_acknowledged_at:
           trimmedLegalNote && legalAck ? new Date().toISOString() : null,
+        share_items: shareItems,
+        share_digital_items: shareDigitalItems,
+        share_checklist: shareChecklist,
+        share_bucket_list: shareBucketList,
+        share_medical: shareMedical,
+        share_album: shareAlbum,
+        share_mood: shareMood,
       })
       .eq("id", recipient.id)
       .eq("user_id", userId);
@@ -265,6 +286,36 @@ export function RecipientWillEditor({
             </label>
           </div>
 
+          <div className="flex flex-col gap-2 rounded-lg border border-black/10 bg-white/70 p-3">
+            <p className="text-xs font-semibold text-ink/80">
+              {recipient.name}さんに共有する項目
+            </p>
+            <p className="text-[11px] text-ink/40">
+              チェックを外した項目は、開示されたときにこの方には表示されません。
+            </p>
+            <div className="grid grid-cols-2 gap-x-3 gap-y-1.5 sm:grid-cols-3">
+              {[
+                { label: "持ち物", checked: shareItems, set: setShareItems },
+                { label: "デジタル遺品", checked: shareDigitalItems, set: setShareDigitalItems },
+                { label: "相続手続き", checked: shareChecklist, set: setShareChecklist },
+                { label: "やりたいことリスト", checked: shareBucketList, set: setShareBucketList },
+                { label: "医療情報", checked: shareMedical, set: setShareMedical },
+                { label: "アルバム", checked: shareAlbum, set: setShareAlbum },
+                { label: "今日の調子", checked: shareMood, set: setShareMood },
+              ].map((opt) => (
+                <label key={opt.label} className="flex items-center gap-1.5 text-xs text-ink/70">
+                  <input
+                    type="checkbox"
+                    checked={opt.checked}
+                    onChange={(e) => opt.set(e.target.checked)}
+                    className="h-4 w-4 accent-green-700"
+                  />
+                  {opt.label}
+                </label>
+              ))}
+            </div>
+          </div>
+
           {error && <p className="text-xs text-red-600">{error}</p>}
           {saved && <p className="text-xs text-green-700">保存しました。</p>}
           <button
@@ -296,4 +347,3 @@ export function RecipientWillEditor({
     </div>
   );
 }
-
