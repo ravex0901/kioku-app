@@ -85,7 +85,7 @@ function ReviewCard({ item, onHandled }: { item: Item; onHandled: () => void }) 
         // eslint-disable-next-line @next/next/no-img-element
         <img
           src={item.imageUrl}
-          alt="提出された死亡届等の画像"
+         alt="提出された死亡診断書・除籍謄本・死亡届記載事項証明書等の画像"
           className="mb-3 max-h-80 w-full rounded-lg border border-black/10 object-contain"
         />
       ) : (
