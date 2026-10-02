@@ -91,6 +91,10 @@ export type Profile = {
   account_code: string | null;
   created_at: string;
   last_active_at: string | null;
+  // 故人フラグ。true の場合、直接つながっている家族が代わりに
+  // 「間接の家族(孫など)への共有可否」を決められる(family_legacy_shares)。
+  is_deceased: boolean;
+  deceased_at: string | null;
 };
 
 export type Json =
@@ -676,6 +680,30 @@ export type Database = {
       };
       link_family_by_account_id: {
         Args: { p_account_code: string; p_relation: string };
+        Returns: Json;
+      };
+      get_extended_family_network: {
+        Args: Record<string, never>;
+        Returns: Json;
+      };
+      get_family_share_settings: {
+        Args: Record<string, never>;
+        Returns: Json;
+      };
+      set_family_share_settings: {
+        Args: { p_share_journal: boolean; p_share_items: boolean };
+        Returns: Json;
+      };
+      mark_family_member_deceased: {
+        Args: { p_user_id: string; p_deceased: boolean };
+        Returns: Json;
+      };
+      get_family_legacy_share: {
+        Args: { p_deceased_user_id: string };
+        Returns: boolean;
+      };
+      set_family_legacy_share: {
+        Args: { p_deceased_user_id: string; p_share: boolean };
         Returns: Json;
       };
       get_received_time_capsules: {
