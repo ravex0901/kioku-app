@@ -70,6 +70,7 @@ export default async function SettingsPage() {
           userId={user.id}
           displayName={displayName}
           purpose={profile?.purpose ?? null}
+          accountCode={profile?.account_code ?? null}
           initialFamily={family}
           initialWill={(willData as Will | null) ?? null}
           initialHandover={(handoverData as HandoverSettings | null) ?? null}
@@ -79,4 +80,3 @@ export default async function SettingsPage() {
     </div>
   );
 }
-
