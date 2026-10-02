@@ -19,10 +19,13 @@ export default async function FamilyTreePage() {
   const [{ data: profile }, { data: familyData }, extendedNetworkResult] =
     await Promise.all([
       supabase.from("profiles").select("*").eq("id", user.id).maybeSingle(),
+      // 「アカウントIDで申請する」等でまだ相手が許可していないつながりは、
+      // linked_user_id が入るまで家系図に表示しない。
       supabase
         .from("family_members")
         .select("*")
         .eq("user_id", user.id)
+        .not("linked_user_id", "is", null)
         .order("created_at", { ascending: true }),
       getExtendedFamilyNetwork(),
     ]);
