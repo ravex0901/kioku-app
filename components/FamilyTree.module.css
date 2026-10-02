@@ -1,0 +1,98 @@
+/* 家系図:夫婦を線でつなぎ、夫婦の中心から子へ幹線を伸ばす、よくある家系図の接続線をCSSだけで表現する */
+
+.forest {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: flex-start;
+  gap: 40px;
+}
+
+.tree {
+  display: flex;
+  justify-content: center;
+}
+
+.level {
+  display: flex;
+  justify-content: center;
+  padding: 0;
+  margin: 0;
+  list-style: none;
+}
+
+.node {
+  position: relative;
+  list-style: none;
+  padding: 24px 12px 0 12px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.node::before,
+.node::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  width: 50%;
+  height: 24px;
+  border-top: 2px solid #a7d6ab;
+}
+.node::before {
+  right: 50%;
+}
+.node::after {
+  left: 50%;
+  border-left: 2px solid #a7d6ab;
+}
+
+.node:only-child::before,
+.node:only-child::after {
+  display: none;
+}
+.node:only-child {
+  padding-top: 0;
+}
+
+.node:first-child::before {
+  border: 0 none;
+}
+.node:last-child::after {
+  border: 0 none;
+}
+.node:last-child::before {
+  border-right: 2px solid #a7d6ab;
+  border-radius: 0 6px 0 0;
+}
+.node:first-child::after {
+  border-left: 2px solid #a7d6ab;
+  border-radius: 6px 0 0 0;
+}
+
+.node > .level {
+  padding-top: 24px;
+  position: relative;
+}
+.node > .level::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 50%;
+  width: 0;
+  height: 24px;
+  border-left: 2px solid #a7d6ab;
+}
+
+.coupleGroup {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.coupleLine {
+  width: 18px;
+  height: 2px;
+  background: #a7d6ab;
+  flex-shrink: 0;
+}
