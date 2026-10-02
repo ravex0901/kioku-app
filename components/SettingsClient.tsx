@@ -5,6 +5,12 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import { FAMILY_RELATION_OPTIONS, familyRelationLabel } from "@/lib/constants";
 import { linkFamilyByAccountId } from "@/app/actions/familyInvite";
+import {
+  setFamilyShareSettings,
+  markFamilyMemberDeceased,
+  setFamilyLegacyShare,
+  type FamilyShareSettings,
+} from "@/app/actions/familyNetwork";
 import { VoiceSettings } from "@/components/VoiceSettings";
 import { RecipientWillEditor } from "@/components/RecipientWillEditor";
 import type {
@@ -24,6 +30,9 @@ export function SettingsClient({
   initialWill,
   initialHandover,
   initialRecipients,
+  initialFamilyShareSettings,
+  initialDeceasedStatus,
+  initialLegacyShareStatus,
 }: {
   userId: string;
   displayName: string;
@@ -33,8 +42,77 @@ export function SettingsClient({
   initialWill: Will | null;
   initialHandover: HandoverSettings | null;
   initialRecipients: HandoverRecipient[];
+  initialFamilyShareSettings?: FamilyShareSettings;
+  initialDeceasedStatus?: Record<string, boolean>;
+  initialLegacyShareStatus?: Record<string, boolean>;
 }) {
   const [family, setFamily] = useState(initialFamily);
+
+  // 間接の家族(孫・甥姪など2ホップ以上先)にも、自分の日記・持ち物を共有するか。
+  const [shareJournalWithNetwork, setShareJournalWithNetwork] = useState(
+    initialFamilyShareSettings?.shareJournalWithNetwork ?? false
+  );
+  const [shareItemsWithNetwork, setShareItemsWithNetwork] = useState(
+    initialFamilyShareSettings?.shareItemsWithNetwork ?? false
+  );
+  const [savingNetworkShare, setSavingNetworkShare] = useState(false);
+  const [networkShareSaved, setNetworkShareSaved] = useState(false);
+
+  async function handleSaveNetworkShare(
+    nextJournal: boolean,
+    nextItems: boolean
+  ) {
+    setShareJournalWithNetwork(nextJournal);
+    setShareItemsWithNetwork(nextItems);
+    setSavingNetworkShare(true);
+    setNetworkShareSaved(false);
+    const result = await setFamilyShareSettings(nextJournal, nextItems);
+    setSavingNetworkShare(false);
+    if (result.ok) {
+      setNetworkShareSaved(true);
+      setTimeout(() => setNetworkShareSaved(false), 2000);
+    }
+  }
+
+  // つながっている家族のうち、アカウントと紐付いている相手の「故人」フラグと、
+  // (故人の場合の)間接の家族への共有可否。直接つながっている家族なら誰でも変更できる。
+  const [deceasedStatus, setDeceasedStatus] = useState<Record<string, boolean>>(
+    initialDeceasedStatus ?? {}
+  );
+  const [legacyShareStatus, setLegacyShareStatus] = useState<
+    Record<string, boolean>
+  >(initialLegacyShareStatus ?? {});
+  const [savingDeceasedId, setSavingDeceasedId] = useState<string | null>(
+    null
+  );
+
+  async function handleToggleDeceased(linkedUserId: string, next: boolean) {
+    setSavingDeceasedId(linkedUserId);
+    const result = await markFamilyMemberDeceased(linkedUserId, next);
+    setSavingDeceasedId(null);
+    if (!result.ok) {
+      alert(result.error);
+      return;
+    }
+    setDeceasedStatus((prev) => ({ ...prev, [linkedUserId]: next }));
+    if (!next) {
+      setLegacyShareStatus((prev) => ({ ...prev, [linkedUserId]: false }));
+    }
+  }
+
+  async function handleToggleLegacyShare(
+    deceasedUserId: string,
+    next: boolean
+  ) {
+    setSavingDeceasedId(deceasedUserId);
+    const result = await setFamilyLegacyShare(deceasedUserId, next);
+    setSavingDeceasedId(null);
+    if (!result.ok) {
+      alert(result.error);
+      return;
+    }
+    setLegacyShareStatus((prev) => ({ ...prev, [deceasedUserId]: next }));
+  }
   const [name, setName] = useState("");
   const [relation, setRelation] = useState<FamilyRelation>("son");
   const [inviting, setInviting] = useState(false);
@@ -402,9 +480,45 @@ export function SettingsClient({
                   </select>
                 </div>
                 {member.linked_user_id ? (
-                  <span className="inline-flex w-fit items-center gap-1 rounded-full bg-green-50 px-2.5 py-1 text-[11px] font-medium text-green-700">
-                    ✓ ご本人のアカウントとつながり済み
-                  </span>
+                  <>
+                    <span className="inline-flex w-fit items-center gap-1 rounded-full bg-green-50 px-2.5 py-1 text-[11px] font-medium text-green-700">
+                      ✓ ご本人のアカウントとつながり済み
+                    </span>
+                    <label className="flex items-center gap-2 text-[11px] text-ink/60">
+                      <input
+                        type="checkbox"
+                        checked={Boolean(deceasedStatus[member.linked_user_id])}
+                        disabled={savingDeceasedId === member.linked_user_id}
+                        onChange={(e) =>
+                          handleToggleDeceased(
+                            member.linked_user_id as string,
+                            e.target.checked
+                          )
+                        }
+                        className="h-4 w-4 rounded border-black/20"
+                      />
+                      故人として設定する
+                    </label>
+                    {deceasedStatus[member.linked_user_id] && (
+                      <label className="flex items-start gap-2 rounded-lg bg-black/5 px-2.5 py-2 text-[11px] text-ink/60">
+                        <input
+                          type="checkbox"
+                          checked={Boolean(
+                            legacyShareStatus[member.linked_user_id]
+                          )}
+                          disabled={savingDeceasedId === member.linked_user_id}
+                          onChange={(e) =>
+                            handleToggleLegacyShare(
+                              member.linked_user_id as string,
+                              e.target.checked
+                            )
+                          }
+                          className="mt-0.5 h-4 w-4 rounded border-black/20"
+                        />
+                        孫など間接のご家族にも、この方の日記・持ち物を家族の思い出として共有する
+                      </label>
+                    )}
+                  </>
                 ) : member.invite_token ? (
                   <div className="flex items-center justify-between gap-2 rounded-lg border border-black/10 bg-white/70 px-2.5 py-1.5">
                     <span className="truncate text-[11px] text-ink/50">
@@ -533,6 +647,45 @@ export function SettingsClient({
           >
             {linking ? "つないでいます…" : "アカウントIDでつなぐ"}
           </button>
+        </div>
+
+        <div className="my-5 flex items-center gap-3 text-xs text-ink/40">
+          <span className="h-px flex-1 bg-black/10" />
+          間接のご家族への共有
+          <span className="h-px flex-1 bg-black/10" />
+        </div>
+
+        <p className="mb-3 text-xs text-ink/50">
+          ご家族がさらにご親戚とつながっている場合、お名前と続柄(世代差)は「間接のご家族」として自動的に表示されます。日記や持ち物まで見られるようにするかは、下記でご自身が選べます(初期設定ではOFFです)。
+        </p>
+        <div className="flex flex-col gap-3 rounded-xl border border-black/5 bg-white/70 p-4">
+          <label className="flex items-center gap-2 text-sm text-ink/80">
+            <input
+              type="checkbox"
+              checked={shareJournalWithNetwork}
+              disabled={savingNetworkShare}
+              onChange={(e) =>
+                handleSaveNetworkShare(e.target.checked, shareItemsWithNetwork)
+              }
+              className="h-4 w-4 rounded border-black/20"
+            />
+            「AIと日記」を間接のご家族にも共有する
+          </label>
+          <label className="flex items-center gap-2 text-sm text-ink/80">
+            <input
+              type="checkbox"
+              checked={shareItemsWithNetwork}
+              disabled={savingNetworkShare}
+              onChange={(e) =>
+                handleSaveNetworkShare(shareJournalWithNetwork, e.target.checked)
+              }
+              className="h-4 w-4 rounded border-black/20"
+            />
+            持ち物の記録を間接のご家族にも共有する
+          </label>
+          {networkShareSaved && (
+            <p className="text-xs text-green-700">設定を保存しました。</p>
+          )}
         </div>
       </section>
 
