@@ -82,28 +82,30 @@ export async function acceptFamilyInvite(
   };
 }
 
-export type LinkByEmailResult =
+export type LinkByAccountIdResult =
   | { ok: true; targetName: string }
   | { ok: false; error: string };
 
 /**
- * 招待リンクを使わずに、既に相手が持っているアカウントのメールアドレスを
- * 指定して、その場で双方向に家族として紐付ける。
+ * 招待リンクを使わずに、既に相手が持っているアカウントの「アカウントID」
+ * (各アカウントに発行される固有のID。メールアドレスではない)を指定して、
+ * その場で双方向に家族として紐付ける。
  * (すでにアカウントを持っている家族が、招待リンク経由で別アカウントを
- *  二重に作ってしまう混乱を避けるための機能)
+ *  二重に作ってしまう混乱を避けるための機能。メールアドレスを人に伝える
+ *  必要がなく、アカウントIDだけ伝えればよい)
  */
-export async function linkFamilyByEmail(
-  email: string,
+export async function linkFamilyByAccountId(
+  accountCode: string,
   relation: FamilyRelation
-): Promise<LinkByEmailResult> {
+): Promise<LinkByAccountIdResult> {
   const supabase = await createClient();
-  const { data, error } = await supabase.rpc("link_family_by_email", {
-    p_email: email,
+  const { data, error } = await supabase.rpc("link_family_by_account_id", {
+    p_account_code: accountCode,
     p_relation: relation,
   });
 
   if (error || !data) {
-    console.error("linkFamilyByEmail error", error);
+    console.error("linkFamilyByAccountId error", error);
     return { ok: false, error: "追加に失敗しました。もう一度お試しください。" };
   }
 
