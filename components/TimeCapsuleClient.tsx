@@ -21,8 +21,8 @@ const UNLOCK_CONDITION_OPTIONS: {
 }[] = [
   {
     value: "date",
-    label: "日付を指定する",
-    hint: "指定した日が来たら開封できます。",
+    label: "日時を指定する",
+    hint: "指定した日時が来たら開封できます。",
   },
   {
     value: "adulthood",
@@ -32,7 +32,7 @@ const UNLOCK_CONDITION_OPTIONS: {
   {
     value: "marriage",
     label: "結婚したら",
-        hint: "宛先の方が婚姻届(または婚姻届受理証明書・戸籍謄本・戸籍抄本等)の画像を提出し、AIが確認できた時点で開封できます。",
+    hint: "宛先の方が婚姻届(または婚姻届受理証明書・戸籍謄本・戸籍抄本等)の画像を提出し、AIが確認できた時点で開封できます。",
   },
   {
     value: "same_age_as_sender",
@@ -53,14 +53,36 @@ function formatDate(iso: string) {
   });
 }
 
+// 日付に加えて時刻(時:分)も表示する。0時0分ちょうど(日付のみ指定/後方互換の
+// 既存データ)の場合は、時刻を省いて日付のみ表示する。
+function formatDateTime(iso: string) {
+  const d = new Date(iso);
+  const datePart = formatDate(iso);
+  if (d.getHours() === 0 && d.getMinutes() === 0) {
+    return datePart;
+  }
+  const timePart = d.toLocaleTimeString("ja-JP", {
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+  return `${datePart} ${timePart}`;
+}
+
 function daysUntil(iso: string) {
   const diff = new Date(iso).getTime() - Date.now();
   return Math.max(1, Math.ceil(diff / (24 * 60 * 60 * 1000)));
 }
 
-function minOpenDate() {
-  const d = new Date(Date.now() + 24 * 60 * 60 * 1000);
-  return d.toISOString().slice(0, 10);
+// datetime-local 入力欄の min/value に使う "YYYY-MM-DDTHH:mm" 形式(ローカル時刻基準)を作る。
+function toDatetimeLocalValue(d: Date) {
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(
+    d.getHours()
+  )}:${pad(d.getMinutes())}`;
+}
+
+function minOpenDateTime() {
+  return toDatetimeLocalValue(new Date(Date.now() + 60 * 60 * 1000));
 }
 
 export function TimeCapsuleClient({
@@ -182,7 +204,7 @@ export function TimeCapsuleClient({
       return;
     }
     if (unlockConditionType === "date" && !openAt) {
-      setError("開封日を指定してください。");
+      setError("開封日時を指定してください。");
       return;
     }
     if (unlockConditionType !== "date" && !recipientFamilyMemberId) {
@@ -376,12 +398,12 @@ export function TimeCapsuleClient({
             {unlockConditionType === "date" && (
               <div className="flex flex-col gap-1">
                 <label className="text-xs font-medium text-ink/60">
-                  開封日
+                  開封日時
                 </label>
                 <input
-                  type="date"
+                  type="datetime-local"
                   value={openAt}
-                  min={minOpenDate()}
+                  min={minOpenDateTime()}
                   onChange={(e) => setOpenAt(e.target.value)}
                   className="w-full rounded-xl border border-black/10 bg-white px-4 py-2.5 text-sm text-ink outline-none focus:border-green-400 focus:ring-2 focus:ring-green-100"
                 />
@@ -451,7 +473,7 @@ export function TimeCapsuleClient({
                   <div className="flex items-center justify-between gap-3">
                     <div>
                       <p className="text-xs text-ink/40">
-                        開封日 {formatDate(c.open_at)}
+                        開封日時 {formatDateTime(c.open_at)}
                       </p>
                       <p className="mt-1 font-serif-jp text-base font-bold text-ink">
                         {c.title}
@@ -534,7 +556,7 @@ export function TimeCapsuleClient({
                     {c.title}
                   </p>
                   <p className="text-xs text-ink/50">
-                    {formatDate(c.open_at)}に開封できます(あと
+                    {formatDateTime(c.open_at)}に開封できます(あと
                     {daysUntil(c.open_at)}日)
                   </p>
                 </div>
