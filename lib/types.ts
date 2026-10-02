@@ -187,6 +187,16 @@ export type FamilyMember = {
   created_at: string;
 };
 
+// 「アカウントIDでつなぐ」で送られた、まだ相手が許可していない家族連携の申請。
+// 許可されるまでは family_members には一切行が作られず、家系図にも表示されない。
+export type PendingFamilyLinkRequest = {
+  id: string;
+  fromUserId: string;
+  fromName: string;
+  relationOfToUser: FamilyRelation;
+  createdAt: string;
+};
+
 // 遺言書・遺言動画による本人の意思伝達情報(特許図面「もしもの時」に対応)
 // 請求項8対応: 「本人の意思(想い)」と「法的な遺言事項」を明確に区別して保持する。
 // message/video_url = 本人の想い・感謝のメッセージ(法的効力を主張しない私的な記録)
@@ -680,6 +690,22 @@ export type Database = {
       };
       link_family_by_account_id: {
         Args: { p_account_code: string; p_relation: string };
+        Returns: Json;
+      };
+      request_family_link: {
+        Args: { p_account_code: string; p_relation: string };
+        Returns: Json;
+      };
+      get_pending_family_link_requests: {
+        Args: Record<string, never>;
+        Returns: Json;
+      };
+      approve_family_link_request: {
+        Args: { p_request_id: string };
+        Returns: Json;
+      };
+      decline_family_link_request: {
+        Args: { p_request_id: string };
         Returns: Json;
       };
       get_extended_family_network: {
