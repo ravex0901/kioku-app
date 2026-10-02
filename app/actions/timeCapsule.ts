@@ -125,15 +125,19 @@ export async function createTimeCapsule(
   let openAtIso = FAR_FUTURE_DATE;
   if (unlockConditionType === "date") {
     if (!openAtRaw) {
-      return { ok: false, error: "開封日を指定してください。" };
+      return { ok: false, error: "開封日時を指定してください。" };
     }
-    const openAtDate = new Date(`${openAtRaw}T00:00:00+09:00`);
+    // <input type="datetime-local"> は "YYYY-MM-DDTHH:mm"(秒なし)を返す。
+    // 日付のみ("YYYY-MM-DD")が渡された場合は0時0分として扱う(後方互換)。
+    const hasTime = /T\d{2}:\d{2}/.test(openAtRaw);
+    const normalized = hasTime ? `${openAtRaw}:00` : `${openAtRaw}T00:00:00`;
+    const openAtDate = new Date(`${normalized}+09:00`);
     if (Number.isNaN(openAtDate.getTime())) {
-      return { ok: false, error: "開封日の形式が正しくありません。" };
+      return { ok: false, error: "開封日時の形式が正しくありません。" };
     }
     const now = new Date();
     if (openAtDate.getTime() <= now.getTime()) {
-      return { ok: false, error: "開封日は未来の日付を指定してください。" };
+      return { ok: false, error: "開封日時は未来の日時を指定してください。" };
     }
     openAtIso = openAtDate.toISOString();
   }
@@ -307,7 +311,7 @@ export async function submitMarriageCertificate(
               },
               {
                 type: "text",
-                                text:
+                text:
                   "この画像は、結婚の事実を証明する書類ですか? 次のいずれかに該当すれば有効と判定してください: " +
                   "「婚姻届」そのもの、「婚姻届受理証明書」、「戸籍謄本(戸籍全部事項証明書)」、" +
                   "「戸籍抄本(戸籍個人事項証明書)」、またはそれらに準ずる、結婚(婚姻)の事実が確認できる公的書類。" +
