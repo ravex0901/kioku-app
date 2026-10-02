@@ -1,8 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { FAMILY_RELATION_OPTIONS, labelFor } from "@/lib/constants";
-import type { FamilyMember, FamilyRelation } from "@/lib/types";
+import { familyGenerationDelta, familyRelationLabel } from "@/lib/constants";
+import type { FamilyMember } from "@/lib/types";
 
 // アバターの配色。名前の文字コードから決定的に選ぶことで、
 // 同じ人には毎回同じ色が付くようにする。
@@ -23,9 +23,13 @@ function colorFor(name: string) {
   return AVATAR_PALETTE[hash % AVATAR_PALETTE.length];
 }
 
-function relationLabel(relation: FamilyRelation) {
-  return labelFor(FAMILY_RELATION_OPTIONS, relation);
-}
+// 世代差ごとの見出しラベル(本人の世代には見出しを付けない)。
+const TIER_LABELS: Record<number, string> = {
+  "-2": "祖父母の世代",
+  "-1": "親の世代",
+  1: "子の世代",
+  2: "孫の世代",
+};
 
 function PersonCard({
   name,
@@ -82,6 +86,20 @@ function PersonCard({
   return content;
 }
 
+function MemberCard({ member }: { member: FamilyMember }) {
+  return (
+    <PersonCard
+      name={member.name}
+      subtitle={familyRelationLabel(member.relation)}
+      linkedHref={
+        member.linked_user_id
+          ? `/journal/view/${member.linked_user_id}`
+          : undefined
+      }
+    />
+  );
+}
+
 export function FamilyTreeClient({
   displayName,
   family,
@@ -89,15 +107,26 @@ export function FamilyTreeClient({
   displayName: string;
   family: FamilyMember[];
 }) {
-  const spouse = family.find((f) => f.relation === "spouse") ?? null;
-  const CHILD_RELATIONS: FamilyRelation[] = [
-    "eldest_son",
-    "eldest_daughter",
-    "son",
-    "daughter",
-  ];
-  const children = family.filter((f) => CHILD_RELATIONS.includes(f.relation));
+  // 「その他」は世代が定まらないため、従来通り家系図の下に別枠で表示する。
   const others = family.filter((f) => f.relation === "other");
+  const placed = family.filter((f) => f.relation !== "other");
+
+  // 続柄(relation)から世代差を求め、同じ世代差ごとにグループ化する。
+  // delta が小さいほど年上の世代(家系図の上側)に表示する。
+  const tiers = new Map<number, FamilyMember[]>();
+  for (const member of placed) {
+    const delta = familyGenerationDelta(member.relation);
+    const list = tiers.get(delta) ?? [];
+    list.push(member);
+    tiers.set(delta, list);
+  }
+  const ascendingTiers = [...tiers.keys()]
+    .filter((d) => d < 0)
+    .sort((a, b) => a - b);
+  const descendingTiers = [...tiers.keys()]
+    .filter((d) => d > 0)
+    .sort((a, b) => a - b);
+  const sameTier = tiers.get(0) ?? [];
 
   if (family.length === 0) {
     return (
@@ -120,66 +149,46 @@ export function FamilyTreeClient({
     <div className="flex flex-col gap-8">
       <div className="rounded-[1.75rem] border border-green-100 bg-white/70 px-4 py-8 shadow-sm sm:px-8">
         <div className="overflow-x-auto">
-          <div className="flex min-w-fit flex-col items-center px-2">
-            {/* 本人 + 配偶者 */}
-            <div className="flex items-center">
-              <PersonCard name={displayName} subtitle="本人" isRoot />
-              {spouse && (
-                <>
-                  <span className="mx-1 h-0.5 w-6 shrink-0 bg-green-300 sm:w-8" />
-                  <PersonCard
-                    name={spouse.name}
-                    subtitle={relationLabel(spouse.relation)}
-                    linkedHref={
-                      spouse.linked_user_id
-                        ? `/journal/view/${spouse.linked_user_id}`
-                        : undefined
-                    }
-                  />
-                </>
-              )}
+          <div className="flex min-w-fit flex-col items-center gap-5 px-2">
+            {/* 年上の世代(祖父母・親など)を上から順に表示 */}
+            {ascendingTiers.map((delta) => (
+              <div key={delta} className="flex flex-col items-center gap-2">
+                <span className="text-[10px] font-semibold tracking-wider text-ink/40">
+                  {TIER_LABELS[delta] ?? ""}
+                </span>
+                <div className="flex flex-wrap items-center justify-center gap-4">
+                  {(tiers.get(delta) ?? []).map((member) => (
+                    <MemberCard key={member.id} member={member} />
+                  ))}
+                </div>
+                <span aria-hidden className="h-5 w-0.5 bg-green-300" />
+              </div>
+            ))}
+
+            {/* 本人 + 同世代(配偶者・兄弟姉妹) */}
+            <div className="flex flex-col items-center gap-2">
+              <div className="flex flex-wrap items-center justify-center gap-4">
+                <PersonCard name={displayName} subtitle="本人" isRoot />
+                {sameTier.map((member) => (
+                  <MemberCard key={member.id} member={member} />
+                ))}
+              </div>
             </div>
 
-            {/* 子どもたちへの連結線 */}
-            {children.length > 0 && (
-              <>
-                <span className="h-6 w-0.5 shrink-0 bg-green-300" />
-                <div className="flex">
-                  {children.map((child, i) => {
-                    const isFirst = i === 0;
-                    const isLast = i === children.length - 1;
-                    return (
-                      <div
-                        key={child.id}
-                        className="relative flex flex-col items-center px-3 pt-5 sm:px-4"
-                      >
-                        <span
-                          aria-hidden
-                          className="absolute top-0 h-0.5 bg-green-300"
-                          style={{
-                            left: isFirst ? "50%" : 0,
-                            right: isLast ? "50%" : 0,
-                          }}
-                        />
-                        <span
-                          aria-hidden
-                          className="absolute top-0 left-1/2 h-5 w-0.5 -translate-x-1/2 bg-green-300"
-                        />
-                        <PersonCard
-                          name={child.name}
-                          subtitle={relationLabel(child.relation)}
-                          linkedHref={
-                            child.linked_user_id
-                              ? `/journal/view/${child.linked_user_id}`
-                              : undefined
-                          }
-                        />
-                      </div>
-                    );
-                  })}
+            {/* 年下の世代(子・孫など)を上から順に表示 */}
+            {descendingTiers.map((delta) => (
+              <div key={delta} className="flex flex-col items-center gap-2">
+                <span aria-hidden className="h-5 w-0.5 bg-green-300" />
+                <span className="text-[10px] font-semibold tracking-wider text-ink/40">
+                  {TIER_LABELS[delta] ?? ""}
+                </span>
+                <div className="flex flex-wrap items-center justify-center gap-4">
+                  {(tiers.get(delta) ?? []).map((member) => (
+                    <MemberCard key={member.id} member={member} />
+                  ))}
                 </div>
-              </>
-            )}
+              </div>
+            ))}
           </div>
         </div>
       </div>
@@ -189,16 +198,7 @@ export function FamilyTreeClient({
           <h2 className="mb-3 text-lg font-bold text-ink">その他のご家族</h2>
           <div className="flex gap-4 overflow-x-auto pb-1">
             {others.map((member) => (
-              <PersonCard
-                key={member.id}
-                name={member.name}
-                subtitle={relationLabel(member.relation)}
-                linkedHref={
-                  member.linked_user_id
-                    ? `/journal/view/${member.linked_user_id}`
-                    : undefined
-                }
-              />
+              <MemberCard key={member.id} member={member} />
             ))}
           </div>
         </div>
