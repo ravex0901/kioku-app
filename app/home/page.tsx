@@ -13,6 +13,8 @@ import { VoiceCheckinCard } from "@/components/VoiceCheckinCard";
 import { formatPriceDisplay } from "@/lib/priceRange";
 import { getTodayMood } from "@/app/actions/mood";
 import { getCurrentVoiceCheckin } from "@/app/actions/voiceCheckins";
+import { getPendingFamilyLinkRequests } from "@/app/actions/familyLinkRequests";
+import { FamilyLinkRequestsCard } from "@/components/FamilyLinkRequestsCard";
 import type { Disposition } from "@/lib/types";
 
 type RecentItem = {
@@ -153,6 +155,7 @@ export default async function HomePage() {
     recentRes,
     todayMoodResult,
     voiceCheckinResult,
+    pendingFamilyLinkRequests,
   ] = await Promise.all([
       supabase
         .from("items")
@@ -182,6 +185,7 @@ export default async function HomePage() {
         .limit(5),
       getTodayMood(),
       getCurrentVoiceCheckin(),
+      getPendingFamilyLinkRequests(),
     ]);
 
   const total = totalRes.count ?? 0;
@@ -246,6 +250,8 @@ export default async function HomePage() {
             </svg>
           </span>
         </div>
+
+        <FamilyLinkRequestsCard initialRequests={pendingFamilyLinkRequests} />
 
         <TodayMoodCard initialMood={todayMood} />
 
