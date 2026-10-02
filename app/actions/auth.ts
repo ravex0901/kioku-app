@@ -121,11 +121,24 @@ export async function signupAndAcceptInvite(
     return { error: "パスワード(確認)が一致しません。" };
   }
 
+  // メール確認が必要な設定の場合、確認メール内のリンクはここで指定した
+  // emailRedirectTo に(クエリパラメータも含めて)戻ってくる。招待トークンと
+  // 選択した続柄をクエリに乗せておくことで、メール確認後に招待受け入れの
+  // 文脈(どの招待か・続柄は何か)が失われないようにする。
+  const headersList = await headers();
+  const host = headersList.get("host") ?? "kioku-app-rho.vercel.app";
+  const protocol = host.startsWith("localhost") ? "http" : "https";
+  const origin = `${protocol}://${host}`;
+  const relationParam = encodeURIComponent(myRelation);
+
   const supabase = await createClient();
   const { data, error } = await supabase.auth.signUp({
     email,
     password,
-    options: { data: { name } },
+    options: {
+      data: { name },
+      emailRedirectTo: `${origin}/invite/${token}?relation=${relationParam}`,
+    },
   });
 
   if (error) {
@@ -137,7 +150,10 @@ export async function signupAndAcceptInvite(
   }
 
   if (!data.session || !data.user) {
-    redirect(`/login?message=confirm-email&next=/invite/${token}`);
+    // メール確認が必要な設定の場合はここに来る。実際の招待受け入れは、
+    // メール確認後にユーザーが戻ってくる /invite/[token] ページ
+    // (InviteAcceptClient)側で、ログイン検知後に自動的に行う。
+    redirect(`/invite/${token}?confirmEmail=1&relation=${relationParam}`);
   }
 
   if (birthDate) {
@@ -146,7 +162,7 @@ export async function signupAndAcceptInvite(
 
   const { data: acceptData, error: acceptError } = await supabase.rpc(
     "accept_family_invite",
-    { p_token: token, p_my_relation_to_inviter: myRelation }
+    { p_token: token, p_inviter_relation_to_me: myRelation }
   );
 
   if (acceptError || !acceptData || !(acceptData as { ok?: boolean }).ok) {
