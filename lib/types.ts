@@ -12,8 +12,14 @@ export type CategoryMajor =
   | "subscription"
   | "insurance"
   | "other";
+// 処分の方針(整理の方針)。残す/整理する/わからない の3択。
+// 旧5択(keep/keepsake/sell/discard/undecided)で登録みの既存データは
+// DB上の値はそのまま残り、表示側(lib/constants.tsのdispositionLabel等)で
+// 新しい3択に読み替えて表示する。
 export type Disposition = "keep" | "organize" | "unsure";
 export type DispositionTag = "heirloom" | "inherited" | "memory" | "other";
+
+// デジタル情報・契約情報の種別(特許図面【図10】〜【図13】に対応)
 export type DigitalItemType =
   | "subscription"
   | "account"
@@ -23,7 +29,12 @@ export type DigitalItemType =
   | "contract"
   | "access_info"
   | "other";
+
+// デジタル情報・契約情報の手続き状態(請求項9対応)
 export type DigitalItemStatus = "not_started" | "in_progress" | "done";
+
+// 遺品の整理進捗ステータス(請求項7の標準ワークフローに対応)
+// 写真登録→AI解析/登録→査定待ち→査定完了→家族確認→処分方針の記録→搬送予定/搬出→完了
 export type ItemStatus =
   | "photo_registered"
   | "appraisal_pending"
@@ -32,6 +43,9 @@ export type ItemStatus =
   | "policy_recorded"
   | "transport_scheduled"
   | "completed";
+
+// ご依頼(買取・回収・整理サービス)の種別(特許図面【図2】【図14】の「ご依頼」に対応)
+// appraisal: 品物ごとの「査定を依頼する」ボタンから送信される、自社スタッフによる本査定の依頼
 export type ServiceType =
   | "all_in_one"
   | "buyback"
@@ -39,7 +53,13 @@ export type ServiceType =
   | "estate_cleanup"
   | "pre_death_cleanup"
   | "appraisal";
+
 export type ServiceRequestStatus = "pending" | "in_progress" | "done";
+
+// 家系図で正しい世代(上下)に表示するための、方向つきの続柄。
+// 値は「この家族が、追加した本人から見て何にあたるか」を表す。
+// (例)本人が「父」を追加した場合、relation = "father" のレコードができ、
+// 家系図では本人より1世代上に表示される。
 export type FamilyRelation =
   | "father"
   | "mother"
@@ -57,16 +77,22 @@ export type FamilyRelation =
   | "grandson"
   | "granddaughter"
   | "other"
+  // 旧バージョンの値(過去に登録されたデータとの互換性のために残す)。
   | "eldest_son"
   | "eldest_daughter";
+
 export type Profile = {
   id: string;
   name: string | null;
   purpose: string | null;
+  // 年齢条件(成人になったら/本人と同じ歳になったら)の判定に使う生年月日
   birth_date: string | null;
+  // ご家族をメールアドレスではなく、この8桁のIDで直接つなぐための固有ID。
+  account_code: string | null;
   created_at: string;
   last_active_at: string | null;
 };
+
 export type Json =
   | string
   | number
@@ -74,6 +100,7 @@ export type Json =
   | null
   | { [key: string]: Json | undefined }
   | Json[];
+
 export type Location = {
   id: string;
   user_id: string;
@@ -83,6 +110,7 @@ export type Location = {
   sort_order: number | null;
   created_at: string;
 };
+
 export type Item = {
   id: string;
   user_id: string;
@@ -102,6 +130,8 @@ export type Item = {
   created_at: string;
   updated_at: string;
 };
+
+// 遺品ステータス変更履歴(請求項7「ステータス履歴(変更前、変更後、変更者、日時)」に対応)
 export type ItemStatusHistory = {
   id: string;
   item_id: string;
@@ -111,6 +141,8 @@ export type ItemStatusHistory = {
   changed_by: string | null;
   changed_at: string;
 };
+
+// デジタル・契約情報(特許図面【図10】〜【図13】、【図23】【図24】に対応)
 export type DigitalItem = {
   id: string;
   user_id: string;
@@ -123,6 +155,9 @@ export type DigitalItem = {
   created_at: string;
   updated_at: string;
 };
+
+// ご依頼(特許図面【図2】【図18】に対応)
+// item_id: 品物ごとの「査定を依頼する」から送信された場合に対象の品物を紐づける(自社査定への一次窓口)
 export type ServiceRequest = {
   id: string;
   user_id: string;
@@ -132,6 +167,11 @@ export type ServiceRequest = {
   status: ServiceRequestStatus;
   created_at: string;
 };
+
+// 家族と共有(特許図面【図2】【図18】の「家族と共有」に対応)
+// invite_token: この家族を「自分のアカウントで」紐付けるための招待リンクのトークン。
+// linked_user_id: 招待を受け入れ、実際にサインアップ/ログインして紐付いたアカウントのID
+// (未紐付けの場合はnull。その場合はこれまで通り共有リンクのみで内容を閲覧する)。
 export type FamilyMember = {
   id: string;
   user_id: string;
@@ -142,6 +182,12 @@ export type FamilyMember = {
   linked_at: string | null;
   created_at: string;
 };
+
+// 遺言書・遺言動画による本人の意思伝達情報(特許図面「もしもの時」に対応)
+// 請求項8対応: 「本人の意思(想い)」と「法的な遺言事項」を明確に区別して保持する。
+// message/video_url = 本人の想い・感謝のメッセージ(法的効力を主張しない私的な記録)
+// legal_will_note = 財産分与など法的な遺言事項に関する記録(正式な遺言書の代替ではない旨の
+//   免責への同意を得たうえで保存する。legal_disclaimer_acknowledged_at が同意日時)
 export type Will = {
   id: string;
   user_id: string;
@@ -151,6 +197,11 @@ export type Will = {
   legal_disclaimer_acknowledged_at: string | null;
   updated_at: string;
 };
+
+// もしもの時(引き継ぎ)設定。開示条件(非アクティブ日数・承認者)と共有トークンを保持する
+// disclosure_status: 非アクティブ検知だけで即座に公開しないための開示ステップ。
+//   pending(通常時)→ awaiting_certificate(連絡・死亡届等の提出待ち)
+//   → certificate_submitted(運営確認待ち)→ approved(開示)/ rejected(却下・再提出可)
 export type HandoverDisclosureStatus =
   | "pending"
   | "awaiting_certificate"
@@ -166,6 +217,9 @@ export type HandoverSettings = {
   disclosure_status: HandoverDisclosureStatus;
   updated_at: string;
 };
+
+// 死亡届(または除籍謄本等)の画像提出。運営(管理者)が内容を確認し、承認すると
+// 「もしもの時」の内容が開示される。
 export type DeathCertificateSubmission = {
   id: string;
   user_id: string;
@@ -177,6 +231,10 @@ export type DeathCertificateSubmission = {
   reviewed_at: string | null;
   reviewed_by: string | null;
 };
+
+// 共有相手ごとの遺言動画・遺言書と専用共有リンク(複数人共有対応)。
+// 未設定の項目(message/video_url/legal_will_note が全てnull)の場合は、
+// 共有時に Will(デフォルトの内容)へフォールバックする。
 export type HandoverRecipient = {
   id: string;
   user_id: string;
@@ -187,6 +245,7 @@ export type HandoverRecipient = {
   legal_will_note: string | null;
   legal_disclaimer_acknowledged_at: string | null;
   share_token: string;
+  // 共有相手ごとの機能別共有制限(どの情報をこの相手に見せるか)
   share_items: boolean;
   share_digital_items: boolean;
   share_checklist: boolean;
@@ -197,12 +256,16 @@ export type HandoverRecipient = {
   created_at: string;
   updated_at: string;
 };
+
+// 相続手続きチェックリストの完了状況(請求項1の相続レポート機能に対応)
 export type ChecklistProgress = {
   user_id: string;
   procedure_key: string;
   done: boolean;
   updated_at: string;
 };
+
+// AIの声(カスタム音声)機能: 録音音声から作成した音声クローンの状態
 export type VoiceProfileStatusValue = "pending" | "ready" | "failed";
 export type VoiceProfile = {
   user_id: string;
@@ -214,6 +277,9 @@ export type VoiceProfile = {
   created_at: string;
   updated_at: string;
 };
+
+// 「AIと日記」機能: 1日1問AIが質問を出し、テキストか音声で回答すると
+// 自分史として蓄積されていく(家族の思い出を代々残すための土台になる記録)。
 export type JournalEntry = {
   id: string;
   user_id: string;
@@ -223,6 +289,9 @@ export type JournalEntry = {
   answered_at: string | null;
   created_at: string;
 };
+
+// タイムカプセル機能: 未来の家族に向けたメッセージ(テキスト・音声)を、
+// 指定した開封日(または年齢・結婚などの条件)まで開けられない状態で残しておける機能。
 export type TimeCapsuleUnlockConditionType =
   | "date"
   | "adulthood"
@@ -233,17 +302,21 @@ export type TimeCapsule = {
   user_id: string;
   title: string;
   recipient_name: string | null;
+  // 紐付け済みの家族アカウント宛てに送る場合、その family_members.id(紐付け済みの行)
   recipient_family_member_id: string | null;
   message_text: string | null;
   message_audio_path: string | null;
   open_at: string;
   unlock_condition_type: TimeCapsuleUnlockConditionType;
+  // 「送った本人と同じ歳になったら」条件で使う、送信時点の本人の年齢
   sender_age_at_creation: number | null;
   marriage_certificate_path: string | null;
   marriage_verified_at: string | null;
   marriage_review_note: string | null;
   created_at: string;
 };
+
+// 受信者側(紐付け済みの家族アカウント)がget_received_time_capsules()で受け取る形
 export type ReceivedTimeCapsule =
   | {
       id: string;
@@ -266,6 +339,9 @@ export type ReceivedTimeCapsule =
       createdAt: string;
       marriageSubmitted: boolean;
     };
+
+// 「AIと会話する」機能の会話ログ: 持ち物について尋ねたやり取りを保存し、
+// 「この日はこういう会話をしていた」として自分史に組み込むための記録
 export type ConversationLogEntry = {
   id: string;
   user_id: string;
@@ -273,6 +349,8 @@ export type ConversationLogEntry = {
   answer: string;
   created_at: string;
 };
+
+// やりたいことリスト(チェックボックス式)
 export type BucketListItem = {
   id: string;
   user_id: string;
@@ -281,6 +359,8 @@ export type BucketListItem = {
   created_at: string;
   updated_at: string;
 };
+
+// 医療情報: かかりつけ医・持病・今飲んでいる薬(ユーザーにつき1件)
 export type MedicalInfo = {
   user_id: string;
   doctor_name: string | null;
@@ -290,14 +370,19 @@ export type MedicalInfo = {
   medications: string | null;
   updated_at: string;
 };
+
+// アルバム: スマホの写真をこのシステム内にも複数保存できる機能
 export type AlbumPhoto = {
   id: string;
   user_id: string;
   storage_path: string;
   caption: string | null;
+  // 「もしもの時」共有ページで都度署名を発行せず表示できる長期有効の署名付きURL
   long_lived_url: string | null;
   created_at: string;
 };
+
+// 今日の調子(にこちゃんマークで1日1回、調子を記録する)
 export type MoodValue = "good" | "normal" | "bad";
 export type DailyMoodLog = {
   user_id: string;
@@ -306,6 +391,9 @@ export type DailyMoodLog = {
   created_at: string;
   updated_at: string;
 };
+
+// 家族ボイスメッセージ: お昼・夕方・夜に家族の声(録音)で話しかけてくれる機能。
+// 現時点では家族本人が録音した音声をそのまま再生する(AI音声クローンではない)。
 export type VoiceCheckinSlot = "lunch" | "evening" | "night";
 export type VoiceCheckin = {
   id: string;
@@ -315,6 +403,7 @@ export type VoiceCheckin = {
   time_slot: VoiceCheckinSlot;
   message_text: string | null;
   storage_path: string | null;
+  // 紐付け済みの家族アカウントが自分でこのメッセージを送った場合、その人のユーザーID
   created_by_user_id: string | null;
   created_at: string;
   updated_at: string;
@@ -585,8 +674,8 @@ export type Database = {
         Args: { p_token: string; p_inviter_relation_to_me: string };
         Returns: Json;
       };
-      link_family_by_email: {
-        Args: { p_email: string; p_relation: string };
+      link_family_by_account_id: {
+        Args: { p_account_code: string; p_relation: string };
         Returns: Json;
       };
       get_received_time_capsules: {
