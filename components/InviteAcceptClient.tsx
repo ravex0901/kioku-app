@@ -1,9 +1,11 @@
 "use client";
 
 import Link from "next/link";
-import { useActionState, useState, useTransition } from "react";
+import { useActionState, useEffect, useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
 import { signupAndAcceptInvite } from "@/app/actions/auth";
 import { acceptFamilyInvite } from "@/app/actions/familyInvite";
+import { createClient } from "@/lib/supabase/client";
 import { FAMILY_RELATION_OPTIONS } from "@/lib/constants";
 import type { FamilyRelation } from "@/lib/types";
 import type { InviteInfo } from "@/app/actions/familyInvite";
@@ -12,11 +14,39 @@ export function InviteAcceptClient({
   token,
   info,
   isLoggedIn,
+  initialRelation = null,
+  awaitingEmailConfirm = false,
 }: {
   token: string;
   info: InviteInfo;
   isLoggedIn: boolean;
+  initialRelation?: FamilyRelation | null;
+  awaitingEmailConfirm?: boolean;
 }) {
+  const router = useRouter();
+
+  useEffect(() => {
+    if (isLoggedIn) return;
+    const supabase = createClient();
+    const { data: subscription } = supabase.auth.onAuthStateChange(
+      (event, session) => {
+        if (event !== "SIGNED_IN" || !session) return;
+        if (initialRelation) {
+          acceptFamilyInvite(token, initialRelation).then((result) => {
+            if (result.ok) {
+              window.location.href = "/family-tree?invited=1";
+            } else {
+              router.refresh();
+            }
+          });
+        } else {
+          router.refresh();
+        }
+      }
+    );
+    return () => subscription.subscription.unsubscribe();
+  }, [isLoggedIn, initialRelation, token, router]);
+
   if (!info.found) {
     return (
       <p className="rounded-lg bg-red-50 px-4 py-3 text-center text-sm text-red-600">
@@ -38,6 +68,15 @@ export function InviteAcceptClient({
           ログインする
         </Link>
       </div>
+    );
+  }
+
+  if (awaitingEmailConfirm && !isLoggedIn) {
+    return (
+      <p className="rounded-lg bg-green-50 px-4 py-3 text-center text-sm text-green-700">
+        ご登録ありがとうございます。確認メールを送信しました。メール内のリンクをクリックすると、自動的に
+        {info.inviterName || "ご本人"}さんとつながります。
+      </p>
     );
   }
 
@@ -96,7 +135,7 @@ function LoggedInAccept({
     <div className="flex flex-col gap-4">
       <div className="flex flex-col gap-1.5">
         <label htmlFor="myRelation" className="text-sm font-medium text-ink/80">
-          {inviterName || "招待した方"}から見て、あなたの続柄
+          あなたから見て、{inviterName || "招待した方"}はどのご関係ですか?
         </label>
         <select
           id="myRelation"
@@ -212,7 +251,7 @@ function NewAccountAccept({ token }: { token: string }) {
         </div>
         <div className="flex flex-col gap-1.5">
           <label htmlFor="myRelationSelect" className="text-sm font-medium text-ink/80">
-            招待した方から見て、あなたの続柄
+            あなたから見て、招待した方はどのご関係ですか?
           </label>
           <select
             id="myRelationSelect"
