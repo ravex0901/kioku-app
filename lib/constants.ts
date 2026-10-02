@@ -248,6 +248,16 @@ export function familyGenerationDelta(relation: string): number {
   return FAMILY_RELATION_GENERATION[relation] ?? 0;
 }
 
+// 「間接の家族」(2ホップ以上先でつながっている家族)用の、世代差から見出しラベルを作る。
+// 直接の家族(1ホップ)は familyRelationLabel の続柄名をそのまま使うのでこちらは使わない。
+export function familyNetworkGenerationLabel(generationDelta: number): string {
+  if (generationDelta <= -2) return `${-generationDelta}世代上のご親戚`;
+  if (generationDelta === -1) return "親の世代のご親戚";
+  if (generationDelta === 0) return "同世代のご親戚";
+  if (generationDelta === 1) return "子の世代のご親戚";
+  return `${generationDelta}世代下のご親戚`;
+}
+
 export const DISPOSITION_BADGE_STYLE: Record<Disposition, string> = {
   keep: "bg-green-100 text-green-700",
   organize: "bg-orange-100 text-orange-700",
