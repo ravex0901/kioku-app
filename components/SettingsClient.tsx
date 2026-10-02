@@ -4,7 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import { FAMILY_RELATION_OPTIONS, familyRelationLabel } from "@/lib/constants";
-import { linkFamilyByEmail } from "@/app/actions/familyInvite";
+import { linkFamilyByAccountId } from "@/app/actions/familyInvite";
 import { VoiceSettings } from "@/components/VoiceSettings";
 import { RecipientWillEditor } from "@/components/RecipientWillEditor";
 import type {
@@ -19,6 +19,7 @@ export function SettingsClient({
   userId,
   displayName,
   purpose,
+  accountCode,
   initialFamily,
   initialWill,
   initialHandover,
@@ -27,6 +28,7 @@ export function SettingsClient({
   userId: string;
   displayName: string;
   purpose: string | null;
+  accountCode: string | null;
   initialFamily: FamilyMember[];
   initialWill: Will | null;
   initialHandover: HandoverSettings | null;
@@ -38,29 +40,44 @@ export function SettingsClient({
   const [inviting, setInviting] = useState(false);
   const [inviteError, setInviteError] = useState<string | null>(null);
 
-  const [linkEmail, setLinkEmail] = useState("");
+  // 自分のアカウントIDをコピーするためのUI状態。
+  const [accountCodeCopied, setAccountCodeCopied] = useState(false);
+  async function handleCopyAccountCode() {
+    if (!accountCode) return;
+    try {
+      await navigator.clipboard.writeText(accountCode);
+      setAccountCodeCopied(true);
+      setTimeout(() => setAccountCodeCopied(false), 2000);
+    } catch {
+      // クリップボードが使用できない場合は何もしない
+    }
+  }
+
+  // 相手のアカウントIDを指定して、招待リンクを使わずに
+  // 既存アカウントとその場で紐付ける機能。メールアドレスは使わない。
+  const [linkAccountCode, setLinkAccountCode] = useState("");
   const [linkRelation, setLinkRelation] = useState<FamilyRelation>("father");
   const [linking, setLinking] = useState(false);
   const [linkError, setLinkError] = useState<string | null>(null);
   const [linkSuccess, setLinkSuccess] = useState<string | null>(null);
 
-  async function handleLinkByEmail() {
-    const trimmed = linkEmail.trim();
+  async function handleLinkByAccountId() {
+    const trimmed = linkAccountCode.trim().toUpperCase();
     if (!trimmed) {
-      setLinkError("メールアドレスを入力してください。");
+      setLinkError("相手のアカウントIDを入力してください。");
       return;
     }
     setLinking(true);
     setLinkError(null);
     setLinkSuccess(null);
-    const result = await linkFamilyByEmail(trimmed, linkRelation);
+    const result = await linkFamilyByAccountId(trimmed, linkRelation);
     setLinking(false);
     if (!result.ok) {
       setLinkError(result.error);
       return;
     }
     setLinkSuccess(`${result.targetName}さんとつながりました。`);
-    setLinkEmail("");
+    setLinkAccountCode("");
     window.location.reload();
   }
 
@@ -86,6 +103,8 @@ export function SettingsClient({
     null
   );
 
+  // 動画は非公開バケットに保存し、家族への共有リンクからも長期間閲覧できるよう
+  // 有効期限の長い署名付きURLを発行してvideo_urlに保存する(アップロード時点で発行)。
   const VIDEO_SIGNED_URL_EXPIRES_IN = 60 * 60 * 24 * 365 * 10; // 10年
   const MAX_VIDEO_SIZE_BYTES = 200 * 1024 * 1024; // 200MB
 
@@ -142,6 +161,7 @@ export function SettingsClient({
     }
   }
 
+  // 法的な遺言事項(財産分与など)。本人の想い・メッセージとは明確に分けて保持する(請求項8対応)。
   const [legalWillNote, setLegalWillNote] = useState(
     initialWill?.legal_will_note ?? ""
   );
@@ -176,6 +196,8 @@ export function SettingsClient({
     setName("");
   }
 
+  // 続柄を後から修正する(例:メールアドレスでつないだ直後は「その他」に
+  // なっている相手の続柄を、本来の関係に直す)。
   async function handleUpdateRelation(
     memberId: string,
     newRelation: FamilyRelation
@@ -249,6 +271,8 @@ export function SettingsClient({
     }
   }
 
+  // 共有を複数人でき、共有者一人一人に遺言動画と遺言書を設定できるようにする機能。
+  // handover_recipients に登録した相手ごとに、専用の遺言内容と専用共有リンクを発行する。
   const [recipients, setRecipients] = useState(initialRecipients);
   const [newRecipientName, setNewRecipientName] = useState("");
   const [newRecipientFamilyId, setNewRecipientFamilyId] = useState("");
@@ -305,6 +329,7 @@ export function SettingsClient({
     }
   }
 
+  // 家族招待リンク(ご家族がご自身のアカウントで紐付けるためのリンク)のコピー
   const [copiedInviteId, setCopiedInviteId] = useState<string | null>(null);
   async function handleCopyInviteLink(member: FamilyMember) {
     if (!member.invite_token) return;
@@ -445,19 +470,39 @@ export function SettingsClient({
         </div>
 
         <p className="mb-3 text-xs text-ink/50">
-          ご家族がすでにこのアプリのアカウントをお持ちの場合は、招待リンクを使わず、メールアドレスを指定してその場でつなぐことができます(招待リンクから別アカウントを新しく作ってしまう二重登録を防げます)。
+          ご家族がすでにこのアプリのアカウントをお持ちの場合は、招待リンクを使わず、「アカウントID」を指定してその場でつなぐことができます(メールアドレスを伝える必要はありません。招待リンクから別アカウントを新しく作ってしまう二重登録も防げます)。
         </p>
+
+        <div className="mb-4 rounded-xl border border-green-100 bg-green-50/60 px-4 py-3">
+          <p className="mb-1 text-xs font-medium text-ink/60">
+            あなたのアカウントID(家族に伝えてつないでもらいましょう)
+          </p>
+          <div className="flex items-center justify-between gap-2">
+            <span className="font-mono text-lg font-bold tracking-widest text-green-800">
+              {accountCode ?? "発行準備中…"}
+            </span>
+            {accountCode && (
+              <button
+                type="button"
+                onClick={handleCopyAccountCode}
+                className="shrink-0 rounded-full border border-green-700 px-3 py-1.5 text-xs font-medium text-green-700 transition hover:bg-green-100"
+              >
+                {accountCodeCopied ? "コピーしました" : "コピー"}
+              </button>
+            )}
+          </div>
+        </div>
+
         <div className="flex flex-col gap-3">
           <div className="flex flex-col gap-1.5">
             <label className="text-sm font-medium text-ink/80">
-              相手のメールアドレス(アカウントID)
+              相手のアカウントID
             </label>
             <input
-              value={linkEmail}
-              onChange={(e) => setLinkEmail(e.target.value)}
-              type="email"
-              placeholder="例:taro@example.com"
-              className="rounded-lg border border-black/10 bg-white px-4 py-2.5 text-sm outline-none focus:border-green-400 focus:ring-2 focus:ring-green-100"
+              value={linkAccountCode}
+              onChange={(e) => setLinkAccountCode(e.target.value)}
+              placeholder="例:AB3KX9Q2"
+              className="rounded-lg border border-black/10 bg-white px-4 py-2.5 text-sm uppercase outline-none focus:border-green-400 focus:ring-2 focus:ring-green-100"
             />
           </div>
           <div className="flex flex-col gap-1.5">
@@ -482,11 +527,11 @@ export function SettingsClient({
           )}
           <button
             type="button"
-            onClick={handleLinkByEmail}
+            onClick={handleLinkByAccountId}
             disabled={linking}
             className="rounded-full border border-green-700 px-5 py-2.5 text-sm font-semibold text-green-700 shadow-sm transition hover:bg-green-50 disabled:opacity-60"
           >
-            {linking ? "つないでいます…" : "メールアドレスでつなぐ"}
+            {linking ? "つないでいます…" : "アカウントIDでつなぐ"}
           </button>
         </div>
       </section>
