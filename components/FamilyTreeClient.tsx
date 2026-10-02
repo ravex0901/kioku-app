@@ -1,8 +1,13 @@
 "use client";
 
 import Link from "next/link";
-import { familyGenerationDelta, familyRelationLabel } from "@/lib/constants";
+import {
+  familyGenerationDelta,
+  familyNetworkGenerationLabel,
+  familyRelationLabel,
+} from "@/lib/constants";
 import type { FamilyMember } from "@/lib/types";
+import type { ExtendedFamilyNetworkMember } from "@/app/actions/familyNetwork";
 
 // アバターの配色。名前の文字コードから決定的に選ぶことで、
 // 同じ人には毎回同じ色が付くようにする。
@@ -100,12 +105,36 @@ function MemberCard({ member }: { member: FamilyMember }) {
   );
 }
 
+// 「間接の家族」(2ホップ以上先でつながっている家族)用のカード。
+// 既定では名前+続柄(世代差)のみ表示し、本人(または故人の場合は直接の家族)が
+// 共有をONにしている場合のみ「日記を見る」リンクが付く。
+function NetworkMemberCard({
+  member,
+}: {
+  member: ExtendedFamilyNetworkMember;
+}) {
+  return (
+    <PersonCard
+      name={member.name ?? "ご家族"}
+      subtitle={
+        (member.isDeceased ? "故人・" : "") +
+        familyNetworkGenerationLabel(member.generationDelta)
+      }
+      linkedHref={
+        member.canViewJournal ? `/journal/view/${member.userId}` : undefined
+      }
+    />
+  );
+}
+
 export function FamilyTreeClient({
   displayName,
   family,
+  extendedNetwork = [],
 }: {
   displayName: string;
   family: FamilyMember[];
+  extendedNetwork?: ExtendedFamilyNetworkMember[];
 }) {
   // 「その他」は世代が定まらないため、従来通り家系図の下に別枠で表示する。
   const others = family.filter((f) => f.relation === "other");
@@ -199,6 +228,20 @@ export function FamilyTreeClient({
           <div className="flex gap-4 overflow-x-auto pb-1">
             {others.map((member) => (
               <MemberCard key={member.id} member={member} />
+            ))}
+          </div>
+        </div>
+      )}
+
+      {extendedNetwork.length > 0 && (
+        <div>
+          <h2 className="mb-1 text-lg font-bold text-ink">間接のご家族</h2>
+          <p className="mb-3 text-xs text-ink/50">
+            ご家族がさらにつながっているご親戚です。名前は表示されますが、日記などの詳細は、ご本人(故人の場合は直接のご家族)が共有をONにした方のみ見られます。
+          </p>
+          <div className="flex flex-wrap gap-4 overflow-x-auto pb-1">
+            {extendedNetwork.map((member) => (
+              <NetworkMemberCard key={member.userId} member={member} />
             ))}
           </div>
         </div>
