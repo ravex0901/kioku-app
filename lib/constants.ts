@@ -24,8 +24,6 @@ export const CATEGORY_OPTIONS: { value: CategoryMajor; label: string }[] = [
   { value: "other", label: "その他" },
 ];
 
-// 資産・サブスク・保険は現物の「もの」ではないため、
-// 品名/メモの入力欄でどんな情報を書けばよいかをガイドする文言。
 export const CATEGORY_MEMO_HINTS: Partial<Record<CategoryMajor, string>> = {
   asset: "例:○○銀行 普通預金、△△証券のNISA口座、概算評価額など",
   subscription:
@@ -40,7 +38,6 @@ export const CATEGORY_NAME_HINTS: Partial<Record<CategoryMajor, string>> = {
   insurance: "例:〇〇生命 終身保険、△△火災保険 など",
 };
 
-// デジタル情報・契約情報の種別(特許図面【図10】〜【図13】に対応)
 export const DIGITAL_ITEM_TYPE_OPTIONS: {
   value: DigitalItemType;
   label: string;
@@ -68,16 +65,12 @@ export const DIGITAL_ITEM_TITLE_HINTS: Partial<
   other: "例:その他残しておきたい情報",
 };
 
-// 整理の方針(旧:処分の方針)。残す/整理する/わからない の3択。
 export const DISPOSITION_OPTIONS: { value: Disposition; label: string }[] = [
   { value: "keep", label: "残す" },
   { value: "organize", label: "整理する" },
   { value: "unsure", label: "わからない" },
 ];
 
-// 旧5択(keep/keepsake/sell/discard/undecided)で登録済みの既存データを、
-// 新しい3択のラベル・バッジ色に読み替えるための後方互換テーブル。
-// DB上の値そのものは変更しない。
 const LEGACY_DISPOSITION_LABEL: Record<string, string> = {
   keepsake: "残す",
   sell: "整理する",
@@ -85,9 +78,6 @@ const LEGACY_DISPOSITION_LABEL: Record<string, string> = {
   undecided: "わからない",
 };
 
-// 新3択の値それぞれに対応する旧5択時代のDB値。
-// 絞り込み検索(見る・探す)で新旧どちらの値で保存されたデータも
-// 取りこぼさないように使う。
 export const LEGACY_DISPOSITION_VALUES: Record<Disposition, string[]> = {
   keep: ["keepsake"],
   organize: ["sell", "discard"],
@@ -108,8 +98,6 @@ export function dispositionLabel(value: string | null | undefined): string {
   return LEGACY_DISPOSITION_LABEL[value] ?? "未設定";
 }
 
-// 新3択の"keep"、または旧5択時代の"keepsake"(=残す)であればtrue。
-// 「残す」判定を行う箇所(売却候補の除外など)で、旧データを取りこぼさないために使う。
 export function isKeepDisposition(value: string | null | undefined): boolean {
   return value === "keep" || value === "keepsake";
 }
@@ -163,7 +151,6 @@ export const PURPOSE_OPTIONS: {
   },
 ];
 
-// ご依頼(特許図面【図2】【図18】の「ご依頼」に対応)
 export const SERVICE_TYPE_OPTIONS: {
   value: ServiceType;
   label: string;
@@ -207,13 +194,59 @@ export const FAMILY_RELATION_OPTIONS: {
   value: FamilyRelation;
   label: string;
 }[] = [
+  { value: "father", label: "父親" },
+  { value: "mother", label: "母親" },
+  { value: "grandfather", label: "祖父" },
+  { value: "grandmother", label: "祖母" },
+  { value: "uncle", label: "伯父・叔父" },
+  { value: "aunt", label: "伯母・叔母" },
+  { value: "older_brother", label: "兄" },
+  { value: "older_sister", label: "姉" },
+  { value: "younger_brother", label: "弟" },
+  { value: "younger_sister", label: "妹" },
   { value: "spouse", label: "配偶者" },
-  { value: "eldest_son", label: "長男" },
-  { value: "eldest_daughter", label: "長女" },
-  { value: "son", label: "次男以降の息子" },
-  { value: "daughter", label: "次女以降の娘" },
+  { value: "son", label: "息子" },
+  { value: "daughter", label: "娘" },
+  { value: "grandson", label: "孫息子" },
+  { value: "granddaughter", label: "孫娘" },
   { value: "other", label: "その他" },
 ];
+
+const LEGACY_FAMILY_RELATION_LABEL: Record<string, string> = {
+  eldest_son: "長男",
+  eldest_daughter: "長女",
+};
+
+export function familyRelationLabel(value: string | null | undefined): string {
+  if (!value) return "未設定";
+  const found = FAMILY_RELATION_OPTIONS.find((o) => o.value === value);
+  if (found) return found.label;
+  return LEGACY_FAMILY_RELATION_LABEL[value] ?? "その他";
+}
+
+export const FAMILY_RELATION_GENERATION: Record<string, number> = {
+  grandfather: -2,
+  grandmother: -2,
+  father: -1,
+  mother: -1,
+  uncle: -1,
+  aunt: -1,
+  older_brother: 0,
+  older_sister: 0,
+  younger_brother: 0,
+  younger_sister: 0,
+  spouse: 0,
+  son: 1,
+  daughter: 1,
+  eldest_son: 1,
+  eldest_daughter: 1,
+  grandson: 2,
+  granddaughter: 2,
+};
+
+export function familyGenerationDelta(relation: string): number {
+  return FAMILY_RELATION_GENERATION[relation] ?? 0;
+}
 
 export const DISPOSITION_BADGE_STYLE: Record<Disposition, string> = {
   keep: "bg-green-100 text-green-700",
@@ -233,7 +266,6 @@ export const CONDITION_LABELS: Record<"good" | "used" | "needs_repair", string> 
   needs_repair: "要修理",
 };
 
-// 遺品の整理進捗ステータス(請求項7の標準ワークフローに対応)
 export const ITEM_STATUS_OPTIONS: { value: ItemStatus; label: string }[] = [
   { value: "photo_registered", label: "写真登録" },
   { value: "appraisal_pending", label: "査定待ち" },
@@ -254,7 +286,6 @@ export const ITEM_STATUS_BADGE_STYLE: Record<ItemStatus, string> = {
   completed: "bg-green-100 text-green-700",
 };
 
-// デジタル・契約情報の手続き状態(請求項9対応)
 export const DIGITAL_ITEM_STATUS_OPTIONS: {
   value: DigitalItemStatus;
   label: string;
@@ -264,9 +295,6 @@ export const DIGITAL_ITEM_STATUS_OPTIONS: {
   { value: "done", label: "完了" },
 ];
 
-// 家族ボイスメッセージの時間帯ラベル(app/actions/voiceCheckins.tsはサーバーアクション専用の
-// ファイルのため非同期関数しかexportできない。この定数はクライアント側でも使うので
-// こちらに置く)。
 export const VOICE_CHECKIN_SLOT_LABELS: Record<"lunch" | "evening" | "night", string> = {
   lunch: "お昼",
   evening: "夕方",
