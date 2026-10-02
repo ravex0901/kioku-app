@@ -54,7 +54,9 @@ export async function acceptFamilyInvite(
 
   const { data, error } = await supabase.rpc("accept_family_invite", {
     p_token: token,
-    p_my_relation_to_inviter: myRelationToInviter,
+    // 「招待した方が、自分(ログイン中のユーザー)から見て何にあたるか」を渡す。
+    // (例)招待した方が父親なら relation = "father" を渡す。
+    p_inviter_relation_to_me: myRelationToInviter,
   });
 
   if (error || !data) {
@@ -78,4 +80,42 @@ export async function acceptFamilyInvite(
     inviterUserId: result.inviterUserId,
     inviterName: result.inviterName ?? null,
   };
+}
+
+export type LinkByEmailResult =
+  | { ok: true; targetName: string }
+  | { ok: false; error: string };
+
+/**
+ * 招待リンクを使わずに、既に相手が持っているアカウントのメールアドレスを
+ * 指定して、その場で双方向に家族として紐付ける。
+ * (すでにアカウントを持っている家族が、招待リンク経由で別アカウントを
+ *  二重に作ってしまう混乱を避けるための機能)
+ */
+export async function linkFamilyByEmail(
+  email: string,
+  relation: FamilyRelation
+): Promise<LinkByEmailResult> {
+  const supabase = await createClient();
+  const { data, error } = await supabase.rpc("link_family_by_email", {
+    p_email: email,
+    p_relation: relation,
+  });
+
+  if (error || !data) {
+    console.error("linkFamilyByEmail error", error);
+    return { ok: false, error: "追加に失敗しました。もう一度お試しください。" };
+  }
+
+  const result = data as unknown as {
+    ok: boolean;
+    error?: string;
+    targetName?: string;
+  };
+
+  if (!result.ok) {
+    return { ok: false, error: result.error ?? "追加に失敗しました。" };
+  }
+
+  return { ok: true, targetName: result.targetName ?? "" };
 }
