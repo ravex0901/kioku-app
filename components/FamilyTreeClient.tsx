@@ -1,9 +1,13 @@
 "use client";
 
 import Link from "next/link";
-import { familyGenerationDelta, familyRelationLabel } from "@/lib/constants";
-import type { FamilyMember } from "@/lib/types";
+import {
+  familyGenerationDelta,
+  familyRelationLabel,
+} from "@/lib/constants";
+import type { FamilyMember, FamilyRelation } from "@/lib/types";
 import type { ExtendedFamilyNetworkMember } from "@/app/actions/familyNetwork";
+import styles from "./FamilyTree.module.css";
 
 // アバターの配色。名前の文字コードから決定的に選ぶことで、
 // 同じ人には毎回同じ色が付くようにする。
@@ -25,7 +29,7 @@ function colorFor(name: string) {
 }
 
 // 世代差ごとの見出しラベル(本人の世代には見出しを付けない)。
-// 間接の家族が合流することで ±2 を超える世代も出てくるため、それより外側は汎用の表現にする。
+// 間接の家族や孫世代が合流することで ±2 を超える世代も出てくるため、それより外側は汎用の表現にする。
 function tierHeaderLabel(delta: number): string {
   if (delta <= -3) return `${-delta}世代上の世代`;
   if (delta === -2) return "祖父母の世代";
@@ -35,17 +39,19 @@ function tierHeaderLabel(delta: number): string {
   return `${delta}世代下の世代`;
 }
 
+type PersonCardData = {
+  name: string;
+  subtitle?: string;
+  isRoot?: boolean;
+  linkedHref?: string;
+};
+
 function PersonCard({
   name,
   subtitle,
   isRoot = false,
   linkedHref,
-}: {
-  name: string;
-  subtitle?: string;
-  isRoot?: boolean;
-  linkedHref?: string;
-}) {
+}: PersonCardData) {
   const initial = name.trim().slice(0, 1) || "?";
   const content = (
     <div className="flex w-20 shrink-0 flex-col items-center gap-1 sm:w-24">
@@ -90,6 +96,20 @@ function PersonCard({
   return content;
 }
 
+// 夫婦(1人の場合もある)を横並びにし、2人いる場合だけ間を小さな線でつなぐ。
+function CoupleGroup({ cards }: { cards: PersonCardData[] }) {
+  if (cards.length === 2) {
+    return (
+      <div className={styles.coupleGroup}>
+        <PersonCard {...cards[0]} />
+        <span aria-hidden className={styles.coupleLine} />
+        <PersonCard {...cards[1]} />
+      </div>
+    );
+  }
+  return <PersonCard {...cards[0]} />;
+}
+
 function MemberCard({ member }: { member: FamilyMember }) {
   return (
     <PersonCard
@@ -104,25 +124,57 @@ function MemberCard({ member }: { member: FamilyMember }) {
   );
 }
 
-// 家系図に表示する1人分のデータ。直接の家族・間接の家族(2ホップ以上先)の両方を、
-// 同じ木の中に世代ごと(世代差)に混ぜて表示するための共通の形。
-type TreeNode = {
+function cardFromMember(member: FamilyMember): PersonCardData {
+  return {
+    name: member.name,
+    subtitle: familyRelationLabel(member.relation),
+    linkedHref: member.linked_user_id
+      ? `/journal/view/${member.linked_user_id}`
+      : undefined,
+  };
+}
+
+function compact<T>(values: (T | undefined | null | false)[]): T[] {
+  return values.filter(Boolean) as T[];
+}
+
+// 家系図の1つの「枠」。夫婦(または単身)のカード1組と、その子供にあたる枠の並び。
+// 「続柄の文字列を並べる」のではなく、夫婦の中心から子へ1本の線が伸びる、という
+// 家系図として自然な構造を、今あるデータ(本人から見た続柄)から組み立てる。
+type TreeBranch = {
+  id: string;
+  cards: PersonCardData[];
+  children: TreeBranch[];
+};
+
+function leafBranch(member: FamilyMember): TreeBranch {
+  return { id: `f-${member.id}`, cards: [cardFromMember(member)], children: [] };
+}
+
+function TreeLevel({ branches }: { branches: TreeBranch[] }) {
+  return (
+    <ul className={styles.level}>
+      {branches.map((branch) => (
+        <li key={branch.id} className={styles.node}>
+          <CoupleGroup cards={branch.cards} />
+          {branch.children.length > 0 && <TreeLevel branches={branch.children} />}
+        </li>
+      ))}
+    </ul>
+  );
+}
+
+// 間接の家族・孫世代など、まだ「誰の夫婦の子か」までは分からない人を
+// 補助的に世代ごとへ並べて表示するための、従来からの(枠に頼らない)表示。
+type FlatNode = {
   id: string;
   name: string;
   subtitle: string;
-  // 日記を見られる相手だけリンクが付く。直接の家族は常にtrue、間接の家族は
-  // 本人(故人の場合は直接の家族)が共有をONにしている場合だけtrueになる。
   linkedHref?: string;
 };
 
-function TreeNodeCard({ node }: { node: TreeNode }) {
-  return (
-    <PersonCard
-      name={node.name}
-      subtitle={node.subtitle}
-      linkedHref={node.linkedHref}
-    />
-  );
+function FlatNodeCard({ node }: { node: FlatNode }) {
+  return <PersonCard name={node.name} subtitle={node.subtitle} linkedHref={node.linkedHref} />;
 }
 
 export function FamilyTreeClient({
@@ -134,47 +186,105 @@ export function FamilyTreeClient({
   family: FamilyMember[];
   extendedNetwork?: ExtendedFamilyNetworkMember[];
 }) {
-  // 「その他」は世代が定まらないため、従来通り家系図の下に別枠で表示する。
+  // 「その他」は世代・関係が定まらないため、従来通り家系図の下に別枠で表示する。
   const others = family.filter((f) => f.relation === "other");
   const placed = family.filter((f) => f.relation !== "other");
 
-  // 直接の家族(続柄から世代差を求める)と、間接の家族(2ホップ以上先。
-  // 既に世代差が計算済み)を、同じ世代差ごとにまとめて1つの家系図にする。
-  const tiers = new Map<number, TreeNode[]>();
-  function pushNode(delta: number, node: TreeNode) {
+  const findAll = (...rels: FamilyRelation[]) =>
+    placed.filter((f) => rels.includes(f.relation));
+
+  const usedIds = new Set<string>();
+  const take = (rels: FamilyRelation[]) => {
+    const members = findAll(...rels);
+    members.forEach((m) => usedIds.add(m.id));
+    return members;
+  };
+
+  const father = take(["father"])[0];
+  const mother = take(["mother"])[0];
+  const grandfather = take(["grandfather"])[0];
+  const grandmother = take(["grandmother"])[0];
+  const uncleAunt = take(["uncle", "aunt"]);
+  const siblings = take([
+    "older_brother",
+    "older_sister",
+    "younger_brother",
+    "younger_sister",
+  ]);
+  const spouse = take(["spouse"])[0];
+  const children = take(["son", "daughter", "eldest_son", "eldest_daughter"]);
+
+  // 本人(+配偶者)の枠。子供がいれば、その枠の下に子供たちが並ぶ。
+  const selfBranch: TreeBranch = {
+    id: "self",
+    cards: compact([
+      { name: displayName, subtitle: "本人", isRoot: true },
+      spouse && cardFromMember(spouse),
+    ]),
+    children: children.map(leafBranch),
+  };
+
+  const siblingBranches = siblings.map(leafBranch);
+  const uncleAuntBranches = uncleAunt.map(leafBranch);
+
+  // 父母がいれば、その枠の子として「本人+兄弟姉妹」を並べる(同じ親から生まれた、という構造)。
+  const parentsBranch: TreeBranch | null =
+    father || mother
+      ? {
+          id: "parents",
+          cards: compact([father && cardFromMember(father), mother && cardFromMember(mother)]),
+          children: [selfBranch, ...siblingBranches],
+        }
+      : null;
+
+  // 祖父母がいれば、その枠の子として「父母(+おじ・おば)」を並べる。
+  const roots: TreeBranch[] = [];
+  if (grandfather || grandmother) {
+    const gpChildren = compact([parentsBranch, ...uncleAuntBranches]);
+    roots.push({
+      id: "grandparents",
+      cards: compact([grandfather && cardFromMember(grandfather), grandmother && cardFromMember(grandmother)]),
+      children: gpChildren,
+    });
+    if (!parentsBranch) {
+      // 父母の登録がないまま祖父母だけ登録されている場合、本人側は別の枠として表示する。
+      roots.push(selfBranch, ...siblingBranches);
+    }
+  } else {
+    if (parentsBranch) {
+      roots.push(parentsBranch);
+    } else {
+      roots.push(selfBranch, ...siblingBranches);
+    }
+    roots.push(...uncleAuntBranches);
+  }
+
+  // まだ枠の中に組み込めていない人(孫世代など)と、間接のご家族を、
+  // 従来通り世代ごとにまとめて家系図の下に補助表示する。
+  const leftoverPlaced = placed.filter((f) => !usedIds.has(f.id));
+  const tiers = new Map<number, FlatNode[]>();
+  function pushTier(delta: number, node: FlatNode) {
     const list = tiers.get(delta) ?? [];
     list.push(node);
     tiers.set(delta, list);
   }
-
-  for (const member of placed) {
-    pushNode(familyGenerationDelta(member.relation), {
+  for (const member of leftoverPlaced) {
+    pushTier(familyGenerationDelta(member.relation), {
       id: `f-${member.id}`,
       name: member.name,
       subtitle: familyRelationLabel(member.relation),
-      linkedHref: member.linked_user_id
-        ? `/journal/view/${member.linked_user_id}`
-        : undefined,
+      linkedHref: member.linked_user_id ? `/journal/view/${member.linked_user_id}` : undefined,
     });
   }
   for (const member of extendedNetwork) {
-    pushNode(member.generationDelta, {
+    pushTier(member.generationDelta, {
       id: `n-${member.userId}`,
       name: member.name ?? "ご家族",
       subtitle: member.isDeceased ? "故人のご親戚" : "ご親戚",
-      linkedHref: member.canViewJournal
-        ? `/journal/view/${member.userId}`
-        : undefined,
+      linkedHref: member.canViewJournal ? `/journal/view/${member.userId}` : undefined,
     });
   }
-
-  const ascendingTiers = [...tiers.keys()]
-    .filter((d) => d < 0)
-    .sort((a, b) => a - b);
-  const descendingTiers = [...tiers.keys()]
-    .filter((d) => d > 0)
-    .sort((a, b) => a - b);
-  const sameTier = tiers.get(0) ?? [];
+  const tierDeltas = [...tiers.keys()].sort((a, b) => a - b);
 
   if (family.length === 0) {
     return (
@@ -197,49 +307,35 @@ export function FamilyTreeClient({
     <div className="flex flex-col gap-8">
       <div className="rounded-[1.75rem] border border-green-100 bg-white/70 px-4 py-8 shadow-sm sm:px-8">
         <div className="overflow-x-auto">
-          <div className="flex min-w-fit flex-col items-center gap-5 px-2">
-            {/* 年上の世代(祖父母・親など、間接のご親戚含む)を上から順に表示 */}
-            {ascendingTiers.map((delta) => (
-              <div key={delta} className="flex flex-col items-center gap-2">
-                <span className="text-[10px] font-semibold tracking-wider text-ink/40">
-                  {tierHeaderLabel(delta)}
-                </span>
-                <div className="flex flex-wrap items-center justify-center gap-4">
-                  {(tiers.get(delta) ?? []).map((node) => (
-                    <TreeNodeCard key={node.id} node={node} />
-                  ))}
-                </div>
-                <span aria-hidden className="h-5 w-0.5 bg-green-300" />
+          <div className={styles.forest}>
+            {roots.map((root) => (
+              <div key={root.id} className={styles.tree}>
+                <TreeLevel branches={[root]} />
               </div>
             ))}
+          </div>
+        </div>
+      </div>
 
-            {/* 本人 + 同世代(配偶者・兄弟姉妹・間接のご親戚) */}
-            <div className="flex flex-col items-center gap-2">
-              <div className="flex flex-wrap items-center justify-center gap-4">
-                <PersonCard name={displayName} subtitle="本人" isRoot />
-                {sameTier.map((node) => (
-                  <TreeNodeCard key={node.id} node={node} />
-                ))}
-              </div>
-            </div>
-
-            {/* 年下の世代(子・孫など、間接のご親戚含む)を上から順に表示 */}
-            {descendingTiers.map((delta) => (
-              <div key={delta} className="flex flex-col items-center gap-2">
-                <span aria-hidden className="h-5 w-0.5 bg-green-300" />
-                <span className="text-[10px] font-semibold tracking-wider text-ink/40">
+      {tierDeltas.length > 0 && (
+        <div>
+          <h2 className="mb-3 text-lg font-bold text-ink">そのほかのつながり</h2>
+          <div className="flex flex-col gap-4">
+            {tierDeltas.map((delta) => (
+              <div key={delta}>
+                <span className="mb-2 block text-[10px] font-semibold tracking-wider text-ink/40">
                   {tierHeaderLabel(delta)}
                 </span>
-                <div className="flex flex-wrap items-center justify-center gap-4">
+                <div className="flex flex-wrap items-center gap-4">
                   {(tiers.get(delta) ?? []).map((node) => (
-                    <TreeNodeCard key={node.id} node={node} />
+                    <FlatNodeCard key={node.id} node={node} />
                   ))}
                 </div>
               </div>
             ))}
           </div>
         </div>
-      </div>
+      )}
 
       {others.length > 0 && (
         <div>
