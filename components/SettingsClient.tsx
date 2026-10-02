@@ -4,7 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import { FAMILY_RELATION_OPTIONS, familyRelationLabel } from "@/lib/constants";
-import { linkFamilyByAccountId } from "@/app/actions/familyInvite";
+import { requestFamilyLink } from "@/app/actions/familyLinkRequests";
 import {
   setFamilyShareSettings,
   markFamilyMemberDeceased,
@@ -148,15 +148,18 @@ export function SettingsClient({
     setLinking(true);
     setLinkError(null);
     setLinkSuccess(null);
-    const result = await linkFamilyByAccountId(trimmed, linkRelation);
+    const result = await requestFamilyLink(trimmed, linkRelation);
     setLinking(false);
     if (!result.ok) {
       setLinkError(result.error);
       return;
     }
-    setLinkSuccess(`${result.targetName}さんとつながりました。`);
+    setLinkSuccess(
+      result.alreadyRequested
+        ? `${result.targetName}さんへの申請はすでに届いています。相手が許可するとつながります。`
+        : `${result.targetName}さんに申請を送りました。相手が許可すると、家族としてつながります。`
+    );
     setLinkAccountCode("");
-    window.location.reload();
   }
 
   const [inactiveDays, setInactiveDays] = useState(
@@ -584,7 +587,7 @@ export function SettingsClient({
         </div>
 
         <p className="mb-3 text-xs text-ink/50">
-          ご家族がすでにこのアプリのアカウントをお持ちの場合は、招待リンクを使わず、「アカウントID」を指定してその場でつなぐことができます(メールアドレスを伝える必要はありません。招待リンクから別アカウントを新しく作ってしまう二重登録も防げます)。
+          ご家族がすでにこのアプリのアカウントをお持ちの場合は、招待リンクを使わず、「アカウントID」を指定してその場で申請できます(メールアドレスを伝える必要はありません)。申請を送っただけではまだつながらず、相手がホーム画面で「許可」を押してはじめて、家族としてつながります。
         </p>
 
         <div className="mb-4 rounded-xl border border-green-100 bg-green-50/60 px-4 py-3">
@@ -645,7 +648,7 @@ export function SettingsClient({
             disabled={linking}
             className="rounded-full border border-green-700 px-5 py-2.5 text-sm font-semibold text-green-700 shadow-sm transition hover:bg-green-50 disabled:opacity-60"
           >
-            {linking ? "つないでいます…" : "アカウントIDでつなぐ"}
+            {linking ? "送信しています…" : "アカウントIDで申請する"}
           </button>
         </div>
 
