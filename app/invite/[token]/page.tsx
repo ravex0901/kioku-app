@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { getFamilyInviteInfo } from "@/app/actions/familyInvite";
 import { InviteAcceptClient } from "@/components/InviteAcceptClient";
+import type { FamilyRelation } from "@/lib/types";
 
 // 家族招待リンク。息子・孫など、ご家族がご自身のアカウントでこのリンクから
 // サインアップ(またはログイン)すると、招待してくれた方の家系図・タイムカプセルの
@@ -8,8 +9,20 @@ import { InviteAcceptClient } from "@/components/InviteAcceptClient";
 // アカウントを作らない場合でも、これまで通り「もしもの時」の共有リンクは別途使える。
 export default async function InvitePage({
   params,
+  searchParams,
 }: PageProps<"/invite/[token]">) {
   const { token } = await params;
+  const sp = (await searchParams) ?? {};
+  const relationRaw = sp.relation;
+  const initialRelation = (
+    typeof relationRaw === "string" ? relationRaw : relationRaw?.[0]
+  ) as FamilyRelation | undefined;
+  const confirmEmailRaw = sp.confirmEmail;
+  const awaitingEmailConfirm =
+    (typeof confirmEmailRaw === "string"
+      ? confirmEmailRaw
+      : confirmEmailRaw?.[0]) === "1";
+
   const info = await getFamilyInviteInfo(token);
 
   const supabase = await createClient();
@@ -39,6 +52,8 @@ export default async function InvitePage({
             token={token}
             info={info}
             isLoggedIn={!!user}
+            initialRelation={initialRelation ?? null}
+            awaitingEmailConfirm={awaitingEmailConfirm}
           />
         </div>
       </div>
