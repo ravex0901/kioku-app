@@ -40,11 +40,8 @@ export default async function AdminPage() {
     );
   }
 
-  const [
-    { data: profilesData, error: profilesError },
-    { data: itemsData, error: itemsError },
-    { data: pendingCertsData, error: certsError },
-  ] = await Promise.all([
+  const [{ data: profilesData }, { data: itemsData }, { data: pendingCertsData }] =
+    await Promise.all([
       adminClient
         .from("profiles")
         .select("id, name, purpose, created_at, last_active_at")
@@ -57,13 +54,6 @@ export default async function AdminPage() {
         .eq("status", "pending")
         .order("submitted_at", { ascending: true }),
     ]);
-
-  // [一時デバッグ] 原因調査用。問題解決後にこのブロックごと削除する。
-  const debugErrors = [
-    profilesError && { table: "profiles", error: profilesError },
-    itemsError && { table: "items", error: itemsError },
-    certsError && { table: "death_certificate_submissions", error: certsError },
-  ].filter(Boolean);
 
   const pendingCerts = (pendingCertsData ?? []) as DeathCertificateSubmission[];
   const certOwnerNames = new Map<string, string>();
@@ -132,15 +122,6 @@ export default async function AdminPage() {
         </h1>
         <p className="mt-1 text-xs text-ink/50">{user.email} でログイン中</p>
       </div>
-
-      {debugErrors.length > 0 && (
-        <div className="mb-8 rounded-xl bg-red-50 px-4 py-3 text-xs text-red-700">
-          <p className="mb-2 font-bold">[一時デバッグ] Supabaseクエリエラー:</p>
-          <pre className="whitespace-pre-wrap break-all">
-            {JSON.stringify(debugErrors, null, 2)}
-          </pre>
-        </div>
-      )}
 
       <div className="mb-8 grid grid-cols-1 gap-3 sm:grid-cols-3">
         <StatCard label="総ユーザー数" value={totalUsers.toLocaleString()} />
