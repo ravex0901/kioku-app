@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
@@ -173,6 +174,7 @@ export default async function AdminPage() {
                 <th className="py-2 pr-4">登録日</th>
                 <th className="py-2 pr-4">最終利用</th>
                 <th className="py-2 pr-4">登録済みの持ち物数</th>
+                <th className="py-2 pr-4"></th>
               </tr>
             </thead>
             <tbody>
@@ -191,11 +193,19 @@ export default async function AdminPage() {
                   <td className="py-2 pr-4 text-ink/60">
                     {itemCountByUser.get(p.id) ?? 0}
                   </td>
+                  <td className="py-2 pr-4">
+                    <Link
+                      href={`/admin/users/${p.id}`}
+                      className="text-xs text-green-700 underline hover:text-green-900"
+                    >
+                      持ち物を見る
+                    </Link>
+                  </td>
                 </tr>
               ))}
               {profiles.length === 0 && (
                 <tr>
-                  <td colSpan={5} className="py-6 text-center text-ink/40">
+                  <td colSpan={6} className="py-6 text-center text-ink/40">
                     データがありません
                   </td>
                 </tr>
