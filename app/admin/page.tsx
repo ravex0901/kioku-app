@@ -41,8 +41,12 @@ export default async function AdminPage() {
     );
   }
 
-  const [{ data: profilesData }, { data: itemsData }, { data: pendingCertsData }] =
-    await Promise.all([
+  const [
+    { data: profilesData },
+    { data: itemsData },
+    { data: pendingCertsData },
+    { data: authUsersData },
+  ] = await Promise.all([
       adminClient
         .from("profiles")
         .select("id, name, purpose, created_at, last_active_at")
@@ -54,7 +58,15 @@ export default async function AdminPage() {
         .select("*")
         .eq("status", "pending")
         .order("submitted_at", { ascending: true }),
+      // 顧客一覧にメールアドレスを表示するため、auth.usersをAdmin APIで取得する。
+      // (profilesテーブルにはメールアドレスを保持していないため)
+      adminClient.auth.admin.listUsers({ perPage: 1000 }),
     ]);
+
+  const emailByUserId = new Map<string, string>();
+  for (const authUser of authUsersData?.users ?? []) {
+    if (authUser.email) emailByUserId.set(authUser.id, authUser.email);
+  }
 
   const pendingCerts = (pendingCertsData ?? []) as DeathCertificateSubmission[];
   const certOwnerNames = new Map<string, string>();
@@ -166,10 +178,11 @@ export default async function AdminPage() {
           顧客一覧
         </h2>
         <div className="overflow-x-auto">
-          <table className="w-full min-w-[520px] text-left text-sm">
+          <table className="w-full min-w-[700px] text-left text-sm">
             <thead>
               <tr className="border-b border-black/10 text-xs text-ink/50">
                 <th className="py-2 pr-4">名前</th>
+                <th className="py-2 pr-4">メールアドレス</th>
                 <th className="py-2 pr-4">目的</th>
                 <th className="py-2 pr-4">登録日</th>
                 <th className="py-2 pr-4">最終利用</th>
@@ -181,6 +194,9 @@ export default async function AdminPage() {
               {profiles.map((p) => (
                 <tr key={p.id} className="border-b border-black/5">
                   <td className="py-2 pr-4">{p.name || "(未設定)"}</td>
+                  <td className="py-2 pr-4 text-ink/60">
+                    {emailByUserId.get(p.id) ?? "-"}
+                  </td>
                   <td className="py-2 pr-4">{p.purpose || "-"}</td>
                   <td className="py-2 pr-4 text-ink/60">
                     {new Date(p.created_at).toLocaleDateString("ja-JP")}
@@ -205,7 +221,7 @@ export default async function AdminPage() {
               ))}
               {profiles.length === 0 && (
                 <tr>
-                  <td colSpan={6} className="py-6 text-center text-ink/40">
+                  <td colSpan={7} className="py-6 text-center text-ink/40">
                     データがありません
                   </td>
                 </tr>
