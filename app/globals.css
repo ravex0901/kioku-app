@@ -1,19 +1,31 @@
 @import "tailwindcss";
 
 @theme {
-  --color-cream: #f6efe0;
-  --color-cream-dark: #eee2c6;
-  --color-ink: #2b2a24;
-  --color-green-50: #eef2ea;
-  --color-green-100: #dbe5d2;
-  --color-green-200: #b8cdac;
-  --color-green-300: #93b183;
-  --color-green-400: #6c9260;
-  --color-green-500: #4a7248;
-  --color-green-600: #2f5233;
-  --color-green-700: #213c28;
-  --color-green-800: #172a1c;
+  /* 背景・カード（優しいベージュ × オフホワイトのカード） */
+  --color-cream: #f5efe4;
+  --color-cream-dark: #e9dfc9;
+  --color-card: #fffdf8;
+  --color-white: #fffdf8;
+
+  /* 文字（真っ黒を使わない、濃い茶色） */
+  --color-ink: #3a332b;
+
+  /* アクセントグリーン（押せる場所だけに使う） */
+  --color-green-50: #eef3ea;
+  --color-green-100: #dce8d5;
+  --color-green-200: #c3d9b8;
+  --color-green-300: #a3c494;
+  --color-green-400: #80ac6e;
+  --color-green-500: #649653;
+  --color-green-600: #578c56;
+  --color-green-700: #4e7d5b;
+  --color-green-800: #35553d;
+
   --color-gold: #c8a45c;
+
+  /* 区切り線用のやわらかいトーン */
+  --color-divider: #c9bba4;
+
   --font-serif-jp: var(--font-shippori-mincho), "Hiragino Mincho ProN",
     "Yu Mincho", serif;
 }
@@ -36,6 +48,7 @@ body {
   background: var(--color-cream);
   font-family: "Hiragino Sans", "Yu Gothic", "Noto Sans JP", system-ui,
     -apple-system, sans-serif;
+  line-height: 1.6;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
