@@ -35,7 +35,7 @@ function ScoreRing({ percent }: { percent: number }) {
         r={radius}
         fill="none"
         strokeWidth={stroke}
-        style={{ stroke: "rgba(43,42,36,0.08)" }}
+        style={{ stroke: "rgba(58,51,43,0.08)" }}
       />
       <circle
         cx={size / 2}
