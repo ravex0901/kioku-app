@@ -114,7 +114,7 @@ export function BottomNav() {
 
   return (
     <nav className="fixed inset-x-0 bottom-0 z-20 border-t border-green-100 bg-cream/95 backdrop-blur">
-      <div className="mx-auto flex max-w-5xl items-end px-2 pb-[calc(env(safe-area-inset-bottom)+0.5rem)] pt-2 sm:px-8">
+      <div className="mx-auto flex max-w-5xl items-end px-2 pb-[calc(env(safe-area-inset-bottom)+0.65rem)] pt-2.5 sm:px-8">
         {NAV_ITEMS.map((item) => {
           const active =
             pathname === item.href ||
@@ -128,7 +128,7 @@ export function BottomNav() {
                 key={item.href}
                 href={item.href}
                 aria-label={item.label}
-                className="-mt-6 flex h-14 w-14 items-center justify-center rounded-full bg-green-700 text-cream shadow-md transition hover:bg-green-800"
+                className="-mt-7 flex h-16 w-16 items-center justify-center rounded-full bg-green-700 text-cream shadow-md transition hover:bg-green-800"
               >
                 {item.icon(false)}
               </Link>
@@ -139,7 +139,7 @@ export function BottomNav() {
             <Link
               key={item.href}
               href={item.href}
-              className={`flex flex-1 flex-col items-center gap-1 px-1 py-1 text-[11px] transition ${
+              className={`flex flex-1 flex-col items-center gap-1 px-1 py-1.5 text-xs font-medium transition ${
                 active ? "text-green-700" : "text-ink/45 hover:text-ink/70"
               }`}
             >
