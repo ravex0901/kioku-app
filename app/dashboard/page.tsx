@@ -47,7 +47,7 @@ function ScoreRing({ percent }: { percent: number }) {
         strokeDasharray={circumference}
         strokeDashoffset={offset}
         transform={`rotate(-90 ${size / 2} ${size / 2})`}
-        style={{ stroke: "#213c28" }}
+        style={{ stroke: "#4e7d5b" }}
       />
       <text
         x="50%"
@@ -56,7 +56,7 @@ function ScoreRing({ percent }: { percent: number }) {
         dominantBaseline="middle"
         fontSize="20"
         fontWeight="700"
-        fill="#2b2a24"
+        fill="#3a332b"
       >
         {clamped}
       </text>
