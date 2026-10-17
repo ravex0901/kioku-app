@@ -223,7 +223,7 @@ export default async function HomePage() {
             <p className="text-xs font-semibold tracking-[0.2em] text-ink/40">
               HOME
             </p>
-            <h1 className="mt-2 font-serif-jp text-2xl font-bold text-ink">
+            <h1 className="mt-2 font-serif-jp text-3xl font-bold text-ink">
               おかえりなさい、{displayName}さん
             </h1>
             <p className="mt-1 text-sm text-ink/60">
@@ -309,7 +309,7 @@ export default async function HomePage() {
           <div className="relative mt-4 flex flex-wrap items-center gap-2.5">
             <Link
               href="/items/new"
-              className="inline-flex items-center gap-2 rounded-full bg-cream px-5 py-2.5 text-sm font-semibold text-green-800 shadow-sm transition hover:bg-white"
+              className="inline-flex min-h-[50px] items-center justify-center gap-2 rounded-full bg-cream px-5 py-3 text-sm font-semibold text-green-800 shadow-sm transition hover:bg-white"
             >
               <svg viewBox="0 0 24 24" fill="none" className="h-4 w-4">
                 <path
@@ -324,7 +324,7 @@ export default async function HomePage() {
             </Link>
             <Link
               href="/items/new"
-              className="inline-flex items-center gap-2 rounded-full border border-cream/40 px-5 py-2.5 text-sm font-medium text-cream/90 transition hover:bg-white/10"
+              className="inline-flex min-h-[50px] items-center justify-center gap-2 rounded-full border border-cream/40 px-5 py-3 text-sm font-medium text-cream/90 transition hover:bg-white/10"
             >
               写真なしで登録する
             </Link>
