@@ -4,8 +4,8 @@
   "description": "ものの記録と片付けの進捗をやさしく整理するアプリ「きおく」",
   "start_url": "/home",
   "display": "standalone",
-  "background_color": "#f6efe0",
-  "theme_color": "#f6efe0",
+  "background_color": "#f5efe4",
+  "theme_color": "#f5efe4",
   "icons": [
     {
       "src": "/favicon.ico",
