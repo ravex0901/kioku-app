@@ -16,7 +16,7 @@ export function Header() {
           <form action={logout}>
             <button
               type="submit"
-              className="rounded-full px-3 py-1.5 text-sm text-ink/50 transition hover:bg-black/5 hover:text-ink"
+              className="rounded-full px-3.5 py-2 text-sm text-ink/50 transition hover:bg-divider/15 hover:text-ink"
             >
               ログアウト
             </button>
