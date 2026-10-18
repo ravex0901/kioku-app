@@ -85,7 +85,7 @@ export function VoiceSettings() {
       </p>
 
       <div className="flex flex-col gap-1.5">
-        <label className="flex items-center gap-2 text-sm text-ink/80">
+        <label className="flex items-center gap-2 text-lg text-ink/80">
           <input
             type="radio"
             name="voice-mode"
@@ -94,7 +94,7 @@ export function VoiceSettings() {
           />
           端末標準の音声を使う
         </label>
-        <label className="flex items-center gap-2 text-sm text-ink/80">
+        <label className="flex items-center gap-2 text-lg text-ink/80">
           <input
             type="radio"
             name="voice-mode"
