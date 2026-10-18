@@ -295,7 +295,7 @@ export function FamilyTreeClient({
         </p>
         <Link
           href="/settings#family"
-          className="rounded-full bg-green-700 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-green-800"
+          className="inline-flex min-h-[50px] items-center justify-center rounded-full bg-green-700 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-green-800"
         >
           家族を登録する
         </Link>
