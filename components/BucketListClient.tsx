@@ -71,14 +71,14 @@ export function BucketListClient({ initialItems }: { initialItems: BucketListIte
           type="text"
           value={title}
           onChange={(e) => setTitle(e.target.value)}
-          placeholder="例：富士山に登る、孫と温泉に行く"
-          className="min-w-0 flex-1 rounded-full border border-green-100 bg-white px-4 py-2.5 text-sm text-ink outline-none focus:border-green-400"
+          placeholder="例:富士山に登る、孫と温泉に行く"
+          className="min-h-[50px] min-w-0 flex-1 rounded-full border border-green-100 bg-white px-4 py-2.5 text-sm text-ink outline-none focus:border-green-400"
           disabled={adding}
         />
         <button
           type="submit"
           disabled={adding || !title.trim()}
-          className="shrink-0 rounded-full bg-green-700 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-green-800 disabled:opacity-40"
+          className="inline-flex min-h-[50px] shrink-0 items-center justify-center rounded-full bg-green-700 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-green-800 disabled:opacity-40"
         >
           追加する
         </button>
