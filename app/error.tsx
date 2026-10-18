@@ -43,7 +43,7 @@ export default function ErrorBoundary({
       <p className="text-sm font-semibold tracking-[0.15em] text-ink/40">
         きおく
       </p>
-      <h1 className="font-serif-jp text-xl font-bold text-ink">
+      <h1 className="font-serif-jp text-3xl font-bold text-ink">
         一時的な問題が発生しました
       </h1>
       <p className="max-w-sm text-sm text-ink/60">
@@ -54,14 +54,14 @@ export default function ErrorBoundary({
           type="button"
           onClick={handleRetry}
           disabled={retrying}
-          className="rounded-full bg-green-700 px-6 py-3 text-sm font-semibold text-white transition hover:bg-green-800 disabled:opacity-60"
+          className="inline-flex min-h-[50px] items-center justify-center rounded-full bg-green-700 px-6 py-3 text-sm font-semibold text-white transition hover:bg-green-800 disabled:opacity-60"
         >
           {retrying ? "再読み込み中…" : "もう一度試す"}
         </button>
         <button
           type="button"
           onClick={handleHome}
-          className="rounded-full border border-black/10 px-6 py-3 text-sm font-medium text-ink/70 transition hover:bg-black/5"
+          className="inline-flex min-h-[50px] items-center justify-center rounded-full border border-black/10 px-6 py-3 text-sm font-medium text-ink/70 transition hover:bg-black/5"
         >
           ホームに戻る
         </button>
@@ -69,4 +69,3 @@ export default function ErrorBoundary({
     </div>
   );
 }
-
