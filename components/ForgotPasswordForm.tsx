@@ -20,7 +20,7 @@ export function ForgotPasswordForm() {
   return (
     <form action={formAction} className="flex flex-col gap-4">
       <div className="flex flex-col gap-1.5">
-        <label htmlFor="email" className="text-sm font-medium text-ink/80">
+        <label htmlFor="email" className="text-lg font-medium text-ink/80">
           メールアドレス
         </label>
         <input
