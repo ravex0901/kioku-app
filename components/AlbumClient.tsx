@@ -58,7 +58,7 @@ export function AlbumClient({ initialPhotos }: { initialPhotos: AlbumPhotoWithUr
           type="button"
           onClick={() => inputRef.current?.click()}
           disabled={uploading}
-          className="flex w-full items-center justify-center gap-2 rounded-full bg-green-700 px-5 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-green-800 disabled:opacity-50"
+          className="flex min-h-[50px] w-full items-center justify-center gap-2 rounded-full bg-green-700 px-5 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-green-800 disabled:opacity-50"
         >
           <svg viewBox="0 0 24 24" fill="none" className="h-4 w-4">
             <path
