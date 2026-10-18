@@ -96,7 +96,8 @@ export function ItemsBulkGrid({
       await supabase
         .from("items")
         .update({ status: "appraisal_pending" })
-        .in("id", pendingIds);
+        .in("id", pendingIds)
+        .eq("user_id", userId);
     }
 
     setBusy(false);
@@ -114,7 +115,8 @@ export function ItemsBulkGrid({
     const { error } = await supabase
       .from("items")
       .update({ disposition: bulkDisposition })
-      .in("id", ids);
+      .in("id", ids)
+      .eq("user_id", userId);
 
     setBusy(false);
     if (error) {
@@ -243,7 +245,7 @@ export function ItemsBulkGrid({
               type="button"
               onClick={handleBulkAppraisal}
               disabled={busy}
-              className="rounded-full bg-green-700 px-4 py-2 text-sm font-semibold text-white transition hover:bg-green-800 disabled:opacity-60"
+              className="inline-flex min-h-[50px] items-center justify-center rounded-full bg-green-700 px-4 py-2 text-sm font-semibold text-white transition hover:bg-green-800 disabled:opacity-60"
             >
               {busy ? "処理中…" : `選択した${selected.size}件の査定をまとめて依頼する`}
             </button>
@@ -263,7 +265,7 @@ export function ItemsBulkGrid({
                 type="button"
                 onClick={handleBulkDisposition}
                 disabled={busy}
-                className="rounded-full border border-green-600 px-4 py-2 text-sm font-semibold text-green-700 transition hover:bg-green-50 disabled:opacity-60"
+                className="inline-flex min-h-[50px] items-center justify-center rounded-full border border-green-600 px-4 py-2 text-sm font-semibold text-green-700 transition hover:bg-green-50 disabled:opacity-60"
               >
                 に一括変更
               </button>
@@ -279,4 +281,3 @@ export function ItemsBulkGrid({
     </div>
   );
 }
-
