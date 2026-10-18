@@ -44,7 +44,7 @@ export default async function LocationsPage() {
           <h1 className="mt-2 font-serif-jp text-3xl font-bold text-ink">
             場所を管理する
           </h1>
-          <p className="mt-1 text-sm text-ink/60">
+          <p className="mt-1 text-lg text-ink/60">
             部屋や収納をわかりやすく整理しましょう
           </p>
         </div>
