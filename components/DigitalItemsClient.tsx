@@ -179,7 +179,7 @@ function DigitalItemRow({
       <li className="rounded-[1.5rem] border border-green-200 bg-green-50/60 p-4 shadow-sm">
         <div className="flex flex-col gap-3">
           <div className="flex flex-col gap-1.5">
-            <label className="text-sm font-medium text-ink/80">種別</label>
+            <label className="text-lg font-medium text-ink/80">種別</label>
             <select
               value={itemType}
               onChange={(e) => setItemType(e.target.value as DigitalItemType)}
@@ -193,7 +193,7 @@ function DigitalItemRow({
             </select>
           </div>
           <div className="flex flex-col gap-1.5">
-            <label className="text-sm font-medium text-ink/80">タイトル</label>
+            <label className="text-lg font-medium text-ink/80">タイトル</label>
             <input
               value={title}
               onChange={(e) => setTitle(e.target.value)}
@@ -201,7 +201,7 @@ function DigitalItemRow({
             />
           </div>
           <div className="flex flex-col gap-1.5">
-            <label className="text-sm font-medium text-ink/80">一言メモ</label>
+            <label className="text-lg font-medium text-ink/80">一言メモ</label>
             <textarea
               value={memo}
               onChange={(e) => setMemo(e.target.value)}
@@ -210,7 +210,7 @@ function DigitalItemRow({
             />
           </div>
           <div className="flex flex-col gap-1.5">
-            <label className="text-sm font-medium text-ink/80">手続担当者</label>
+            <label className="text-lg font-medium text-ink/80">手続担当者</label>
             <input
               value={contactPerson}
               onChange={(e) => setContactPerson(e.target.value)}
@@ -219,7 +219,7 @@ function DigitalItemRow({
             />
           </div>
           <div className="flex flex-col gap-1.5">
-            <label className="text-sm font-medium text-ink/80">関連書類</label>
+            <label className="text-lg font-medium text-ink/80">関連書類</label>
             <input
               value={relatedDocuments}
               onChange={(e) => setRelatedDocuments(e.target.value)}
@@ -228,7 +228,7 @@ function DigitalItemRow({
             />
           </div>
           <div className="flex flex-col gap-1.5">
-            <label className="text-sm font-medium text-ink/80">状態</label>
+            <label className="text-lg font-medium text-ink/80">状態</label>
             <select
               value={status}
               onChange={(e) => setStatus(e.target.value as DigitalItemStatus)}
@@ -496,7 +496,7 @@ export function DigitalItemsClient({
         </h2>
         <div className="flex flex-col gap-4">
           <div className="flex flex-col gap-1.5">
-            <label className="text-sm font-medium text-ink/80">種別</label>
+            <label className="text-lg font-medium text-ink/80">種別</label>
             <select
               value={itemType}
               onChange={(e) => setItemType(e.target.value as DigitalItemType)}
@@ -510,7 +510,7 @@ export function DigitalItemsClient({
             </select>
           </div>
           <div className="flex flex-col gap-1.5">
-            <label className="text-sm font-medium text-ink/80">
+            <label className="text-lg font-medium text-ink/80">
               タイトル<span className="text-red-500">*</span>
             </label>
             <input
@@ -521,7 +521,7 @@ export function DigitalItemsClient({
             />
           </div>
           <div className="flex flex-col gap-1.5">
-            <label className="text-sm font-medium text-ink/80">一言メモ</label>
+            <label className="text-lg font-medium text-ink/80">一言メモ</label>
             <textarea
               value={memo}
               onChange={(e) => setMemo(e.target.value)}
@@ -531,7 +531,7 @@ export function DigitalItemsClient({
             />
           </div>
           <div className="flex flex-col gap-1.5">
-            <label className="text-sm font-medium text-ink/80">手続担当者(任意)</label>
+            <label className="text-lg font-medium text-ink/80">手続担当者(任意)</label>
             <input
               value={contactPerson}
               onChange={(e) => setContactPerson(e.target.value)}
@@ -540,7 +540,7 @@ export function DigitalItemsClient({
             />
           </div>
           <div className="flex flex-col gap-1.5">
-            <label className="text-sm font-medium text-ink/80">関連書類(任意)</label>
+            <label className="text-lg font-medium text-ink/80">関連書類(任意)</label>
             <input
               value={relatedDocuments}
               onChange={(e) => setRelatedDocuments(e.target.value)}
