@@ -126,7 +126,7 @@ export function ResetPasswordForm() {
           autoComplete="new-password"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
-          className="rounded-lg border border-black/10 bg-white px-4 py-2.5 text-ink outline-none focus:border-green-400 focus:ring-2 focus:ring-green-100"
+          className="min-h-[50px] rounded-lg border border-black/10 bg-white px-4 py-2.5 text-ink outline-none focus:border-green-400 focus:ring-2 focus:ring-green-100"
         />
       </div>
       <div className="flex flex-col gap-1.5">
@@ -144,7 +144,7 @@ export function ResetPasswordForm() {
           autoComplete="new-password"
           value={passwordConfirm}
           onChange={(e) => setPasswordConfirm(e.target.value)}
-          className="rounded-lg border border-black/10 bg-white px-4 py-2.5 text-ink outline-none focus:border-green-400 focus:ring-2 focus:ring-green-100"
+          className="min-h-[50px] rounded-lg border border-black/10 bg-white px-4 py-2.5 text-ink outline-none focus:border-green-400 focus:ring-2 focus:ring-green-100"
         />
       </div>
 
@@ -157,7 +157,7 @@ export function ResetPasswordForm() {
       <button
         type="submit"
         disabled={submitting}
-        className="mt-2 rounded-full bg-green-700 px-6 py-3 font-semibold text-white transition hover:bg-green-800 disabled:opacity-60"
+        className="mt-2 inline-flex min-h-[50px] items-center justify-center rounded-full bg-green-700 px-6 py-3 font-semibold text-white transition hover:bg-green-800 disabled:opacity-60"
       >
         {submitting ? "更新中…" : "パスワードを更新する"}
       </button>
