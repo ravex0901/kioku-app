@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { deleteVoiceCheckin, saveVoiceCheckin } from "@/app/actions/voiceCheckins";
 import { VOICE_CHECKIN_SLOT_LABELS } from "@/lib/constants";
 import type { FamilyMember, VoiceCheckinSlot } from "@/lib/types";
@@ -62,57 +62,100 @@ export function VoiceCheckinsClient({
     night: initialCheckins.find((c) => c.time_slot === "night")?.audioUrl ?? null,
   });
 
-  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
-  const chunksRef = useRef<Blob[]>([]);
-  const streamRef = useRef<MediaStream | null>(null);
-  const timerRef = useRef<number | null>(null);
-  const startedAtRef = useRef(0);
-  const blobRef = useRef<Blob | null>(null);
+  // [バグ修正] 以前は MediaRecorder/stream/chunks/blob/timer が
+  // コンポーネント全体で1つしかなく、録音中に別の時間帯タブへ切り替えてから
+  // そこでも録音を始めると、前のタブのマイクが止まらないまま(ついたまま)
+  // 録音データも混ざってしまっていた。時間帯ごとに別々のrefを持つことで、
+  // どのタブで録音しても他のタブの録音と干渉しないようにする。
+  const recordingRefs = useRef<
+    Record<
+      VoiceCheckinSlot,
+      {
+        mediaRecorder: MediaRecorder | null;
+        chunks: Blob[];
+        stream: MediaStream | null;
+        timer: number | null;
+        startedAt: number;
+        blob: Blob | null;
+      }
+    >
+  >({
+    lunch: { mediaRecorder: null, chunks: [], stream: null, timer: null, startedAt: 0, blob: null },
+    evening: { mediaRecorder: null, chunks: [], stream: null, timer: null, startedAt: 0, blob: null },
+    night: { mediaRecorder: null, chunks: [], stream: null, timer: null, startedAt: 0, blob: null },
+  });
+
+  // ページを離れるときに、録音中のタブがあればマイクを確実に止める
+  // (つけっぱなしで他の画面に移動してしまうのを防ぐ)。
+  useEffect(() => {
+    return () => {
+      for (const slot of SLOTS) {
+        const refs = recordingRefs.current[slot];
+        if (refs.timer) window.clearInterval(refs.timer);
+        refs.stream?.getTracks().forEach((t) => t.stop());
+      }
+    };
+  }, []);
 
   const state = states[activeSlot];
 
+  function updateSlotState(slot: VoiceCheckinSlot, partial: Partial<SlotState>) {
+    setStates((prev) => ({ ...prev, [slot]: { ...prev[slot], ...partial } }));
+  }
+
   function updateState(partial: Partial<SlotState>) {
-    setStates((prev) => ({ ...prev, [activeSlot]: { ...prev[activeSlot], ...partial } }));
+    updateSlotState(activeSlot, partial);
   }
 
   async function startRecording() {
-    updateState({ error: null, saved: false });
+    const slot = activeSlot;
+    const refs = recordingRefs.current[slot];
+    updateSlotState(slot, { error: null, saved: false });
     try {
+      // 同じタブで録り直す場合に、前回の録音が残っていればきちんと止める。
+      refs.stream?.getTracks().forEach((t) => t.stop());
+      refs.blob = null;
+
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      streamRef.current = stream;
+      refs.stream = stream;
       const mimeType = MediaRecorder.isTypeSupported("audio/webm") ? "audio/webm" : "";
       const recorder = mimeType ? new MediaRecorder(stream, { mimeType }) : new MediaRecorder(stream);
-      chunksRef.current = [];
+      refs.chunks = [];
       recorder.ondataavailable = (e) => {
-        if (e.data.size > 0) chunksRef.current.push(e.data);
+        if (e.data.size > 0) refs.chunks.push(e.data);
       };
       recorder.onstop = () => {
-        const blob = new Blob(chunksRef.current, { type: recorder.mimeType || "audio/webm" });
-        blobRef.current = blob;
-        updateState({ previewUrl: URL.createObjectURL(blob) });
+        const blob = new Blob(refs.chunks, { type: recorder.mimeType || "audio/webm" });
+        refs.blob = blob;
+        updateSlotState(slot, { previewUrl: URL.createObjectURL(blob) });
         stream.getTracks().forEach((t) => t.stop());
       };
-      mediaRecorderRef.current = recorder;
+      refs.mediaRecorder = recorder;
       recorder.start();
-      startedAtRef.current = Date.now();
-      updateState({ recording: true, elapsedMs: 0 });
-      timerRef.current = window.setInterval(() => {
-        const elapsed = Date.now() - startedAtRef.current;
-        updateState({ elapsedMs: elapsed });
-        if (elapsed >= MAX_MS) stopRecording();
+      refs.startedAt = Date.now();
+      updateSlotState(slot, { recording: true, elapsedMs: 0 });
+      refs.timer = window.setInterval(() => {
+        const elapsed = Date.now() - refs.startedAt;
+        updateSlotState(slot, { elapsedMs: elapsed });
+        if (elapsed >= MAX_MS) stopRecordingFor(slot);
       }, 200);
     } catch {
-      updateState({ error: "マイクにアクセスできませんでした。ブラウザの権限設定をご確認ください。" });
+      updateSlotState(slot, { error: "マイクにアクセスできませんでした。ブラウザの権限設定をご確認ください。" });
     }
   }
 
-  function stopRecording() {
-    if (timerRef.current) {
-      window.clearInterval(timerRef.current);
-      timerRef.current = null;
+  function stopRecordingFor(slot: VoiceCheckinSlot) {
+    const refs = recordingRefs.current[slot];
+    if (refs.timer) {
+      window.clearInterval(refs.timer);
+      refs.timer = null;
     }
-    mediaRecorderRef.current?.stop();
-    updateState({ recording: false });
+    refs.mediaRecorder?.stop();
+    updateSlotState(slot, { recording: false });
+  }
+
+  function stopRecording() {
+    stopRecordingFor(activeSlot);
   }
 
   async function handleSave() {
@@ -128,13 +171,15 @@ export function VoiceCheckinsClient({
 
     updateState({ saving: true, error: null, saved: false });
 
+    const slot = activeSlot;
+    const refs = recordingRefs.current[slot];
     const formData = new FormData();
-    formData.append("timeSlot", activeSlot);
+    formData.append("timeSlot", slot);
     formData.append("speakerName", trimmedName);
     formData.append("familyMemberId", state.familyMemberId);
     formData.append("messageText", state.messageText.trim());
-    if (blobRef.current) {
-      formData.append("audio", blobRef.current, "sample.webm");
+    if (refs.blob) {
+      formData.append("audio", refs.blob, "sample.webm");
     }
 
     const result = await saveVoiceCheckin(formData);
@@ -147,9 +192,9 @@ export function VoiceCheckinsClient({
 
     updateState({ saved: true, previewUrl: null });
     if (state.previewUrl) {
-      setExistingAudioUrls((prev) => ({ ...prev, [activeSlot]: state.previewUrl }));
+      setExistingAudioUrls((prev) => ({ ...prev, [slot]: state.previewUrl }));
     }
-    blobRef.current = null;
+    refs.blob = null;
   }
 
   async function handleDelete() {
@@ -196,7 +241,7 @@ export function VoiceCheckinsClient({
             value={state.speakerName}
             onChange={(e) => updateState({ speakerName: e.target.value })}
             placeholder="例:たろう"
-            className="rounded-xl border border-green-100 bg-white px-4 py-2.5 text-sm text-ink outline-none focus:border-green-400"
+            className="min-h-[50px] rounded-xl border border-green-100 bg-white px-4 py-2.5 text-sm text-ink outline-none focus:border-green-400"
           />
         </label>
 
@@ -206,7 +251,7 @@ export function VoiceCheckinsClient({
             <select
               value={state.familyMemberId}
               onChange={(e) => updateState({ familyMemberId: e.target.value })}
-              className="rounded-xl border border-green-100 bg-white px-4 py-2.5 text-sm text-ink outline-none focus:border-green-400"
+              className="min-h-[50px] rounded-xl border border-green-100 bg-white px-4 py-2.5 text-sm text-ink outline-none focus:border-green-400"
             >
               <option value="">選択しない</option>
               {family.map((f) => (
@@ -225,7 +270,7 @@ export function VoiceCheckinsClient({
             value={state.messageText}
             onChange={(e) => updateState({ messageText: e.target.value })}
             placeholder="例:お昼ごはん食べた?"
-            className="rounded-xl border border-green-100 bg-white px-4 py-2.5 text-sm text-ink outline-none focus:border-green-400"
+            className="min-h-[50px] rounded-xl border border-green-100 bg-white px-4 py-2.5 text-sm text-ink outline-none focus:border-green-400"
           />
         </label>
 
@@ -274,7 +319,7 @@ export function VoiceCheckinsClient({
             type="button"
             onClick={handleSave}
             disabled={state.saving}
-            className="rounded-full bg-green-700 px-6 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-green-800 disabled:opacity-50"
+            className="inline-flex min-h-[50px] items-center justify-center rounded-full bg-green-700 px-6 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-green-800 disabled:opacity-50"
           >
             {state.saving ? "保存中…" : "この内容を保存する"}
           </button>
@@ -283,7 +328,7 @@ export function VoiceCheckinsClient({
               type="button"
               onClick={handleDelete}
               disabled={state.saving}
-              className="rounded-full border border-red-200 px-5 py-2.5 text-sm font-medium text-red-600 transition hover:bg-red-50 disabled:opacity-50"
+              className="inline-flex min-h-[50px] items-center justify-center rounded-full border border-red-200 px-5 py-2.5 text-sm font-medium text-red-600 transition hover:bg-red-50 disabled:opacity-50"
             >
               この時間帯のメッセージを削除
             </button>
