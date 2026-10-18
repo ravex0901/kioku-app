@@ -337,7 +337,7 @@ export function BulkItemForm({ userId }: { userId: string }) {
     return (
       <div className="flex flex-col gap-6 rounded-[1.75rem] border border-green-100 bg-white/70 p-6 shadow-sm sm:p-8">
         <div className="flex flex-col gap-1.5">
-          <label className="text-sm font-medium text-ink/80">
+          <label className="text-lg font-medium text-ink/80">
             写真をまとめて選択
           </label>
           <input
@@ -360,7 +360,7 @@ export function BulkItemForm({ userId }: { userId: string }) {
           <p className="text-xs text-ink/40">
             各写真をAIが自動判定します。次の画面で品名・ジャンルを確認・修正してから登録します。
             カメラで連続撮影すると、シャッターを押した分だけ何枚でも追加できます。
-        </p>
+          </p>
         </div>
 
         {drafts.length > 0 && (
