@@ -240,7 +240,7 @@ export function HandoverView({
 
       {status.will?.legal_will_note && (
         <div className="mt-4 rounded-[1.75rem] border border-red-200 bg-red-50/40 p-5 sm:p-6">
-          <h2 className="text-sm font-bold text-ink">
+          <h2 className="text-lg font-bold text-ink">
             法的な遺言事項に関する記録(財産の分け方など)
           </h2>
           <div className="mt-2 rounded-lg border border-red-200 bg-white/80 p-3">
