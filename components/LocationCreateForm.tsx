@@ -70,7 +70,7 @@ export function LocationCreateForm({
           value={name}
           onChange={(e) => setName(e.target.value)}
           placeholder="例:2階 寝室のクローゼット"
-          className="rounded-lg border border-black/10 bg-white px-3 py-2 text-sm outline-none focus:border-green-400 focus:ring-2 focus:ring-green-100"
+          className="min-h-[50px] rounded-lg border border-black/10 bg-white px-3 py-2 text-sm outline-none focus:border-green-400 focus:ring-2 focus:ring-green-100"
         />
       </div>
       <div className="flex flex-col gap-1.5">
@@ -78,7 +78,7 @@ export function LocationCreateForm({
         <select
           value={locationType}
           onChange={(e) => setLocationType(e.target.value as LocationType)}
-          className="rounded-lg border border-black/10 bg-white px-3 py-2 text-sm outline-none focus:border-green-400 focus:ring-2 focus:ring-green-100"
+          className="min-h-[50px] rounded-lg border border-black/10 bg-white px-3 py-2 text-sm outline-none focus:border-green-400 focus:ring-2 focus:ring-green-100"
         >
           {LOCATION_TYPE_OPTIONS.map((opt) => (
             <option key={opt.value} value={opt.value}>
@@ -116,7 +116,7 @@ export function LocationCreateForm({
         <button
           type="submit"
           disabled={submitting}
-          className="rounded-full bg-green-700 px-4 py-2 text-sm font-semibold text-white transition hover:bg-green-800 disabled:opacity-60"
+          className="inline-flex min-h-[50px] items-center justify-center rounded-full bg-green-700 px-4 py-2 text-sm font-semibold text-white transition hover:bg-green-800 disabled:opacity-60"
         >
           {submitting ? "追加中…" : "追加する"}
         </button>
