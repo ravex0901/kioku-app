@@ -172,7 +172,7 @@ function LocationListItem({
       >
         <div className="flex flex-col gap-3">
           <div className="flex flex-col gap-1.5">
-            <label className="text-sm font-medium text-ink/80">
+            <label className="text-lg font-medium text-ink/80">
               場所の名前
             </label>
             <input
@@ -182,7 +182,7 @@ function LocationListItem({
             />
           </div>
           <div className="flex flex-col gap-1.5">
-            <label className="text-sm font-medium text-ink/80">種別</label>
+            <label className="text-lg font-medium text-ink/80">種別</label>
             <select
               value={locationType}
               onChange={(e) =>
