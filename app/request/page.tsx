@@ -43,7 +43,7 @@ export default async function RequestPage() {
           <h1 className="mt-2 font-serif-jp text-3xl font-bold text-ink">
             ご依頼はこちら
           </h1>
-          <p className="mt-1 text-sm text-ink/60">
+          <p className="mt-1 text-lg text-ink/60">
             出張買取・不用品回収・遺品整理・生前整理。迷ったら「丸投げ依頼」へ
           </p>
         </div>
