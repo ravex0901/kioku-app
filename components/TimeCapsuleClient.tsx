@@ -263,7 +263,7 @@ export function TimeCapsuleClient({
           <button
             type="button"
             onClick={() => setShowForm(true)}
-            className="flex w-full items-center justify-center gap-2 rounded-full bg-green-700 px-6 py-3 text-sm font-semibold text-white transition hover:bg-green-800"
+            className="flex min-h-[50px] w-full items-center justify-center gap-2 rounded-full bg-green-700 px-6 py-3 text-sm font-semibold text-white transition hover:bg-green-800"
           >
             新しいタイムカプセルを残す
           </button>
@@ -289,13 +289,13 @@ export function TimeCapsuleClient({
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               placeholder="タイトル(例: 20歳になったあなたへ)"
-              className="w-full rounded-xl border border-black/10 bg-white px-4 py-2.5 text-sm text-ink outline-none focus:border-green-400 focus:ring-2 focus:ring-green-100"
+              className="min-h-[50px] w-full rounded-xl border border-black/10 bg-white px-4 py-2.5 text-sm text-ink outline-none focus:border-green-400 focus:ring-2 focus:ring-green-100"
             />
             <input
               value={recipientName}
               onChange={(e) => setRecipientName(e.target.value)}
               placeholder="宛先(例: 孫のゆうたへ)・省略可"
-              className="w-full rounded-xl border border-black/10 bg-white px-4 py-2.5 text-sm text-ink outline-none focus:border-green-400 focus:ring-2 focus:ring-green-100"
+              className="min-h-[50px] w-full rounded-xl border border-black/10 bg-white px-4 py-2.5 text-sm text-ink outline-none focus:border-green-400 focus:ring-2 focus:ring-green-100"
             />
 
             {linkedFamilyMembers.length > 0 && (
@@ -306,7 +306,7 @@ export function TimeCapsuleClient({
                 <select
                   value={recipientFamilyMemberId}
                   onChange={(e) => setRecipientFamilyMemberId(e.target.value)}
-                  className="w-full rounded-xl border border-black/10 bg-white px-4 py-2.5 text-sm text-ink outline-none focus:border-green-400 focus:ring-2 focus:ring-green-100"
+                  className="min-h-[50px] w-full rounded-xl border border-black/10 bg-white px-4 py-2.5 text-sm text-ink outline-none focus:border-green-400 focus:ring-2 focus:ring-green-100"
                 >
                   <option value="">指定しない(日付のみで開封)</option>
                   {linkedFamilyMembers.map((m) => (
@@ -330,7 +330,7 @@ export function TimeCapsuleClient({
                   )
                 }
                 disabled={linkedFamilyMembers.length === 0}
-                className="w-full rounded-xl border border-black/10 bg-white px-4 py-2.5 text-sm text-ink outline-none focus:border-green-400 focus:ring-2 focus:ring-green-100 disabled:opacity-50"
+                className="min-h-[50px] w-full rounded-xl border border-black/10 bg-white px-4 py-2.5 text-sm text-ink outline-none focus:border-green-400 focus:ring-2 focus:ring-green-100 disabled:opacity-50"
               >
                 {UNLOCK_CONDITION_OPTIONS.map((o) => (
                   <option
@@ -405,7 +405,7 @@ export function TimeCapsuleClient({
                   value={openAt}
                   min={minOpenDateTime()}
                   onChange={(e) => setOpenAt(e.target.value)}
-                  className="w-full rounded-xl border border-black/10 bg-white px-4 py-2.5 text-sm text-ink outline-none focus:border-green-400 focus:ring-2 focus:ring-green-100"
+                  className="min-h-[50px] w-full rounded-xl border border-black/10 bg-white px-4 py-2.5 text-sm text-ink outline-none focus:border-green-400 focus:ring-2 focus:ring-green-100"
                 />
               </div>
             )}
@@ -417,7 +417,7 @@ export function TimeCapsuleClient({
                 type="button"
                 onClick={handleSubmit}
                 disabled={submitting}
-                className="rounded-full bg-green-700 px-6 py-2.5 text-sm font-semibold text-white transition hover:bg-green-800 disabled:opacity-50"
+                className="inline-flex min-h-[50px] items-center justify-center rounded-full bg-green-700 px-6 py-2.5 text-sm font-semibold text-white transition hover:bg-green-800 disabled:opacity-50"
               >
                 {submitting ? "保存中…" : "封をする"}
               </button>
