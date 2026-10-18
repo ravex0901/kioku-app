@@ -308,7 +308,7 @@ export function LocationsClient({
         <button
           type="button"
           onClick={() => setShowForm((v) => !v)}
-          className="inline-flex items-center gap-1.5 rounded-full bg-green-700 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-green-800"
+          className="inline-flex min-h-[50px] items-center gap-1.5 rounded-full bg-green-700 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-green-800"
         >
           <svg viewBox="0 0 24 24" fill="none" className="h-4 w-4">
             <path
