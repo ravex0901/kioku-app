@@ -205,7 +205,7 @@ export function RecipientWillEditor({
             ここに入力した内容は{recipient.name}さん専用のリンクからのみ開示されます。未入力の項目は、共通の意思伝達情報(上の①②)が代わりに使われます。
           </p>
           <div className="flex flex-col gap-1.5">
-            <label className="text-sm font-medium text-ink/80">
+            <label className="text-lg font-medium text-ink/80">
               {recipient.name}さんへのメッセージ
             </label>
             <textarea
@@ -217,7 +217,7 @@ export function RecipientWillEditor({
             />
           </div>
           <div className="flex flex-col gap-1.5">
-            <label className="text-sm font-medium text-ink/80">
+            <label className="text-lg font-medium text-ink/80">
               メッセージ動画(任意)
             </label>
             {videoUrl ? (
