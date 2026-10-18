@@ -110,7 +110,7 @@ export function VoiceSettings() {
         <select
           value={selected}
           onChange={(e) => handleChange(e.target.value)}
-          className="rounded-lg border border-black/10 bg-white px-4 py-2.5 text-sm outline-none focus:border-green-400 focus:ring-2 focus:ring-green-100"
+          className="min-h-[50px] rounded-lg border border-black/10 bg-white px-4 py-2.5 text-sm outline-none focus:border-green-400 focus:ring-2 focus:ring-green-100"
         >
           {voices.length === 0 && <option value="">読み込み中…</option>}
           {japaneseVoices.length > 0 && (
