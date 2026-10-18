@@ -22,7 +22,7 @@ export function LoginForm({
         </p>
       )}
       <div className="flex flex-col gap-1.5">
-        <label htmlFor="email" className="text-sm font-medium text-ink/80">
+        <label htmlFor="email" className="text-lg font-medium text-ink/80">
           メールアドレス
         </label>
         <input
@@ -35,7 +35,7 @@ export function LoginForm({
         />
       </div>
       <div className="flex flex-col gap-1.5">
-        <label htmlFor="password" className="text-sm font-medium text-ink/80">
+        <label htmlFor="password" className="text-lg font-medium text-ink/80">
           パスワード
         </label>
         <input
