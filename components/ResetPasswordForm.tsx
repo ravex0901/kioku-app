@@ -115,7 +115,7 @@ export function ResetPasswordForm() {
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-4">
       <div className="flex flex-col gap-1.5">
-        <label htmlFor="password" className="text-sm font-medium text-ink/80">
+        <label htmlFor="password" className="text-lg font-medium text-ink/80">
           新しいパスワード
         </label>
         <input
@@ -132,7 +132,7 @@ export function ResetPasswordForm() {
       <div className="flex flex-col gap-1.5">
         <label
           htmlFor="passwordConfirm"
-          className="text-sm font-medium text-ink/80"
+          className="text-lg font-medium text-ink/80"
         >
           新しいパスワード(確認)
         </label>
