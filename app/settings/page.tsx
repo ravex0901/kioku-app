@@ -98,7 +98,7 @@ export default async function SettingsPage() {
           <p className="text-xs font-semibold tracking-[0.2em] text-ink/40">
             SETTINGS
           </p>
-          <h1 className="mt-2 font-serif-jp text-2xl font-bold text-ink">
+          <h1 className="mt-2 font-serif-jp text-3xl font-bold text-ink">
             アカウント・設定
           </h1>
         </div>
