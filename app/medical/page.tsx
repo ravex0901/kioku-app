@@ -25,7 +25,7 @@ export default async function MedicalPage() {
         <h1 className="mb-1 mt-4 font-serif-jp text-3xl font-bold text-ink">
           医療情報
         </h1>
-        <p className="mb-6 text-sm text-ink/60">
+        <p className="mb-6 text-lg text-ink/60">
           かかりつけ医・持病・今飲んでいる薬を登録しておくと、もしもの時や救急の場で役立ちます。
         </p>
 
