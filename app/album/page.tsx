@@ -25,7 +25,7 @@ export default async function AlbumPage() {
         <h1 className="mb-1 mt-4 font-serif-jp text-3xl font-bold text-ink">
           アルバム
         </h1>
-        <p className="mb-6 text-sm text-ink/60">
+        <p className="mb-6 text-lg text-ink/60">
           スマホの写真を選ぶだけで、このシステムの中にも保存しておけます。
         </p>
 
