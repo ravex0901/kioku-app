@@ -43,7 +43,7 @@ export function InheritanceTaxCalculator() {
       <h2 className="mb-3 text-base font-bold text-ink">相続税シミュレーション</h2>
       <div className="flex flex-col gap-3">
         <div className="flex flex-col gap-1.5">
-          <label className="text-sm font-medium text-ink/80">
+          <label className="text-lg font-medium text-ink/80">
             資産の合計額(万円)
           </label>
           <input
@@ -55,7 +55,7 @@ export function InheritanceTaxCalculator() {
           />
         </div>
         <div className="flex flex-col gap-1.5">
-          <label className="text-sm font-medium text-ink/80">
+          <label className="text-lg font-medium text-ink/80">
             法定相続人の人数
           </label>
           <input
