@@ -8,7 +8,7 @@ export default function ForgotPasswordPage() {
         <h1 className="text-center text-3xl font-bold text-green-700">
           パスワードを再設定
         </h1>
-        <p className="mt-1 text-center text-sm text-ink/60">
+        <p className="mt-1 text-center text-lg text-ink/60">
           登録済みのメールアドレスに再設定用のリンクをお送りします。
         </p>
 
