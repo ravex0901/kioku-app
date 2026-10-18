@@ -29,7 +29,7 @@ export function ForgotPasswordForm() {
           type="email"
           required
           autoComplete="email"
-          className="rounded-lg border border-black/10 bg-white px-4 py-2.5 text-ink outline-none focus:border-green-400 focus:ring-2 focus:ring-green-100"
+          className="min-h-[50px] rounded-lg border border-black/10 bg-white px-4 py-2.5 text-ink outline-none focus:border-green-400 focus:ring-2 focus:ring-green-100"
         />
       </div>
 
@@ -42,7 +42,7 @@ export function ForgotPasswordForm() {
       <button
         type="submit"
         disabled={pending}
-        className="mt-2 rounded-full bg-green-700 px-6 py-3 font-semibold text-white transition hover:bg-green-800 disabled:opacity-60"
+        className="mt-2 inline-flex min-h-[50px] items-center justify-center rounded-full bg-green-700 px-6 py-3 font-semibold text-white transition hover:bg-green-800 disabled:opacity-60"
       >
         {pending ? "送信中…" : "再設定メールを送る"}
       </button>
