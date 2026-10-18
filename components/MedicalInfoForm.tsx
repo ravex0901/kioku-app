@@ -39,7 +39,7 @@ export function MedicalInfoForm({ initialInfo }: { initialInfo: MedicalInfo | nu
       className="flex flex-col gap-5 rounded-[1.75rem] border border-green-100 bg-white/70 p-6 shadow-sm"
     >
       <div>
-        <h2 className="text-sm font-bold text-ink">かかりつけ医</h2>
+        <h2 className="text-lg font-bold text-ink">かかりつけ医</h2>
         <div className="mt-3 flex flex-col gap-3">
           <label className="flex flex-col gap-1">
             <span className="text-xs font-medium text-ink/60">病院名</span>
@@ -78,7 +78,7 @@ export function MedicalInfoForm({ initialInfo }: { initialInfo: MedicalInfo | nu
       </div>
 
       <div>
-        <h2 className="text-sm font-bold text-ink">持病</h2>
+        <h2 className="text-lg font-bold text-ink">持病</h2>
         <p className="mt-1 text-xs text-ink/50">
           1行に1つずつ書いてください(例：高血圧、糖尿病)
         </p>
@@ -93,7 +93,7 @@ export function MedicalInfoForm({ initialInfo }: { initialInfo: MedicalInfo | nu
       </div>
 
       <div>
-        <h2 className="text-sm font-bold text-ink">今飲んでいる薬</h2>
+        <h2 className="text-lg font-bold text-ink">今飲んでいる薬</h2>
         <p className="mt-1 text-xs text-ink/50">
           1行に1つずつ書いてください(例：アムロジピン 朝1錡)
         </p>
