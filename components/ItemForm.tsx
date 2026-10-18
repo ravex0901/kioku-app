@@ -238,7 +238,7 @@ export function ItemForm({
   if (registeredName) {
     return (
       <div className="flex flex-col items-center gap-6 rounded-[1.75rem] border border-green-100 bg-white/70 p-10 text-center shadow-sm">
-        <p className="text-2xl font-bold text-green-700">
+        <p className="text-3xl font-bold text-green-700">
           登録が完了しました
         </p>
         <p className="text-ink/70">
@@ -251,13 +251,13 @@ export function ItemForm({
               resetForm();
               setRegisteredName(null);
             }}
-            className="rounded-full bg-green-700 px-6 py-3 font-semibold text-white transition hover:bg-green-800"
+            className="inline-flex min-h-[50px] items-center justify-center rounded-full bg-green-700 px-6 py-3 font-semibold text-white transition hover:bg-green-800"
           >
             続けて登録する
           </button>
           <Link
             href="/home"
-            className="rounded-full border border-green-200 px-6 py-3 font-semibold text-green-700 transition hover:bg-green-50"
+            className="inline-flex min-h-[50px] items-center justify-center rounded-full border border-green-200 px-6 py-3 font-semibold text-green-700 transition hover:bg-green-50"
           >
             ホームに戻る
           </Link>
@@ -299,7 +299,7 @@ export function ItemForm({
               type="button"
               onClick={handleAiAssist}
               disabled={aiLoading || photoProcessing}
-              className="self-start rounded-full border border-green-300 bg-green-50 px-4 py-2 text-sm font-semibold text-green-700 transition hover:bg-green-100 disabled:opacity-60"
+              className="inline-flex min-h-[50px] items-center justify-center self-start rounded-full border border-green-300 bg-green-50 px-4 py-2 text-sm font-semibold text-green-700 transition hover:bg-green-100 disabled:opacity-60"
             >
               {aiLoading ? "AIが写真を見ています…" : "✨ AIにおまかせ入力"}
             </button>
@@ -345,7 +345,7 @@ export function ItemForm({
           value={form.name}
           onChange={(e) => setForm((p) => ({ ...p, name: e.target.value }))}
           placeholder={CATEGORY_NAME_HINTS[form.categoryMajor || "other"]}
-          className="rounded-lg border border-black/10 bg-white px-4 py-2.5 outline-none focus:border-green-400 focus:ring-2 focus:ring-green-100"
+          className="min-h-[50px] rounded-lg border border-black/10 bg-white px-4 py-2.5 outline-none focus:border-green-400 focus:ring-2 focus:ring-green-100"
         />
       </div>
 
@@ -359,7 +359,7 @@ export function ItemForm({
               categoryMajor: e.target.value as CategoryMajor,
             }))
           }
-          className="rounded-lg border border-black/10 bg-white px-4 py-2.5 outline-none focus:border-green-400 focus:ring-2 focus:ring-green-100"
+          className="min-h-[50px] rounded-lg border border-black/10 bg-white px-4 py-2.5 outline-none focus:border-green-400 focus:ring-2 focus:ring-green-100"
         >
           <option value="">選択してください</option>
           {CATEGORY_OPTIONS.map((opt) => (
@@ -375,7 +375,7 @@ export function ItemForm({
               setForm((p) => ({ ...p, categoryOther: e.target.value }))
             }
             placeholder="ジャンルを入力してください"
-            className="mt-2 rounded-lg border border-black/10 bg-white px-4 py-2.5 outline-none focus:border-green-400 focus:ring-2 focus:ring-green-100"
+            className="mt-2 min-h-[50px] rounded-lg border border-black/10 bg-white px-4 py-2.5 outline-none focus:border-green-400 focus:ring-2 focus:ring-green-100"
           />
         )}
       </div>
@@ -385,7 +385,7 @@ export function ItemForm({
         <select
           value={showLocationForm ? NEW_LOCATION_VALUE : form.locationId}
           onChange={(e) => handleLocationSelect(e.target.value)}
-          className="rounded-lg border border-black/10 bg-white px-4 py-2.5 outline-none focus:border-green-400 focus:ring-2 focus:ring-green-100"
+          className="min-h-[50px] rounded-lg border border-black/10 bg-white px-4 py-2.5 outline-none focus:border-green-400 focus:ring-2 focus:ring-green-100"
         >
           <option value="">選択してください</option>
           {locations.map((loc) => (
@@ -471,7 +471,7 @@ export function ItemForm({
             setForm((p) => ({ ...p, estimatedPriceRange: e.target.value }))
           }
           placeholder="例:〜10,000円 / 値段がつきにくい"
-          className="rounded-lg border border-black/10 bg-white px-4 py-2.5 outline-none focus:border-green-400 focus:ring-2 focus:ring-green-100"
+          className="min-h-[50px] rounded-lg border border-black/10 bg-white px-4 py-2.5 outline-none focus:border-green-400 focus:ring-2 focus:ring-green-100"
         />
         <p className="text-xs text-ink/40">
           「✨ AIにおまかせ入力」を使うと、写真から目安額を自動入力します。
@@ -488,7 +488,7 @@ export function ItemForm({
           value={form.memo}
           onChange={(e) => setForm((p) => ({ ...p, memo: e.target.value }))}
           placeholder={CATEGORY_MEMO_HINTS[form.categoryMajor || "other"]}
-          className="rounded-lg border border-black/10 bg-white px-4 py-2.5 outline-none focus:border-green-400 focus:ring-2 focus:ring-green-100"
+          className="min-h-[50px] rounded-lg border border-black/10 bg-white px-4 py-2.5 outline-none focus:border-green-400 focus:ring-2 focus:ring-green-100"
         />
       </div>
 
@@ -501,11 +501,10 @@ export function ItemForm({
       <button
         type="submit"
         disabled={submitting}
-        className="rounded-full bg-green-700 px-6 py-3 font-semibold text-white transition hover:bg-green-800 disabled:opacity-60"
+        className="inline-flex min-h-[50px] items-center justify-center rounded-full bg-green-700 px-6 py-3 font-semibold text-white transition hover:bg-green-800 disabled:opacity-60"
       >
         {submitting ? "登録中…" : "登録する"}
       </button>
     </form>
   );
 }
-
