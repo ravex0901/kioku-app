@@ -5,7 +5,7 @@ export default function PurposePage() {
   return (
     <main className="flex min-h-screen items-center justify-center bg-cream px-4 py-12">
       <div className="w-full max-w-lg">
-        <h1 className="text-center text-2xl font-bold text-green-700">
+        <h1 className="text-center text-3xl font-bold text-green-700">
           今回のきっかけを教えてください
         </h1>
         <p className="mt-2 text-center text-sm text-ink/60">
