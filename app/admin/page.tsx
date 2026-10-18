@@ -30,7 +30,7 @@ export default async function AdminPage() {
   if (!adminClient) {
     return (
       <main className="mx-auto max-w-5xl px-4 py-8 sm:px-6">
-        <h1 className="font-serif-jp text-2xl font-bold text-ink">
+        <h1 className="font-serif-jp text-3xl font-bold text-ink">
           運営ダッシュボード
         </h1>
         <p className="mt-4 rounded-xl bg-red-50 px-4 py-3 text-sm text-red-600">
@@ -130,7 +130,7 @@ export default async function AdminPage() {
     <main className="mx-auto max-w-5xl px-4 py-8 sm:px-6">
       <div className="mb-6">
         <p className="text-xs font-semibold tracking-[0.2em] text-ink/40">ADMIN</p>
-        <h1 className="mt-2 font-serif-jp text-2xl font-bold text-ink">
+        <h1 className="mt-2 font-serif-jp text-3xl font-bold text-ink">
           運営ダッシュボード
         </h1>
         <p className="mt-1 text-xs text-ink/50">{user.email} でログイン中</p>
