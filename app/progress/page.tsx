@@ -82,7 +82,7 @@ export default async function ProgressPage() {
       <Header />
               <BackButton fallbackHref="/home" />
       <main className="mx-auto max-w-3xl px-4 py-8 sm:px-6">
-        <h1 className="mb-6 text-xl font-bold text-ink">片付けの進捗マップ</h1>
+        <h1 className="mb-6 text-3xl font-bold text-ink">片付けの進捗マップ</h1>
 
         <section className="mb-8 rounded-[1.75rem] border border-green-100 bg-white/70 p-6 shadow-sm">
           <ProgressBar ratio={overallRatio} />
