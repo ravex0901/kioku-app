@@ -89,7 +89,7 @@ export function AiSearchPanel() {
       </p>
 
       <div className="flex flex-wrap items-center gap-3">
-        <label className="cursor-pointer rounded-full border border-green-300 bg-green-50 px-4 py-2 text-sm font-semibold text-green-700 transition hover:bg-green-100">
+        <label className="inline-flex min-h-[50px] cursor-pointer items-center justify-center rounded-full border border-green-300 bg-green-50 px-4 py-2 text-sm font-semibold text-green-700 transition hover:bg-green-100">
           📷 写真で探す
           <input
             ref={fileInputRef}
@@ -106,11 +106,11 @@ export function AiSearchPanel() {
             value={textQuery}
             onChange={(e) => setTextQuery(e.target.value)}
             placeholder="例:貴重品、キッチン用品…"
-            className="min-w-0 flex-1 rounded-lg border border-black/10 bg-white px-3 py-2 text-sm"
+            className="min-h-[50px] min-w-0 flex-1 rounded-lg border border-black/10 bg-white px-3 py-2 text-sm"
           />
           <button
             type="submit"
-            className="rounded-full border border-green-300 bg-green-50 px-4 py-2 text-sm font-semibold text-green-700 transition hover:bg-green-100"
+            className="inline-flex min-h-[50px] items-center justify-center rounded-full border border-green-300 bg-green-50 px-4 py-2 text-sm font-semibold text-green-700 transition hover:bg-green-100"
           >
             AIで探す
           </button>
