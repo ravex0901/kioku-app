@@ -127,7 +127,7 @@ export function HandoverView({
           <p className="text-xs font-semibold tracking-[0.2em] text-ink/40">
             もしもの時
           </p>
-          <h1 className="mt-2 font-serif-jp text-xl font-bold text-ink">
+          <h1 className="mt-2 font-serif-jp text-3xl font-bold text-ink">
             自動開示は設定されていません
           </h1>
           <div className="mt-6 rounded-2xl border border-gold/40 bg-gold/10 p-5">
@@ -148,7 +148,7 @@ export function HandoverView({
         <p className="text-xs font-semibold tracking-[0.2em] text-ink/40">
           もしもの時
         </p>
-        <h1 className="mt-2 font-serif-jp text-xl font-bold text-ink">
+        <h1 className="mt-2 font-serif-jp text-3xl font-bold text-ink">
           開示条件を確認中です
         </h1>
         <div className="mt-6 rounded-2xl border border-gold/40 bg-gold/10 p-5">
@@ -185,7 +185,7 @@ export function HandoverView({
               type="button"
               onClick={handleApprove}
               disabled={approving}
-              className="rounded-full bg-green-700 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-green-800 disabled:opacity-60"
+              className="inline-flex min-h-[50px] items-center justify-center rounded-full bg-green-700 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-green-800 disabled:opacity-60"
             >
               {approving ? "処理中…" : "開示を承認する"}
             </button>
@@ -210,7 +210,7 @@ export function HandoverView({
       <p className="text-xs font-semibold tracking-[0.2em] text-ink/40">
         もしもの時
       </p>
-      <h1 className="mt-2 font-serif-jp text-2xl font-bold text-ink">
+      <h1 className="mt-2 font-serif-jp text-3xl font-bold text-ink">
         {status.recipientName
           ? `ご本人から${status.recipientName}様へのメッセージ`
           : "ご本人からのメッセージ"}
@@ -486,7 +486,7 @@ function DeathCertificateStage({
           value={submittedByName}
           onChange={(e) => setSubmittedByName(e.target.value)}
           placeholder="例:田中 花子"
-          className="rounded-lg border border-black/10 bg-white px-3 py-2 text-sm outline-none focus:border-green-400 focus:ring-2 focus:ring-green-100"
+          className="min-h-[50px] rounded-lg border border-black/10 bg-white px-3 py-2 text-sm outline-none focus:border-green-400 focus:ring-2 focus:ring-green-100"
         />
       </div>
       <div className="mb-3 flex flex-col gap-1.5">
@@ -505,7 +505,7 @@ function DeathCertificateStage({
         type="button"
         onClick={handleSubmit}
         disabled={submitting}
-        className="rounded-full bg-green-700 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-green-800 disabled:opacity-60"
+        className="inline-flex min-h-[50px] items-center justify-center rounded-full bg-green-700 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-green-800 disabled:opacity-60"
       >
         {submitting ? "送信中…" : "画像を提出する"}
       </button>
