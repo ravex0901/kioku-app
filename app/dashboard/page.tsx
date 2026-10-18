@@ -254,7 +254,7 @@ export default async function DashboardPage() {
           <h1 className="mt-2 font-serif-jp text-3xl font-bold text-ink">
             整理の状況
           </h1>
-          <p className="mt-1 text-sm text-ink/60">
+          <p className="mt-1 text-lg text-ink/60">
             今の準備状況、やることリスト、相続税の目安をまとめて確認できます。
           </p>
         </div>
