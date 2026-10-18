@@ -49,7 +49,7 @@ export function MedicalInfoForm({ initialInfo }: { initialInfo: MedicalInfo | nu
               value={hospitalName}
               onChange={(e) => setHospitalName(e.target.value)}
               placeholder="例：〇〇総合病院"
-              className="rounded-xl border border-green-100 bg-white px-4 py-2.5 text-sm text-ink outline-none focus:border-green-400"
+              className="min-h-[50px] rounded-xl border border-green-100 bg-white px-4 py-2.5 text-sm text-ink outline-none focus:border-green-400"
             />
           </label>
           <label className="flex flex-col gap-1">
@@ -60,7 +60,7 @@ export function MedicalInfoForm({ initialInfo }: { initialInfo: MedicalInfo | nu
               value={doctorName}
               onChange={(e) => setDoctorName(e.target.value)}
               placeholder="例：〇〇先生"
-              className="rounded-xl border border-green-100 bg-white px-4 py-2.5 text-sm text-ink outline-none focus:border-green-400"
+              className="min-h-[50px] rounded-xl border border-green-100 bg-white px-4 py-2.5 text-sm text-ink outline-none focus:border-green-400"
             />
           </label>
           <label className="flex flex-col gap-1">
@@ -71,7 +71,7 @@ export function MedicalInfoForm({ initialInfo }: { initialInfo: MedicalInfo | nu
               value={doctorPhone}
               onChange={(e) => setDoctorPhone(e.target.value)}
               placeholder="例：03-0000-0000"
-              className="rounded-xl border border-green-100 bg-white px-4 py-2.5 text-sm text-ink outline-none focus:border-green-400"
+              className="min-h-[50px] rounded-xl border border-green-100 bg-white px-4 py-2.5 text-sm text-ink outline-none focus:border-green-400"
             />
           </label>
         </div>
@@ -119,7 +119,7 @@ export function MedicalInfoForm({ initialInfo }: { initialInfo: MedicalInfo | nu
       <button
         type="submit"
         disabled={saving}
-        className="self-start rounded-full bg-green-700 px-6 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-green-800 disabled:opacity-50"
+        className="inline-flex min-h-[50px] items-center justify-center self-start rounded-full bg-green-700 px-6 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-green-800 disabled:opacity-50"
       >
         {saving ? "保存中…" : "保存する"}
       </button>
