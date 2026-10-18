@@ -65,7 +65,7 @@ export function LocationCreateForm({
       className="flex flex-col gap-3 rounded-2xl border border-green-200 bg-green-50/60 p-4"
     >
       <div className="flex flex-col gap-1.5">
-        <label className="text-sm font-medium text-ink/80">場所の名前</label>
+        <label className="text-lg font-medium text-ink/80">場所の名前</label>
         <input
           value={name}
           onChange={(e) => setName(e.target.value)}
@@ -74,7 +74,7 @@ export function LocationCreateForm({
         />
       </div>
       <div className="flex flex-col gap-1.5">
-        <label className="text-sm font-medium text-ink/80">種別</label>
+        <label className="text-lg font-medium text-ink/80">種別</label>
         <select
           value={locationType}
           onChange={(e) => setLocationType(e.target.value as LocationType)}
@@ -89,7 +89,7 @@ export function LocationCreateForm({
       </div>
       {parentOptions.length > 0 && (
         <div className="flex flex-col gap-1.5">
-          <label className="text-sm font-medium text-ink/80">
+          <label className="text-lg font-medium text-ink/80">
             親の場所(任意)
           </label>
           <select
