@@ -59,7 +59,7 @@ export function QuickLocationAdd({
   return (
     <div className="flex flex-col gap-3 rounded-2xl border border-green-200 bg-green-50/60 p-4">
       <div className="flex flex-col gap-1.5">
-        <label className="text-sm font-medium text-ink/80">
+        <label className="text-lg font-medium text-ink/80">
           新しい場所の名前
         </label>
         <input
