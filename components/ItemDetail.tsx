@@ -407,7 +407,7 @@ export function ItemDetail({
   return (
     <div className="flex flex-col gap-6 rounded-[1.75rem] border border-green-100 bg-white/70 p-6 shadow-sm sm:p-8">
       <div className="flex flex-col gap-1.5">
-        <label className="text-sm font-medium text-ink/80">写真</label>
+        <label className="text-lg font-medium text-ink/80">写真</label>
         {photoPreview && (
           // eslint-disable-next-line @next/next/no-img-element
           <img
@@ -430,7 +430,7 @@ export function ItemDetail({
       </div>
 
       <div className="flex flex-col gap-1.5">
-        <label className="text-sm font-medium text-ink/80">
+        <label className="text-lg font-medium text-ink/80">
           品名 <span className="text-red-500">*</span>
         </label>
         <input
@@ -441,7 +441,7 @@ export function ItemDetail({
       </div>
 
       <div className="flex flex-col gap-1.5">
-        <label className="text-sm font-medium text-ink/80">ジャンル</label>
+        <label className="text-lg font-medium text-ink/80">ジャンル</label>
         <select
           value={categoryMajor}
           onChange={(e) => setCategoryMajor(e.target.value as CategoryMajor)}
@@ -465,7 +465,7 @@ export function ItemDetail({
       </div>
 
       <div className="flex flex-col gap-1.5">
-        <label className="text-sm font-medium text-ink/80">保管場所</label>
+        <label className="text-lg font-medium text-ink/80">保管場所</label>
         <select
           value={showLocationForm ? NEW_LOCATION_VALUE : locationId}
           onChange={(e) => handleLocationSelect(e.target.value)}
@@ -496,7 +496,7 @@ export function ItemDetail({
       </div>
 
       <fieldset className="flex flex-col gap-2">
-        <legend className="mb-1 text-sm font-medium text-ink/80">
+        <legend className="mb-1 text-lg font-medium text-ink/80">
           整理の方針
         </legend>
         {DISPOSITION_OPTIONS.map((opt) => (
@@ -519,7 +519,7 @@ export function ItemDetail({
 
       {showTags && (
         <div className="flex flex-col gap-2">
-          <span className="text-sm font-medium text-ink/80">
+          <span className="text-lg font-medium text-ink/80">
             理由タグ(複数選択可)
           </span>
           <div className="flex flex-wrap gap-2">
@@ -545,7 +545,7 @@ export function ItemDetail({
       )}
 
       <div className="flex flex-col gap-1.5">
-        <label className="text-sm font-medium text-ink/80">
+        <label className="text-lg font-medium text-ink/80">
           売却額の目安
         </label>
         <input
@@ -560,7 +560,7 @@ export function ItemDetail({
       </div>
 
       <div className="flex flex-col gap-1.5">
-        <label className="text-sm font-medium text-ink/80">
+        <label className="text-lg font-medium text-ink/80">
           専門査定結果(任意)
         </label>
         <input
@@ -572,7 +572,7 @@ export function ItemDetail({
       </div>
 
       <div className="flex flex-col gap-1.5">
-        <label className="text-sm font-medium text-ink/80">
+        <label className="text-lg font-medium text-ink/80">
           家族へのメモ
         </label>
         <textarea
