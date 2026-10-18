@@ -204,7 +204,7 @@ export function JournalClient({
                 type="button"
                 onClick={handleSubmit}
                 disabled={submitting}
-                className="self-start rounded-full bg-green-700 px-6 py-2.5 text-sm font-semibold text-white transition hover:bg-green-800 disabled:opacity-50"
+                className="inline-flex min-h-[50px] items-center justify-center self-start rounded-full bg-green-700 px-6 py-2.5 text-sm font-semibold text-white transition hover:bg-green-800 disabled:opacity-50"
               >
                 {submitting ? "保存中…" : "記録する"}
               </button>
