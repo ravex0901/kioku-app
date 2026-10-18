@@ -34,7 +34,7 @@ export default async function NewItemPage() {
       <Header />
               <BackButton fallbackHref="/items" />
       <main className="mx-auto max-w-2xl px-4 py-8 sm:px-6">
-        <h1 className="mb-4 text-xl font-bold text-ink">ものを登録する</h1>
+        <h1 className="mb-4 text-3xl font-bold text-ink">ものを登録する</h1>
         <ItemRegisterTabs active="single" />
         <ItemForm userId={user.id} initialLocations={locations} />
       </main>
