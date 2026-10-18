@@ -226,7 +226,7 @@ export default async function HomePage() {
             <h1 className="mt-2 font-serif-jp text-3xl font-bold text-ink">
               おかえりなさい、{displayName}さん
             </h1>
-            <p className="mt-1 text-sm text-ink/60">
+            <p className="mt-1 text-lg text-ink/60">
               きょうも、ひとつだけ進めてみましょう
             </p>
           </div>
