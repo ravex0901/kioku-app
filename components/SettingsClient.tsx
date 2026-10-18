@@ -545,7 +545,7 @@ export function SettingsClient({
         </p>
         <div className="flex flex-col gap-3">
           <div className="flex flex-col gap-1.5">
-            <label className="text-sm font-medium text-ink/80">お名前</label>
+            <label className="text-lg font-medium text-ink/80">お名前</label>
             <input
               value={name}
               onChange={(e) => setName(e.target.value)}
@@ -554,7 +554,7 @@ export function SettingsClient({
             />
           </div>
           <div className="flex flex-col gap-1.5">
-            <label className="text-sm font-medium text-ink/80">続柄</label>
+            <label className="text-lg font-medium text-ink/80">続柄</label>
             <select
               value={relation}
               onChange={(e) => setRelation(e.target.value as FamilyRelation)}
@@ -612,7 +612,7 @@ export function SettingsClient({
 
         <div className="flex flex-col gap-3">
           <div className="flex flex-col gap-1.5">
-            <label className="text-sm font-medium text-ink/80">
+            <label className="text-lg font-medium text-ink/80">
               相手のアカウントID
             </label>
             <input
@@ -623,7 +623,7 @@ export function SettingsClient({
             />
           </div>
           <div className="flex flex-col gap-1.5">
-            <label className="text-sm font-medium text-ink/80">
+            <label className="text-lg font-medium text-ink/80">
               あなたから見て、その方の続柄
             </label>
             <select
@@ -704,14 +704,14 @@ export function SettingsClient({
         </p>
 
         <div className="mb-4 flex flex-col gap-3 rounded-xl border border-black/5 bg-white/70 p-4">
-          <p className="text-sm font-semibold text-ink/80">
+          <p className="text-lg font-semibold text-ink/80">
             ① ご家族への想い・メッセージ(本人の意思)
           </p>
           <p className="text-[11px] text-ink/40">
             財産分与などの法的な取り決めではなく、ご家族に伝えたい気持ちや感謝の言葉など、私的なメッセージを書く欄です。
           </p>
           <div className="flex flex-col gap-1.5">
-            <label className="text-sm font-medium text-ink/80">
+            <label className="text-lg font-medium text-ink/80">
               ご家族へのメッセージ
             </label>
             <textarea
@@ -723,7 +723,7 @@ export function SettingsClient({
             />
           </div>
           <div className="flex flex-col gap-1.5">
-            <label className="text-sm font-medium text-ink/80">
+            <label className="text-lg font-medium text-ink/80">
               メッセージ動画(任意)
             </label>
             {willVideoUrl ? (
@@ -772,7 +772,7 @@ export function SettingsClient({
         </div>
 
         <div className="mb-5 flex flex-col gap-3 rounded-xl border border-red-200 bg-red-50/40 p-4">
-          <p className="text-sm font-semibold text-ink/80">
+          <p className="text-lg font-semibold text-ink/80">
             ② 法的な遺言事項に関する記録(財産の分け方などど)
           </p>
           <div className="rounded-lg border border-red-200 bg-white/80 p-3">
@@ -781,7 +781,7 @@ export function SettingsClient({
             </p>
           </div>
           <div className="flex flex-col gap-1.5">
-            <label className="text-sm font-medium text-ink/80">
+            <label className="text-lg font-medium text-ink/80">
               資産の分け方などについてのメモ
             </label>
             <textarea
@@ -819,7 +819,7 @@ export function SettingsClient({
 
         <div className="flex flex-col gap-3">
           <div className="flex flex-col gap-1.5">
-            <label className="text-sm font-medium text-ink/80">
+            <label className="text-lg font-medium text-ink/80">
               非アクティブと判定するまでの日数
             </label>
             <select
@@ -834,7 +834,7 @@ export function SettingsClient({
             </select>
           </div>
           <div className="flex flex-col gap-1.5">
-            <label className="text-sm font-medium text-ink/80">
+            <label className="text-lg font-medium text-ink/80">
               確認・開示の承認者
             </label>
             <select
@@ -932,7 +932,7 @@ export function SettingsClient({
 
             <div className="flex flex-col gap-3 rounded-xl border border-black/5 bg-white/70 p-4">
               <div className="flex flex-col gap-1.5">
-                <label className="text-sm font-medium text-ink/80">
+                <label className="text-lg font-medium text-ink/80">
                   お名前
                 </label>
                 <input
@@ -944,7 +944,7 @@ export function SettingsClient({
               </div>
               {family.length > 0 && (
                 <div className="flex flex-col gap-1.5">
-                  <label className="text-sm font-medium text-ink/80">
+                  <label className="text-lg font-medium text-ink/80">
                     登録済みの家族から選ぶ(任意)
                   </label>
                   <select
