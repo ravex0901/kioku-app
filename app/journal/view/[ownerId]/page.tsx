@@ -47,7 +47,7 @@ export default async function FamilyJournalViewPage({
             <h1 className="mb-1 mt-4 font-serif-jp text-3xl font-bold text-ink">
               {result.ownerName}さんのAI日記
             </h1>
-            <p className="mb-6 text-sm text-ink/60">
+            <p className="mb-6 text-lg text-ink/60">
               家族アカウントとして紐付けられているため、閲覧できます(回答はできません)。
             </p>
             <FamilyJournalViewClient
