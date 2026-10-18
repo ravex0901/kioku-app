@@ -18,7 +18,7 @@ export function SignupForm() {
           type="text"
           required
           autoComplete="name"
-          className="rounded-lg border border-black/10 bg-white px-4 py-2.5 text-ink outline-none focus:border-green-400 focus:ring-2 focus:ring-green-100"
+          className="min-h-[50px] rounded-lg border border-black/10 bg-white px-4 py-2.5 text-ink outline-none focus:border-green-400 focus:ring-2 focus:ring-green-100"
         />
       </div>
       <div className="flex flex-col gap-1.5">
@@ -31,7 +31,7 @@ export function SignupForm() {
           type="email"
           required
           autoComplete="email"
-          className="rounded-lg border border-black/10 bg-white px-4 py-2.5 text-ink outline-none focus:border-green-400 focus:ring-2 focus:ring-green-100"
+          className="min-h-[50px] rounded-lg border border-black/10 bg-white px-4 py-2.5 text-ink outline-none focus:border-green-400 focus:ring-2 focus:ring-green-100"
         />
       </div>
       <div className="flex flex-col gap-1.5">
@@ -45,7 +45,7 @@ export function SignupForm() {
           required
           minLength={8}
           autoComplete="new-password"
-          className="rounded-lg border border-black/10 bg-white px-4 py-2.5 text-ink outline-none focus:border-green-400 focus:ring-2 focus:ring-green-100"
+          className="min-h-[50px] rounded-lg border border-black/10 bg-white px-4 py-2.5 text-ink outline-none focus:border-green-400 focus:ring-2 focus:ring-green-100"
         />
       </div>
       <div className="flex flex-col gap-1.5">
@@ -62,7 +62,7 @@ export function SignupForm() {
           required
           minLength={8}
           autoComplete="new-password"
-          className="rounded-lg border border-black/10 bg-white px-4 py-2.5 text-ink outline-none focus:border-green-400 focus:ring-2 focus:ring-green-100"
+          className="min-h-[50px] rounded-lg border border-black/10 bg-white px-4 py-2.5 text-ink outline-none focus:border-green-400 focus:ring-2 focus:ring-green-100"
         />
       </div>
       <div className="flex flex-col gap-1.5">
@@ -74,7 +74,7 @@ export function SignupForm() {
           name="birthDate"
           type="date"
           autoComplete="bday"
-          className="rounded-lg border border-black/10 bg-white px-4 py-2.5 text-ink outline-none focus:border-green-400 focus:ring-2 focus:ring-green-100"
+          className="min-h-[50px] rounded-lg border border-black/10 bg-white px-4 py-2.5 text-ink outline-none focus:border-green-400 focus:ring-2 focus:ring-green-100"
         />
         <p className="text-xs text-ink/40">
           タイムカプセルの「成人になったら」「送った本人と同じ歳になったら」などの開封条件に使われます。
@@ -90,7 +90,7 @@ export function SignupForm() {
       <button
         type="submit"
         disabled={pending}
-        className="mt-2 rounded-full bg-green-700 px-6 py-3 font-semibold text-white transition hover:bg-green-800 disabled:opacity-60"
+        className="mt-2 inline-flex min-h-[50px] items-center justify-center rounded-full bg-green-700 px-6 py-3 font-semibold text-white transition hover:bg-green-800 disabled:opacity-60"
       >
         {pending ? "登録中…" : "新規登録"}
       </button>
