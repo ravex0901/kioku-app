@@ -51,7 +51,7 @@ export function InheritanceTaxCalculator() {
             value={assets}
             onChange={(e) => setAssets(e.target.value)}
             placeholder="例:6000"
-            className="rounded-lg border border-black/10 bg-white px-4 py-2.5 text-sm outline-none focus:border-green-400 focus:ring-2 focus:ring-green-100"
+            className="min-h-[50px] rounded-lg border border-black/10 bg-white px-4 py-2.5 text-sm outline-none focus:border-green-400 focus:ring-2 focus:ring-green-100"
           />
         </div>
         <div className="flex flex-col gap-1.5">
@@ -63,13 +63,13 @@ export function InheritanceTaxCalculator() {
             value={heirs}
             onChange={(e) => setHeirs(e.target.value)}
             placeholder="例:2"
-            className="rounded-lg border border-black/10 bg-white px-4 py-2.5 text-sm outline-none focus:border-green-400 focus:ring-2 focus:ring-green-100"
+            className="min-h-[50px] rounded-lg border border-black/10 bg-white px-4 py-2.5 text-sm outline-none focus:border-green-400 focus:ring-2 focus:ring-green-100"
           />
         </div>
         <button
           type="button"
           onClick={handleCalc}
-          className="rounded-full bg-green-700 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-green-800"
+          className="inline-flex min-h-[50px] items-center justify-center rounded-full bg-green-700 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-green-800"
         >
           計算する
         </button>
