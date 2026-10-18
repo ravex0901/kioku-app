@@ -25,7 +25,7 @@ export default async function FamilyVoiceCheckinPage() {
         <h1 className="mb-1 mt-4 font-serif-jp text-3xl font-bold text-ink">
           家族へボイスメッセージを送る
         </h1>
-        <p className="mb-6 text-sm text-ink/60">
+        <p className="mb-6 text-lg text-ink/60">
           紐付けられたご本人へ、お昼・夕方・夜に届くボイスメッセージを、ご自身のアカウントから録音して送れます。
         </p>
 
