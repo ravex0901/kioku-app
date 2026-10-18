@@ -43,7 +43,7 @@ export default async function InvitePage({
             />
           </svg>
         </div>
-        <h1 className="mt-4 text-center text-2xl font-bold text-green-700">
+        <h1 className="mt-4 text-center text-3xl font-bold text-green-700">
           家族からの招待
         </h1>
 
