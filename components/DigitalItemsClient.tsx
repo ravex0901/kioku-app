@@ -500,7 +500,7 @@ export function DigitalItemsClient({
             <select
               value={itemType}
               onChange={(e) => setItemType(e.target.value as DigitalItemType)}
-              className="rounded-lg border border-black/10 bg-white px-4 py-2.5 outline-none focus:border-green-400 focus:ring-2 focus:ring-green-100"
+              className="min-h-[50px] rounded-lg border border-black/10 bg-white px-4 py-2.5 outline-none focus:border-green-400 focus:ring-2 focus:ring-green-100"
             >
               {DIGITAL_ITEM_TYPE_OPTIONS.map((opt) => (
                 <option key={opt.value} value={opt.value}>
@@ -517,7 +517,7 @@ export function DigitalItemsClient({
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               placeholder={DIGITAL_ITEM_TITLE_HINTS[itemType] ?? "例:Net◯◯"}
-              className="rounded-lg border border-black/10 bg-white px-4 py-2.5 outline-none focus:border-green-400 focus:ring-2 focus:ring-green-100"
+              className="min-h-[50px] rounded-lg border border-black/10 bg-white px-4 py-2.5 outline-none focus:border-green-400 focus:ring-2 focus:ring-green-100"
             />
           </div>
           <div className="flex flex-col gap-1.5">
@@ -536,7 +536,7 @@ export function DigitalItemsClient({
               value={contactPerson}
               onChange={(e) => setContactPerson(e.target.value)}
               placeholder="例:長男が対応"
-              className="rounded-lg border border-black/10 bg-white px-4 py-2.5 outline-none focus:border-green-400 focus:ring-2 focus:ring-green-100"
+              className="min-h-[50px] rounded-lg border border-black/10 bg-white px-4 py-2.5 outline-none focus:border-green-400 focus:ring-2 focus:ring-green-100"
             />
           </div>
           <div className="flex flex-col gap-1.5">
@@ -545,7 +545,7 @@ export function DigitalItemsClient({
               value={relatedDocuments}
               onChange={(e) => setRelatedDocuments(e.target.value)}
               placeholder="例:契約書は自宅の書類ファイルに保管"
-              className="rounded-lg border border-black/10 bg-white px-4 py-2.5 outline-none focus:border-green-400 focus:ring-2 focus:ring-green-100"
+              className="min-h-[50px] rounded-lg border border-black/10 bg-white px-4 py-2.5 outline-none focus:border-green-400 focus:ring-2 focus:ring-green-100"
             />
           </div>
           {formError && <p className="text-sm text-red-600">{formError}</p>}
@@ -553,7 +553,7 @@ export function DigitalItemsClient({
             type="button"
             onClick={handleSave}
             disabled={saving}
-            className="rounded-full bg-green-700 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-green-800 disabled:opacity-60"
+            className="inline-flex min-h-[50px] items-center justify-center rounded-full bg-green-700 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-green-800 disabled:opacity-60"
           >
             {saving ? "保存中…" : "保存する"}
           </button>
@@ -590,13 +590,13 @@ export function DigitalItemsClient({
               }
             }}
             placeholder="例:サブスク何がある? iCloud写真はどこ?"
-            className="flex-1 rounded-full border border-green-100 bg-white px-4 py-2.5 text-sm text-ink outline-none focus:border-green-400"
+            className="min-h-[50px] flex-1 rounded-full border border-green-100 bg-white px-4 py-2.5 text-sm text-ink outline-none focus:border-green-400"
           />
           <button
             type="button"
             onClick={handleAsk}
             disabled={asking || !question.trim()}
-            className="shrink-0 rounded-full bg-green-700 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-green-800 disabled:opacity-40"
+            className="inline-flex min-h-[50px] shrink-0 items-center justify-center rounded-full bg-green-700 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-green-800 disabled:opacity-40"
           >
             {asking ? "考え中…" : "聞く"}
           </button>
