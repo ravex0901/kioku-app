@@ -44,14 +44,14 @@ export default function ConfirmDialog({
           <button
             type="button"
             onClick={onCancel}
-            className="flex-1 rounded-xl border border-black/10 py-3 text-sm font-medium text-ink/70"
+            className="inline-flex min-h-[50px] flex-1 items-center justify-center rounded-xl border border-black/10 py-3 text-sm font-medium text-ink/70"
           >
             {cancelLabel}
           </button>
           <button
             type="button"
             onClick={onConfirm}
-            className={`flex-1 rounded-xl py-3 text-sm font-bold text-white ${
+            className={`inline-flex min-h-[50px] flex-1 items-center justify-center rounded-xl py-3 text-sm font-bold text-white ${
               danger ? "bg-red-500" : "bg-ink"
             }`}
           >
