@@ -40,7 +40,7 @@ export default async function RequestPage() {
           <p className="text-xs font-semibold tracking-[0.2em] text-ink/40">
             REQUEST
           </p>
-          <h1 className="mt-2 font-serif-jp text-2xl font-bold text-ink">
+          <h1 className="mt-2 font-serif-jp text-3xl font-bold text-ink">
             ご依頼はこちら
           </h1>
           <p className="mt-1 text-sm text-ink/60">
@@ -52,4 +52,3 @@ export default async function RequestPage() {
     </div>
   );
 }
-
