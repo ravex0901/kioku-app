@@ -50,7 +50,7 @@ export default async function FamilyTreePage() {
         <h1 className="mb-1 mt-4 font-serif-jp text-3xl font-bold text-ink">
           家系図
         </h1>
-        <p className="mb-6 text-sm text-ink/60">
+        <p className="mb-6 text-lg text-ink/60">
           登録されたご家族の情報から、家系図を自動でつくります。ご家族がさらに別の方とつながると、ここにも代々広がっていきます。
         </p>
         <FamilyTreeClient
