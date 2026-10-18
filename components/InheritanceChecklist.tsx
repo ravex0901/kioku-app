@@ -87,7 +87,7 @@ export function InheritanceChecklist({
   return (
     <div className="rounded-[1.75rem] border border-gold/40 bg-gold/10 p-5 shadow-sm sm:p-6">
       <div className="mb-1 flex items-center justify-between">
-        <h2 className="text-sm font-bold text-ink">
+        <h2 className="text-lg font-bold text-ink">
           相続手続きチェックリスト
         </h2>
         <span className="text-xs font-medium text-ink/50">
