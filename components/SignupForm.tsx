@@ -9,7 +9,7 @@ export function SignupForm() {
   return (
     <form action={formAction} className="flex flex-col gap-4">
       <div className="flex flex-col gap-1.5">
-        <label htmlFor="name" className="text-sm font-medium text-ink/80">
+        <label htmlFor="name" className="text-lg font-medium text-ink/80">
           お名前
         </label>
         <input
@@ -22,7 +22,7 @@ export function SignupForm() {
         />
       </div>
       <div className="flex flex-col gap-1.5">
-        <label htmlFor="email" className="text-sm font-medium text-ink/80">
+        <label htmlFor="email" className="text-lg font-medium text-ink/80">
           メールアドレス
         </label>
         <input
@@ -35,7 +35,7 @@ export function SignupForm() {
         />
       </div>
       <div className="flex flex-col gap-1.5">
-        <label htmlFor="password" className="text-sm font-medium text-ink/80">
+        <label htmlFor="password" className="text-lg font-medium text-ink/80">
           パスワード
         </label>
         <input
@@ -51,7 +51,7 @@ export function SignupForm() {
       <div className="flex flex-col gap-1.5">
         <label
           htmlFor="passwordConfirm"
-          className="text-sm font-medium text-ink/80"
+          className="text-lg font-medium text-ink/80"
         >
           パスワード(確認)
         </label>
@@ -66,7 +66,7 @@ export function SignupForm() {
         />
       </div>
       <div className="flex flex-col gap-1.5">
-        <label htmlFor="birthDate" className="text-sm font-medium text-ink/80">
+        <label htmlFor="birthDate" className="text-lg font-medium text-ink/80">
           生年月日(任意)
         </label>
         <input
