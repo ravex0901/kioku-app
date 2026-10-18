@@ -550,7 +550,7 @@ export function SettingsClient({
               value={name}
               onChange={(e) => setName(e.target.value)}
               placeholder="例:田中 一郎"
-              className="rounded-lg border border-black/10 bg-white px-4 py-2.5 text-sm outline-none focus:border-green-400 focus:ring-2 focus:ring-green-100"
+              className="min-h-[50px] rounded-lg border border-black/10 bg-white px-4 py-2.5 text-sm outline-none focus:border-green-400 focus:ring-2 focus:ring-green-100"
             />
           </div>
           <div className="flex flex-col gap-1.5">
@@ -558,7 +558,7 @@ export function SettingsClient({
             <select
               value={relation}
               onChange={(e) => setRelation(e.target.value as FamilyRelation)}
-              className="rounded-lg border border-black/10 bg-white px-4 py-2.5 text-sm outline-none focus:border-green-400 focus:ring-2 focus:ring-green-100"
+              className="min-h-[50px] rounded-lg border border-black/10 bg-white px-4 py-2.5 text-sm outline-none focus:border-green-400 focus:ring-2 focus:ring-green-100"
             >
               {FAMILY_RELATION_OPTIONS.map((opt) => (
                 <option key={opt.value} value={opt.value}>
@@ -574,7 +574,7 @@ export function SettingsClient({
             type="button"
             onClick={handleInvite}
             disabled={inviting}
-            className="rounded-full bg-green-700 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-green-800 disabled:opacity-60"
+            className="inline-flex min-h-[50px] items-center justify-center rounded-full bg-green-700 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-green-800 disabled:opacity-60"
           >
             {inviting ? "招待中…" : "家族を招待する"}
           </button>
@@ -619,7 +619,7 @@ export function SettingsClient({
               value={linkAccountCode}
               onChange={(e) => setLinkAccountCode(e.target.value)}
               placeholder="例:AB3KX9Q2"
-              className="rounded-lg border border-black/10 bg-white px-4 py-2.5 text-sm uppercase outline-none focus:border-green-400 focus:ring-2 focus:ring-green-100"
+              className="min-h-[50px] rounded-lg border border-black/10 bg-white px-4 py-2.5 text-sm uppercase outline-none focus:border-green-400 focus:ring-2 focus:ring-green-100"
             />
           </div>
           <div className="flex flex-col gap-1.5">
@@ -629,7 +629,7 @@ export function SettingsClient({
             <select
               value={linkRelation}
               onChange={(e) => setLinkRelation(e.target.value as FamilyRelation)}
-              className="rounded-lg border border-black/10 bg-white px-4 py-2.5 text-sm outline-none focus:border-green-400 focus:ring-2 focus:ring-green-100"
+              className="min-h-[50px] rounded-lg border border-black/10 bg-white px-4 py-2.5 text-sm outline-none focus:border-green-400 focus:ring-2 focus:ring-green-100"
             >
               {FAMILY_RELATION_OPTIONS.map((opt) => (
                 <option key={opt.value} value={opt.value}>
@@ -646,7 +646,7 @@ export function SettingsClient({
             type="button"
             onClick={handleLinkByAccountId}
             disabled={linking}
-            className="rounded-full border border-green-700 px-5 py-2.5 text-sm font-semibold text-green-700 shadow-sm transition hover:bg-green-50 disabled:opacity-60"
+            className="inline-flex min-h-[50px] items-center justify-center rounded-full border border-green-700 px-5 py-2.5 text-sm font-semibold text-green-700 shadow-sm transition hover:bg-green-50 disabled:opacity-60"
           >
             {linking ? "送信しています…" : "アカウントIDで申請する"}
           </button>
@@ -719,7 +719,7 @@ export function SettingsClient({
               onChange={(e) => setWillMessage(e.target.value)}
               rows={4}
               placeholder="ご家族に伝えたい想い・感謝の気持ちなどを自由にお書きください。"
-              className="rounded-lg border border-black/10 bg-white px-4 py-2.5 text-sm outline-none focus:border-green-400 focus:ring-2 focus:ring-green-100"
+              className="min-h-[50px] rounded-lg border border-black/10 bg-white px-4 py-2.5 text-sm outline-none focus:border-green-400 focus:ring-2 focus:ring-green-100"
             />
           </div>
           <div className="flex flex-col gap-1.5">
@@ -789,7 +789,7 @@ export function SettingsClient({
               onChange={(e) => setLegalWillNote(e.target.value)}
               rows={4}
               placeholder="資産の分け方の希望など、法的な遺言事項に関する記録を書く場合はこちらに入力してください(正式な遺言書の代わりにはなりません)。"
-              className="rounded-lg border border-black/10 bg-white px-4 py-2.5 text-sm outline-none focus:border-green-400 focus:ring-2 focus:ring-green-100"
+              className="min-h-[50px] rounded-lg border border-black/10 bg-white px-4 py-2.5 text-sm outline-none focus:border-green-400 focus:ring-2 focus:ring-green-100"
             />
           </div>
           <label className="flex items-start gap-2 text-xs text-ink/70">
@@ -811,7 +811,7 @@ export function SettingsClient({
             type="button"
             onClick={handleSaveWill}
             disabled={savingWill}
-            className="self-start rounded-full bg-green-700 px-5 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-green-800 disabled:opacity-60"
+            className="inline-flex min-h-[50px] items-center justify-center self-start rounded-full bg-green-700 px-5 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-green-800 disabled:opacity-60"
           >
             {savingWill ? "保存中…" : "意思伝達情報を保存する"}
           </button>
@@ -825,7 +825,7 @@ export function SettingsClient({
             <select
               value={inactiveDays}
               onChange={(e) => setInactiveDays(e.target.value)}
-              className="rounded-lg border border-black/10 bg-white px-4 py-2.5 text-sm outline-none focus:border-green-400 focus:ring-2 focus:ring-green-100"
+              className="min-h-[50px] rounded-lg border border-black/10 bg-white px-4 py-2.5 text-sm outline-none focus:border-green-400 focus:ring-2 focus:ring-green-100"
             >
               <option value="36500">なし(自動開示しない)</option>
               <option value="7">7日</option>
@@ -841,7 +841,7 @@ export function SettingsClient({
               value={approverId}
               onChange={(e) => setApproverId(e.target.value)}
               disabled={family.length === 0}
-              className="rounded-lg border border-black/10 bg-white px-4 py-2.5 text-sm outline-none focus:border-green-400 focus:ring-2 focus:ring-green-100 disabled:bg-black/5 disabled:text-ink/40"
+              className="min-h-[50px] rounded-lg border border-black/10 bg-white px-4 py-2.5 text-sm outline-none focus:border-green-400 focus:ring-2 focus:ring-green-100 disabled:bg-black/5 disabled:text-ink/40"
             >
               {family.length === 0 ? (
                 <option value="">先に家族を招待してください</option>
@@ -864,7 +864,7 @@ export function SettingsClient({
             type="button"
             onClick={handleSaveHandover}
             disabled={family.length === 0 || savingHandover}
-            className="rounded-full bg-green-700 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-green-800 disabled:opacity-40"
+            className="inline-flex min-h-[50px] items-center justify-center rounded-full bg-green-700 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-green-800 disabled:opacity-40"
           >
             {savingHandover ? "保存中…" : "この内容で設定する"}
           </button>
@@ -939,7 +939,7 @@ export function SettingsClient({
                   value={newRecipientName}
                   onChange={(e) => setNewRecipientName(e.target.value)}
                   placeholder="例:田中 花子"
-                  className="rounded-lg border border-black/10 bg-white px-4 py-2.5 text-sm outline-none focus:border-green-400 focus:ring-2 focus:ring-green-100"
+                  className="min-h-[50px] rounded-lg border border-black/10 bg-white px-4 py-2.5 text-sm outline-none focus:border-green-400 focus:ring-2 focus:ring-green-100"
                 />
               </div>
               {family.length > 0 && (
@@ -955,7 +955,7 @@ export function SettingsClient({
                       const member = family.find((m) => m.id === memberId);
                       if (member) setNewRecipientName(member.name);
                     }}
-                    className="rounded-lg border border-black/10 bg-white px-4 py-2.5 text-sm outline-none focus:border-green-400 focus:ring-2 focus:ring-green-100"
+                    className="min-h-[50px] rounded-lg border border-black/10 bg-white px-4 py-2.5 text-sm outline-none focus:border-green-400 focus:ring-2 focus:ring-green-100"
                   >
                     <option value="">選択しない(直接入力)</option>
                     {family.map((member) => (
@@ -974,7 +974,7 @@ export function SettingsClient({
                 type="button"
                 onClick={handleAddRecipient}
                 disabled={addingRecipient}
-                className="self-start rounded-full bg-green-700 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-green-800 disabled:opacity-60"
+                className="inline-flex min-h-[50px] items-center justify-center self-start rounded-full bg-green-700 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-green-800 disabled:opacity-60"
               >
                 {addingRecipient ? "追加中…" : "共有相手を追加する"}
               </button>
