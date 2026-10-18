@@ -8,7 +8,7 @@ export default function SignupPage() {
         <h1 className="text-center text-3xl font-bold text-green-700">
           新規登録
         </h1>
-        <p className="mt-1 text-center text-sm text-ink/60">
+        <p className="mt-1 text-center text-lg text-ink/60">
           「きおく」をはじめましょう。
         </p>
 
