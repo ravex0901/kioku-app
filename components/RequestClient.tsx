@@ -89,7 +89,7 @@ export function RequestClient({
       <div className="flex flex-col gap-2 sm:flex-row">
         <a
           href="tel:0120000000"
-          className="flex flex-1 items-center justify-center gap-2 rounded-full border border-black/10 bg-white/70 px-5 py-2.5 text-sm font-semibold text-ink transition hover:bg-black/5"
+          className="flex min-h-[50px] flex-1 items-center justify-center gap-2 rounded-full border border-black/10 bg-white/70 px-5 py-2.5 text-sm font-semibold text-ink transition hover:bg-black/5"
         >
           <svg viewBox="0 0 24 24" fill="none" className="h-4 w-4">
             <path
@@ -105,7 +105,7 @@ export function RequestClient({
           href="https://line.me/"
           target="_blank"
           rel="noreferrer"
-          className="flex flex-1 items-center justify-center gap-2 rounded-full border border-green-600 px-5 py-2.5 text-sm font-semibold text-green-700 transition hover:bg-green-50"
+          className="flex min-h-[50px] flex-1 items-center justify-center gap-2 rounded-full border border-green-600 px-5 py-2.5 text-sm font-semibold text-green-700 transition hover:bg-green-50"
         >
           <svg viewBox="0 0 24 24" fill="none" className="h-4 w-4">
             <path
@@ -168,11 +168,10 @@ export function RequestClient({
         type="button"
         onClick={handleSubmit}
         disabled={submitting}
-        className="rounded-full bg-green-700 px-5 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-green-800 disabled:opacity-60"
+        className="inline-flex min-h-[50px] items-center justify-center rounded-full bg-green-700 px-5 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-green-800 disabled:opacity-60"
       >
         {submitting ? "送信中…" : "この内容でご依頼する"}
       </button>
     </div>
   );
 }
-
