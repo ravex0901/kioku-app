@@ -31,7 +31,7 @@ export function LoginForm({
           type="email"
           required
           autoComplete="email"
-          className="rounded-lg border border-black/10 bg-white px-4 py-2.5 text-ink outline-none focus:border-green-400 focus:ring-2 focus:ring-green-100"
+          className="min-h-[50px] rounded-lg border border-black/10 bg-white px-4 py-2.5 text-ink outline-none focus:border-green-400 focus:ring-2 focus:ring-green-100"
         />
       </div>
       <div className="flex flex-col gap-1.5">
@@ -44,7 +44,7 @@ export function LoginForm({
           type="password"
           required
           autoComplete="current-password"
-          className="rounded-lg border border-black/10 bg-white px-4 py-2.5 text-ink outline-none focus:border-green-400 focus:ring-2 focus:ring-green-100"
+          className="min-h-[50px] rounded-lg border border-black/10 bg-white px-4 py-2.5 text-ink outline-none focus:border-green-400 focus:ring-2 focus:ring-green-100"
         />
         <Link
           href="/forgot-password"
@@ -63,7 +63,7 @@ export function LoginForm({
       <button
         type="submit"
         disabled={pending}
-        className="mt-2 rounded-full bg-green-700 px-6 py-3 font-semibold text-white transition hover:bg-green-800 disabled:opacity-60"
+        className="mt-2 inline-flex min-h-[50px] items-center justify-center rounded-full bg-green-700 px-6 py-3 font-semibold text-white transition hover:bg-green-800 disabled:opacity-60"
       >
         {pending ? "ログイン中…" : "ログイン"}
       </button>
