@@ -25,7 +25,7 @@ export default function GlobalError({
             fontFamily: "sans-serif",
           }}
         >
-          <h1 style={{ fontSize: "1.25rem", fontWeight: 700 }}>
+          <h1 style={{ fontSize: "1.875rem", fontWeight: 700 }}>
             一時的な問題が発生しました
           </h1>
           <p style={{ maxWidth: "24rem", fontSize: "0.875rem", color: "#555" }}>
@@ -35,6 +35,10 @@ export default function GlobalError({
             type="button"
             onClick={() => reset()}
             style={{
+              display: "inline-flex",
+              alignItems: "center",
+              justifyContent: "center",
+              minHeight: "50px",
               borderRadius: "9999px",
               backgroundColor: "#4e7d5b",
               color: "#fff",
