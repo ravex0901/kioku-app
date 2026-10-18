@@ -67,7 +67,7 @@ export default async function ItemsPage({
     <div className="min-h-screen bg-cream">
       <Header />
       <main className="mx-auto max-w-5xl px-4 py-8 sm:px-6">
-        <h1 className="mb-6 text-xl font-bold text-ink">見る・探す</h1>
+        <h1 className="mb-6 text-3xl font-bold text-ink">見る・探す</h1>
 
         {bulkAdded && (
           <p className="mb-6 rounded-2xl border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-700">
