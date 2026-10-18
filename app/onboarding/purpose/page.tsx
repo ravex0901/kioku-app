@@ -8,7 +8,7 @@ export default function PurposePage() {
         <h1 className="text-center text-3xl font-bold text-green-700">
           今回のきっかけを教えてください
         </h1>
-        <p className="mt-2 text-center text-sm text-ink/60">
+        <p className="mt-2 text-center text-lg text-ink/60">
           選んだ内容に合わせて、ご案内を調整します。
         </p>
 
