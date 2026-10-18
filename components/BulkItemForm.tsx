@@ -34,6 +34,23 @@ export function BulkItemForm({ userId }: { userId: string }) {
   const [error, setError] = useState<string | null>(null);
   const [saveProgress, setSaveProgress] = useState({ done: 0, total: 0 });
 
+  // [バグ修正] draftFromFile で作った URL.createObjectURL(file) のプレビューURLが
+  // 一度も revoke されておらず、「まとめて登録する」を何度も使う(特に写真を
+  // 選び直す→再選択を繰り返す)と、ブラウザのメモリに古いプレビュー画像が
+  // 蓄積し続けていた。常に最新のdraftsを参照できるようにrefで保持し、
+  // アンマウント時にまとめて解放する。
+  const draftsRef = useRef<Draft[]>([]);
+  useEffect(() => {
+    draftsRef.current = drafts;
+  }, [drafts]);
+  useEffect(() => {
+    return () => {
+      for (const d of draftsRef.current) {
+        URL.revokeObjectURL(d.preview);
+      }
+    };
+  }, []);
+
   // カメラで連続撮影する機能(まとめて登録の際、都度カメラアプリを開き直さずに
   // 何枚も続けて撮影できるようにする)。
   const [cameraOpen, setCameraOpen] = useState(false);
@@ -370,7 +387,7 @@ export function BulkItemForm({ userId }: { userId: string }) {
           type="button"
           onClick={handleAnalyzeAll}
           disabled={drafts.length === 0}
-          className="rounded-full bg-green-700 px-6 py-3 font-semibold text-white transition hover:bg-green-800 disabled:opacity-60"
+          className="inline-flex min-h-[50px] items-center justify-center rounded-full bg-green-700 px-6 py-3 font-semibold text-white transition hover:bg-green-800 disabled:opacity-60"
         >
           {`AIで判定する(${drafts.length}件)`}
         </button>
@@ -513,7 +530,7 @@ export function BulkItemForm({ userId }: { userId: string }) {
             type="button"
             onClick={handleConfirmSave}
             disabled={stillAnalyzing || activeCount === 0}
-            className="flex-1 rounded-full bg-green-700 px-6 py-3 font-semibold text-white transition hover:bg-green-800 disabled:opacity-60"
+            className="inline-flex min-h-[50px] flex-1 items-center justify-center rounded-full bg-green-700 px-6 py-3 font-semibold text-white transition hover:bg-green-800 disabled:opacity-60"
           >
             {`この内容で登録する(${activeCount}件)`}
           </button>
@@ -531,5 +548,3 @@ export function BulkItemForm({ userId }: { userId: string }) {
     </div>
   );
 }
-
-
