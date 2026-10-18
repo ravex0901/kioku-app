@@ -134,7 +134,7 @@ function LoggedInAccept({
   return (
     <div className="flex flex-col gap-4">
       <div className="flex flex-col gap-1.5">
-        <label htmlFor="myRelation" className="text-sm font-medium text-ink/80">
+        <label htmlFor="myRelation" className="text-lg font-medium text-ink/80">
           あなたから見て、{inviterName || "招待した方"}はどのご関係ですか?
         </label>
         <select
@@ -178,7 +178,7 @@ function NewAccountAccept({ token }: { token: string }) {
         <input type="hidden" name="token" value={token} />
         <input type="hidden" name="myRelation" value={relation} />
         <div className="flex flex-col gap-1.5">
-          <label htmlFor="name" className="text-sm font-medium text-ink/80">
+          <label htmlFor="name" className="text-lg font-medium text-ink/80">
             お名前
           </label>
           <input
@@ -191,7 +191,7 @@ function NewAccountAccept({ token }: { token: string }) {
           />
         </div>
         <div className="flex flex-col gap-1.5">
-          <label htmlFor="email" className="text-sm font-medium text-ink/80">
+          <label htmlFor="email" className="text-lg font-medium text-ink/80">
             メールアドレス
           </label>
           <input
@@ -204,7 +204,7 @@ function NewAccountAccept({ token }: { token: string }) {
           />
         </div>
         <div className="flex flex-col gap-1.5">
-          <label htmlFor="password" className="text-sm font-medium text-ink/80">
+          <label htmlFor="password" className="text-lg font-medium text-ink/80">
             パスワード
           </label>
           <input
@@ -220,7 +220,7 @@ function NewAccountAccept({ token }: { token: string }) {
         <div className="flex flex-col gap-1.5">
           <label
             htmlFor="passwordConfirm"
-            className="text-sm font-medium text-ink/80"
+            className="text-lg font-medium text-ink/80"
           >
             パスワード(確認)
           </label>
@@ -235,7 +235,7 @@ function NewAccountAccept({ token }: { token: string }) {
           />
         </div>
         <div className="flex flex-col gap-1.5">
-          <label htmlFor="birthDate" className="text-sm font-medium text-ink/80">
+          <label htmlFor="birthDate" className="text-lg font-medium text-ink/80">
             生年月日(任意)
           </label>
           <input
@@ -250,7 +250,7 @@ function NewAccountAccept({ token }: { token: string }) {
           </p>
         </div>
         <div className="flex flex-col gap-1.5">
-          <label htmlFor="myRelationSelect" className="text-sm font-medium text-ink/80">
+          <label htmlFor="myRelationSelect" className="text-lg font-medium text-ink/80">
             あなたから見て、招待した方はどのご関係ですか?
           </label>
           <select
