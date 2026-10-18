@@ -29,7 +29,7 @@ export default async function LoginPage({
         <h1 className="mt-4 text-center text-3xl font-bold text-green-700">
           きおく
         </h1>
-        <p className="mt-1 text-center text-sm text-ink/60">
+        <p className="mt-1 text-center text-lg text-ink/60">
           ものと向き合う時間を、そっと支えます。
         </p>
 
