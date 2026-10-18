@@ -35,7 +35,7 @@ export default async function VoiceCheckinsPage() {
         <h1 className="mb-1 mt-4 font-serif-jp text-3xl font-bold text-ink">
           家族ボイスメッセージ
         </h1>
-        <p className="mb-6 text-sm text-ink/60">
+        <p className="mb-6 text-lg text-ink/60">
           お孫さんなど、ご家族の声でお昼・夕方・夜に声をかけてあげられます。録音した声がそのままホーム画面で再生されます。
         </p>
 
