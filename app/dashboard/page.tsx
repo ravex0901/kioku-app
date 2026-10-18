@@ -150,7 +150,7 @@ export default async function DashboardPage() {
       .eq("user_id", user.id),
     supabase
       .from("items")
-      .select("id, name, status, disposition")
+      .select("id, name, status, disposition, category_major")
       .eq("user_id", user.id),
     supabase
       .from("digital_items")
@@ -203,6 +203,7 @@ export default async function DashboardPage() {
     name: string;
     status: ItemStatus | null;
     disposition: Disposition | null;
+    category_major: CategoryMajor | null;
   }[];
   const burdenDigitalItems = (digitalItemsForBurdenRes.data ?? []) as {
     id: string;
@@ -250,7 +251,7 @@ export default async function DashboardPage() {
           <p className="text-xs font-semibold tracking-[0.2em] text-ink/40">
             DASHBOARD
           </p>
-          <h1 className="mt-2 font-serif-jp text-2xl font-bold text-ink">
+          <h1 className="mt-2 font-serif-jp text-3xl font-bold text-ink">
             整理の状況
           </h1>
           <p className="mt-1 text-sm text-ink/60">
@@ -367,5 +368,3 @@ export default async function DashboardPage() {
     </div>
   );
 }
-
-
