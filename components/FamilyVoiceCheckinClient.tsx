@@ -158,7 +158,7 @@ export function FamilyVoiceCheckinClient({
         <select
           value={ownerUserId}
           onChange={(e) => setOwnerUserId(e.target.value)}
-          className="w-full rounded-xl border border-black/10 bg-white px-4 py-2.5 text-sm text-ink outline-none focus:border-green-400 focus:ring-2 focus:ring-green-100"
+          className="min-h-[50px] w-full rounded-xl border border-black/10 bg-white px-4 py-2.5 text-sm text-ink outline-none focus:border-green-400 focus:ring-2 focus:ring-green-100"
         >
           {targets.map((t) => (
             <option key={t.ownerUserId} value={t.ownerUserId}>
@@ -192,7 +192,7 @@ export function FamilyVoiceCheckinClient({
         value={speakerName}
         onChange={(e) => setSpeakerName(e.target.value)}
         placeholder="お名前(例: 孫のゆうた)"
-        className="w-full rounded-xl border border-black/10 bg-white px-4 py-2.5 text-sm text-ink outline-none focus:border-green-400 focus:ring-2 focus:ring-green-100"
+        className="min-h-[50px] w-full rounded-xl border border-black/10 bg-white px-4 py-2.5 text-sm text-ink outline-none focus:border-green-400 focus:ring-2 focus:ring-green-100"
       />
 
       <textarea
@@ -250,7 +250,7 @@ export function FamilyVoiceCheckinClient({
         type="button"
         onClick={handleSubmit}
         disabled={submitting}
-        className="self-start rounded-full bg-green-700 px-6 py-2.5 text-sm font-semibold text-white transition hover:bg-green-800 disabled:opacity-50"
+        className="inline-flex min-h-[50px] items-center justify-center self-start rounded-full bg-green-700 px-6 py-2.5 text-sm font-semibold text-white transition hover:bg-green-800 disabled:opacity-50"
       >
         {submitting ? "送信中…" : "送る"}
       </button>
