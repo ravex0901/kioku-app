@@ -35,7 +35,7 @@ export default async function DigitalPage() {
           <h1 className="mt-2 font-serif-jp text-3xl font-bold text-ink">
             契約・情報のしおり
           </h1>
-          <p className="mt-1 text-sm text-ink/60">
+          <p className="mt-1 text-lg text-ink/60">
             契約やアカウントの所在を、家族にわかる形で残せます
           </p>
         </div>
