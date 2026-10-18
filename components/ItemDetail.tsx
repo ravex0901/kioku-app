@@ -276,7 +276,7 @@ export function ItemDetail({
             )}
           </div>
           <div className="flex flex-1 flex-col gap-2">
-            <h1 className="text-2xl font-bold text-ink">{item.name}</h1>
+            <h1 className="text-3xl font-bold text-ink">{item.name}</h1>
             <div className="flex flex-wrap items-center gap-2">
               <DispositionBadge disposition={item.disposition} />
               <span
@@ -377,7 +377,7 @@ export function ItemDetail({
           <button
             type="button"
             onClick={() => setEditing(true)}
-            className="rounded-full bg-green-700 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-green-800"
+            className="inline-flex min-h-[50px] items-center justify-center rounded-full bg-green-700 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-green-800"
           >
             編集する
           </button>
@@ -385,7 +385,7 @@ export function ItemDetail({
             type="button"
             onClick={() => setDeleteConfirmOpen(true)}
             disabled={deleting}
-            className="rounded-full border border-red-200 px-5 py-2.5 text-sm font-semibold text-red-600 transition hover:bg-red-50 disabled:opacity-60"
+            className="inline-flex min-h-[50px] items-center justify-center rounded-full border border-red-200 px-5 py-2.5 text-sm font-semibold text-red-600 transition hover:bg-red-50 disabled:opacity-60"
           >
             {deleting ? "削除中…" : "削除する"}
           </button>
@@ -436,7 +436,7 @@ export function ItemDetail({
         <input
           value={name}
           onChange={(e) => setName(e.target.value)}
-          className="rounded-lg border border-black/10 bg-white px-4 py-2.5 outline-none focus:border-green-400 focus:ring-2 focus:ring-green-100"
+          className="min-h-[50px] rounded-lg border border-black/10 bg-white px-4 py-2.5 outline-none focus:border-green-400 focus:ring-2 focus:ring-green-100"
         />
       </div>
 
@@ -445,7 +445,7 @@ export function ItemDetail({
         <select
           value={categoryMajor}
           onChange={(e) => setCategoryMajor(e.target.value as CategoryMajor)}
-          className="rounded-lg border border-black/10 bg-white px-4 py-2.5 outline-none focus:border-green-400 focus:ring-2 focus:ring-green-100"
+          className="min-h-[50px] rounded-lg border border-black/10 bg-white px-4 py-2.5 outline-none focus:border-green-400 focus:ring-2 focus:ring-green-100"
         >
           <option value="">選択してください</option>
           {CATEGORY_OPTIONS.map((opt) => (
@@ -459,7 +459,7 @@ export function ItemDetail({
             value={categoryOther}
             onChange={(e) => setCategoryOther(e.target.value)}
             placeholder="ジャンルを入力してください"
-            className="mt-2 rounded-lg border border-black/10 bg-white px-4 py-2.5 outline-none focus:border-green-400 focus:ring-2 focus:ring-green-100"
+            className="mt-2 min-h-[50px] rounded-lg border border-black/10 bg-white px-4 py-2.5 outline-none focus:border-green-400 focus:ring-2 focus:ring-green-100"
           />
         )}
       </div>
@@ -469,7 +469,7 @@ export function ItemDetail({
         <select
           value={showLocationForm ? NEW_LOCATION_VALUE : locationId}
           onChange={(e) => handleLocationSelect(e.target.value)}
-          className="rounded-lg border border-black/10 bg-white px-4 py-2.5 outline-none focus:border-green-400 focus:ring-2 focus:ring-green-100"
+          className="min-h-[50px] rounded-lg border border-black/10 bg-white px-4 py-2.5 outline-none focus:border-green-400 focus:ring-2 focus:ring-green-100"
         >
           <option value="">選択してください</option>
           {locations.map((loc) => (
@@ -552,7 +552,7 @@ export function ItemDetail({
           value={estimatedPriceRange}
           onChange={(e) => setEstimatedPriceRange(e.target.value)}
           placeholder="例:〜10,000円 / 値段がつきにくい"
-          className="rounded-lg border border-black/10 bg-white px-4 py-2.5 outline-none focus:border-green-400 focus:ring-2 focus:ring-green-100"
+          className="min-h-[50px] rounded-lg border border-black/10 bg-white px-4 py-2.5 outline-none focus:border-green-400 focus:ring-2 focus:ring-green-100"
         />
         <p className="text-xs text-ink/40">
           AIによる推定価格です。確定した査定結果ではありません。
@@ -567,7 +567,7 @@ export function ItemDetail({
           value={professionalAppraisal}
           onChange={(e) => setProfessionalAppraisal(e.target.value)}
           placeholder="例:〇〇買取店にて15,000円で査定(2026/9/1)"
-          className="rounded-lg border border-black/10 bg-white px-4 py-2.5 outline-none focus:border-green-400 focus:ring-2 focus:ring-green-100"
+          className="min-h-[50px] rounded-lg border border-black/10 bg-white px-4 py-2.5 outline-none focus:border-green-400 focus:ring-2 focus:ring-green-100"
         />
       </div>
 
@@ -580,7 +580,7 @@ export function ItemDetail({
           value={memo}
           onChange={(e) => setMemo(e.target.value)}
           placeholder={CATEGORY_MEMO_HINTS[categoryMajor || "other"]}
-          className="rounded-lg border border-black/10 bg-white px-4 py-2.5 outline-none focus:border-green-400 focus:ring-2 focus:ring-green-100"
+          className="min-h-[50px] rounded-lg border border-black/10 bg-white px-4 py-2.5 outline-none focus:border-green-400 focus:ring-2 focus:ring-green-100"
         />
       </div>
 
@@ -595,14 +595,14 @@ export function ItemDetail({
           type="button"
           onClick={handleSave}
           disabled={submitting || photoProcessing}
-          className="rounded-full bg-green-700 px-6 py-3 font-semibold text-white transition hover:bg-green-800 disabled:opacity-60"
+          className="inline-flex min-h-[50px] items-center justify-center rounded-full bg-green-700 px-6 py-3 font-semibold text-white transition hover:bg-green-800 disabled:opacity-60"
         >
           {submitting ? "保存中…" : "保存する"}
         </button>
         <button
           type="button"
           onClick={() => setEditing(false)}
-          className="rounded-full border border-black/10 px-6 py-3 font-semibold text-ink/60 transition hover:bg-black-5"
+          className="inline-flex min-h-[50px] items-center justify-center rounded-full border border-black/10 px-6 py-3 font-semibold text-ink/60 transition hover:bg-black-5"
         >
           キャンセル
         </button>
@@ -610,4 +610,3 @@ export function ItemDetail({
     </div>
   );
 }
-
