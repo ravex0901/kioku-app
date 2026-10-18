@@ -25,7 +25,7 @@ export default async function BucketListPage() {
         <h1 className="mb-1 mt-4 font-serif-jp text-3xl font-bold text-ink">
           やりたいことリスト
         </h1>
-        <p className="mb-6 text-sm text-ink/60">
+        <p className="mb-6 text-lg text-ink/60">
           これからやってみたいことを書き出して、できたらチェックを入れましょう。
         </p>
 
