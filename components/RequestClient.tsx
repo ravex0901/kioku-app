@@ -145,7 +145,7 @@ export function RequestClient({
       </div>
 
       <div className="flex flex-col gap-2">
-        <label className="text-sm font-medium text-ink/80">
+        <label className="text-lg font-medium text-ink/80">
           ご要望・補足(任意)
         </label>
         <textarea
