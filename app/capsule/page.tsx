@@ -58,7 +58,7 @@ export default async function CapsulePage() {
         <h1 className="mb-1 mt-4 font-serif-jp text-3xl font-bold text-ink">
           タイムカプセル
         </h1>
-        <p className="mb-6 text-sm text-ink/60">
+        <p className="mb-6 text-lg text-ink/60">
           未来の家族に向けたメッセージを残せます。開封日(または成人・結婚などの条件)が来るまでは、だれにも開けられません。
         </p>
 
