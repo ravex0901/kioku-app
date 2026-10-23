@@ -35,6 +35,7 @@ export function SettingsClient({
   initialFamilyShareSettings,
   initialDeceasedStatus,
   initialLegacyShareStatus,
+  handoverOnly = false,
 }: {
   userId: string;
   displayName: string;
@@ -47,6 +48,8 @@ export function SettingsClient({
   initialFamilyShareSettings?: FamilyShareSettings;
   initialDeceasedStatus?: Record<string, boolean>;
   initialLegacyShareStatus?: Record<string, boolean>;
+  // trueのときは、家族・AIの読み上げ音声・その他の管理を表示しない(「もしもの時」から開いた場合)
+  handoverOnly?: boolean;
 }) {
   const [family, setFamily] = useState(initialFamily);
 
@@ -483,6 +486,7 @@ export function SettingsClient({
         </div>
       </div>
 
+      {!handoverOnly && (
       <section
         id="family"
         className="scroll-mt-20 rounded-[1.75rem] border border-green-100 bg-white/70 p-5 shadow-sm sm:p-6"
@@ -773,6 +777,7 @@ export function SettingsClient({
           )}
         </div>
       </section>
+      )}
 
       <section
         id="handover"
@@ -1065,6 +1070,8 @@ export function SettingsClient({
         )}
       </section>
 
+      {!handoverOnly && (
+      <>
       <section className="rounded-[1.75rem] border border-green-100 bg-white/70 p-5 shadow-sm sm:p-6">
         <h2 className="mb-3 text-xs font-semibold tracking-[0.15em] text-ink/40">
           AIの読み上げ音声
@@ -1091,6 +1098,8 @@ export function SettingsClient({
           </Link>
         </div>
       </section>
+      </>
+      )}
     </div>
   );
 }
