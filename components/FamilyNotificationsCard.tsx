@@ -17,7 +17,7 @@ const SLOT_TEXT: Record<string, string> = {
   night: "夜",
 };
 
-function describe(n: FamilyNotification): { text: string; href: string | null } {
+export function describeFamilyNotification(n: FamilyNotification): { text: string; href: string | null } {
   const payload = (n.payload ?? {}) as Record<string, unknown>;
   if (n.kind === "mood") {
     return {
@@ -77,7 +77,7 @@ export function FamilyNotificationsCard({
       {error && <p className="text-sm text-red-600">{error}</p>}
       <ul className="flex flex-col gap-2">
         {items.map((n) => {
-          const { text, href } = describe(n);
+          const { text, href } = describeFamilyNotification(n);
           const body = (
             <>
               <span className="font-semibold">{n.senderName}</span>
