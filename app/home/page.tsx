@@ -15,6 +15,8 @@ import { getTodayMood } from "@/app/actions/mood";
 import { getCurrentVoiceCheckin } from "@/app/actions/voiceCheckins";
 import { getPendingFamilyLinkRequests } from "@/app/actions/familyLinkRequests";
 import { FamilyLinkRequestsCard } from "@/components/FamilyLinkRequestsCard";
+import { getMyFamilyNotifications } from "@/app/actions/familyNotifications";
+import { FamilyNotificationsCard } from "@/components/FamilyNotificationsCard";
 import type { Disposition } from "@/lib/types";
 
 type RecentItem = {
@@ -156,6 +158,7 @@ export default async function HomePage() {
     todayMoodResult,
     voiceCheckinResult,
     pendingFamilyLinkRequests,
+    familyNotifications,
   ] = await Promise.all([
       supabase
         .from("items")
@@ -186,7 +189,9 @@ export default async function HomePage() {
       getTodayMood(),
       getCurrentVoiceCheckin(),
       getPendingFamilyLinkRequests(),
+      getMyFamilyNotifications(),
     ]);
+  const unreadNotificationCount = familyNotifications.filter((n) => !n.read).length;
 
   const total = totalRes.count ?? 0;
   const located = locatedRes.count ?? 0;
@@ -231,9 +236,18 @@ export default async function HomePage() {
             </p>
           </div>
           <span
-            aria-hidden
-            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-green-100 bg-white/70 text-green-700"
+            aria-label={
+              unreadNotificationCount > 0
+                ? `未読のお知らせ${unreadNotificationCount}件`
+                : "お知らせ"
+            }
+            className="relative flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-green-100 bg-white/70 text-green-700"
           >
+            {unreadNotificationCount > 0 && (
+              <span className="absolute -right-1 -top-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-red-500 px-1 text-[11px] font-bold text-white">
+                {unreadNotificationCount > 9 ? "9+" : unreadNotificationCount}
+              </span>
+            )}
             <svg viewBox="0 0 24 24" fill="none" className="h-5 w-5">
               <path
                 d="M12 5a5 5 0 0 0-5 5v3.5L5 17h14l-2-3.5V10a5 5 0 0 0-5-5Z"
@@ -252,6 +266,8 @@ export default async function HomePage() {
         </div>
 
         <FamilyLinkRequestsCard initialRequests={pendingFamilyLinkRequests} />
+
+        <FamilyNotificationsCard initialNotifications={familyNotifications} />
 
         <TodayMoodCard initialMood={todayMood} />
 
