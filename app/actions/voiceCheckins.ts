@@ -47,7 +47,8 @@ export async function listVoiceCheckins(): Promise<VoiceCheckinsResult> {
   const { data, error } = await supabase
       .from("voice_checkins")
       .select("*")
-      .eq("user_id", user.id);
+      .eq("user_id", user.id)
+      .eq("created_by_user_id", user.id);
 
   if (error) {
         console.error("listVoiceCheckins error", error);
@@ -88,6 +89,8 @@ export async function getCurrentVoiceCheckin(): Promise<TodayCheckinResult> {
       .select("*")
       .eq("user_id", user.id)
       .eq("time_slot", slot)
+      .order("updated_at", { ascending: false })
+      .limit(1)
       .maybeSingle();
 
   if (error) {
@@ -154,6 +157,7 @@ export async function saveVoiceCheckin(formData: FormData): Promise<SaveCheckinR
       .from("voice_checkins")
       .select("storage_path")
       .eq("user_id", user.id)
+      .eq("created_by_user_id", user.id)
       .eq("time_slot", timeSlot)
       .maybeSingle();
 
@@ -166,6 +170,7 @@ export async function saveVoiceCheckin(formData: FormData): Promise<SaveCheckinR
   const { error } = await supabase.from("voice_checkins").upsert(
     {
             user_id: user.id,
+            created_by_user_id: user.id,
             time_slot: timeSlot,
             speaker_name: speakerName,
             family_member_id: familyMemberId,
@@ -173,7 +178,7 @@ export async function saveVoiceCheckin(formData: FormData): Promise<SaveCheckinR
             storage_path: finalStoragePath,
             updated_at: new Date().toISOString(),
     },
-    { onConflict: "user_id,time_slot" }
+    { onConflict: "user_id,time_slot,created_by_user_id" }
       );
 
   if (error) {
@@ -200,6 +205,7 @@ export async function deleteVoiceCheckin(timeSlot: VoiceCheckinSlot): Promise<Si
       .from("voice_checkins")
       .select("storage_path")
       .eq("user_id", user.id)
+      .eq("created_by_user_id", user.id)
       .eq("time_slot", timeSlot)
       .maybeSingle();
 
@@ -211,6 +217,7 @@ export async function deleteVoiceCheckin(timeSlot: VoiceCheckinSlot): Promise<Si
       .from("voice_checkins")
       .delete()
       .eq("user_id", user.id)
+      .eq("created_by_user_id", user.id)
       .eq("time_slot", timeSlot);
 
   if (error) {
@@ -284,7 +291,7 @@ export async function saveFamilyVoiceCheckin(
     const arrayBuffer = await audio.arrayBuffer();
     const contentType = audio.type || "audio/webm";
     const ext = contentType.includes("webm") ? "webm" : "mp4";
-    storagePath = `${ownerId}/${timeSlot}.${ext}`;
+    storagePath = `${ownerId}/${timeSlot}-${user.id}.${ext}`;
     const { error: uploadError } = await supabase.storage
       .from(VOICE_CHECKIN_BUCKET)
       .upload(storagePath, arrayBuffer, { contentType, upsert: true });
@@ -298,6 +305,7 @@ export async function saveFamilyVoiceCheckin(
     .from("voice_checkins")
     .select("storage_path")
     .eq("user_id", ownerId)
+    .eq("created_by_user_id", user.id)
     .eq("time_slot", timeSlot)
     .maybeSingle();
 
@@ -318,12 +326,23 @@ export async function saveFamilyVoiceCheckin(
       created_by_user_id: user.id,
       updated_at: new Date().toISOString(),
     },
-    { onConflict: "user_id,time_slot" }
+    { onConflict: "user_id,time_slot,created_by_user_id" }
   );
 
   if (error) {
     console.error("saveFamilyVoiceCheckin upsert error", error);
     return { ok: false, error: "保存に失敗しました。もう一度お試しください。(本人と紐付いていない可能性があります)" };
+  }
+
+  // 届いたことを、相手のホーム画面に通知する(失敗しても保存自体は成功扱い)。
+  const { error: notifyError } = await supabase.rpc("notify_family_event", {
+    p_recipient_id: ownerId,
+    p_kind: "voice_message",
+    p_dedupe_key: timeSlot,
+    p_payload: { timeSlot, speakerName },
+  });
+  if (notifyError) {
+    console.error("saveFamilyVoiceCheckin notify error", notifyError);
   }
 
   return { ok: true };
