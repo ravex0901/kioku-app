@@ -48,10 +48,10 @@ const PROMPT = `あなたは中古品の査定・生前整理の専門家です�
    一般的な品名(例: 「木製の学習机」「ステンレス製の鍋」)を推定する。曖昧な当て推量はしない。
 3. 品目のジャンル、状態(良好・使用感あり・要修理)を判定する。
    腕時計・懐中時計など「時計」は category_major を "watch" とすること。
-   ただし、金・プラチナなどの貴金属やK18/K10/K24などの刻印がある(と思われる)
-   ネックレス・指輪などは、写真だけでは本物か・純度・重量を正確に判定できず、
-   誤った前提で扱うとトラブルの原因になるため、category_major は "jewelry" にせず
-   "other" とし、category_other には "貴金属・アクセサリー" と設定すること。
+   ただし、ネックレス・指輪・ピアス・ブレスレットなどのアクセサリー類
+   (金・プラチナやK18/K10/K24などの刻印があると思われるものを含む)は、
+   category_major を "jewelry" にせず "other" とし、
+   category_other には "アクセサリー" と設定すること。
 4. 日本国内の中古市場(メルカリ・ジモティー・リサイクルショップなど)の実勢価格感を踏まえ、
    売却した場合のおおよその上限額を見積もる。下限〜上限のような「幅」を提示すると、
    実際の売却額との差でユーザーに誤解や不信を与えるリスクがあるため、
@@ -59,18 +59,18 @@ const PROMPT = `あなたは中古品の査定・生前整理の専門家です�
    一般的な日用品は控えめに見積もる。時計もブランド・モデルが判別できる場合は
    通常通り金額を見積もってよい。売却価値がほぼ無いと判断される場合は
    "値段がつきにくい" のように正直に答えてよい。
-   ただし手順3で貴金属・アクセサリーと判定した場合は、写真だけでは重量・純度が
-   わからず金額を見積もれないため、estimated_price_range には null を設定し、
-   案内文や仮の金額など、金額以外の文字列は一切書かないこと。
+   アクセサリー類も、写真から見える素材感・デザイン・ブランドをもとに、
+   他の品目と同じように上限額を1つ見積もること。重量や純度が不明でも、
+   空欄や案内文にせず、必ず「〜○○円」の形で金額を答えること。
 
 説明文などは一切付けず、次の形式のJSONオブジェクトのみを出力してください。
 
 {
   "name": "品名(30文字以内の日本語。可能な限りブランド名・製品名・型番を含める)",
-  "category_major": "furniture" | "appliance" | "clothing" | "tableware" | "books" | "watch" | "asset" | "subscription" | "insurance" | "other" のいずれか(貴金属・アクセサリーと思われる場合も含め "jewelry" は使わないこと),
+  "category_major": "furniture" | "appliance" | "clothing" | "tableware" | "books" | "watch" | "asset" | "subscription" | "insurance" | "other" のいずれか(アクセサリーと思われる場合も含め "jewelry" は使わないこと),
   "category_other": "category_majorがotherの場合のみ具体的なジャンル名(日本語)。それ以外はnull",
   "condition": "good" | "used" | "needs_repair" のいずれか(良好・使用感あり・要修理),
-  "estimated_price_range": "売却した場合のおおよその上限額のみ(幅は示さない。日本語、例: '〜10,000円', '〜3,000円', '値段がつきにくい')。金額を見積もれない場合(貴金属・アクセサリー等)は文字列ではなく null を設定すること"
+  "estimated_price_range": "売却した場合のおおよその上限額のみ(幅は示さない。日本語、例: '〜10,000円', '〜3,000円', '値段がつきにくい')。アクセサリー類を含め、必ず金額を答えること"
 }`;
 
 function extractJson(text: string): unknown {
@@ -160,7 +160,7 @@ export async function analyzeItemPhoto(
       typeof parsed.estimated_price_range === "string"
         ? parsed.estimated_price_range.trim()
         : "";
-    // 貴金属の重量計測を促す案内文などが金額として紛れ込むのを防ぐ
+    // 案内文などが金額として紛れ込むのを防ぐ
     // (円の金額表記や「値段がつきにくい」以外の長い説明文は価格として扱わない)。
     const looksLikeGuidanceText =
       rawPriceText.length > 15 &&
