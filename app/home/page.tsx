@@ -413,18 +413,6 @@ export default async function HomePage() {
 
         <div className="grid grid-cols-3 gap-3">
           <HomeGridCard
-            href="/items"
-            label="見る・探す"
-            bg="bg-green-50"
-            fg="text-green-700"
-            icon={
-              <svg viewBox="0 0 24 24" fill="none" className="h-5 w-5">
-                <circle cx="11" cy="11" r="6.5" stroke="currentColor" strokeWidth={1.6} />
-                <path d="m20 20-3.5-3.5" stroke="currentColor" strokeWidth={1.6} strokeLinecap="round" />
-              </svg>
-            }
-          />
-          <HomeGridCard
             href="/journal"
             label="AIと日記"
             bg="bg-gold/20"
@@ -445,46 +433,6 @@ export default async function HomePage() {
               <svg viewBox="0 0 24 24" fill="none" className="h-5 w-5">
                 <rect x="4" y="10" width="16" height="9.5" rx="1.6" stroke="currentColor" strokeWidth={1.6} />
                 <path d="M7.5 10V7.5a4.5 4.5 0 0 1 9 0V10" stroke="currentColor" strokeWidth={1.6} />
-              </svg>
-            }
-          />
-          <HomeGridCard
-            href="/settings#family"
-            label="家族と共有"
-            bg="bg-green-50"
-            fg="text-green-700"
-            icon={
-              <svg viewBox="0 0 24 24" fill="none" className="h-5 w-5">
-                <circle cx="9" cy="9" r="2.6" stroke="currentColor" strokeWidth={1.6} />
-                <path d="M4.5 19c.6-3 2.3-4.5 4.5-4.5s3.9 1.5 4.5 4.5" stroke="currentColor" strokeWidth={1.6} strokeLinecap="round" />
-                <circle cx="16.5" cy="9.5" r="2.1" stroke="currentColor" strokeWidth={1.6} />
-                <path d="M14.8 14.7c1.5.2 3 1.6 3.5 4.3" stroke="currentColor" strokeWidth={1.6} strokeLinecap="round" />
-              </svg>
-            }
-          />
-          <HomeGridCard
-            href="/family-tree"
-            label="家系図"
-            bg="bg-green-50"
-            fg="text-green-700"
-            icon={
-              <svg viewBox="0 0 24 24" fill="none" className="h-5 w-5">
-                <circle cx="12" cy="6" r="2.2" stroke="currentColor" strokeWidth={1.6} />
-                <circle cx="6" cy="18" r="2.2" stroke="currentColor" strokeWidth={1.6} />
-                <circle cx="18" cy="18" r="2.2" stroke="currentColor" strokeWidth={1.6} />
-                <path d="M12 8.2V12M12 12 6 15.8M12 12l6 3.8" stroke="currentColor" strokeWidth={1.6} strokeLinecap="round" />
-              </svg>
-            }
-          />
-          <HomeGridCard
-            href="/request"
-            label="ご依頼・買取"
-            bg="bg-red-50"
-            fg="text-red-500"
-            icon={
-              <svg viewBox="0 0 24 24" fill="none" className="h-5 w-5">
-                <path d="M12 3 4 7v10l8 4 8-4V7l-8-4Z" stroke="currentColor" strokeWidth={1.6} strokeLinejoin="round" />
-                <path d="M4 7l8 4 8-4M12 11v10" stroke="currentColor" strokeWidth={1.6} strokeLinejoin="round" />
               </svg>
             }
           />
@@ -511,19 +459,15 @@ export default async function HomePage() {
             }
           />
           <HomeGridCard
-            href="/settings"
-            label="設定"
-            bg="bg-black/5"
-            fg="text-ink/70"
+            href="/album"
+            label="アルバム"
+            bg="bg-green-50"
+            fg="text-green-700"
             icon={
               <svg viewBox="0 0 24 24" fill="none" className="h-5 w-5">
-                <circle cx="12" cy="12" r="2.75" stroke="currentColor" strokeWidth={1.6} />
-                <path
-                  d="M12 3.5v2.2M12 18.3v2.2M4.9 6.1l1.6 1.6M17.5 16.3l1.6 1.6M3.5 12h2.2M18.3 12h2.2M4.9 17.9l1.6-1.6M17.5 7.7l1.6-1.6"
-                  stroke="currentColor"
-                  strokeWidth={1.6}
-                  strokeLinecap="round"
-                />
+                <rect x="4" y="5.5" width="16" height="13" rx="2" stroke="currentColor" strokeWidth={1.6} />
+                <circle cx="9" cy="10.5" r="1.6" stroke="currentColor" strokeWidth={1.4} />
+                <path d="M5 16l4.5-4 3 2.8L16 11l3 4" stroke="currentColor" strokeWidth={1.5} strokeLinejoin="round" />
               </svg>
             }
           />
@@ -548,19 +492,6 @@ export default async function HomePage() {
               <svg viewBox="0 0 24 24" fill="none" className="h-5 w-5">
                 <rect x="4" y="4" width="16" height="16" rx="3" stroke="currentColor" strokeWidth={1.6} />
                 <path d="M12 8v8M8 12h8" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" />
-              </svg>
-            }
-          />
-          <HomeGridCard
-            href="/album"
-            label="アルバム"
-            bg="bg-green-50"
-            fg="text-green-700"
-            icon={
-              <svg viewBox="0 0 24 24" fill="none" className="h-5 w-5">
-                <rect x="4" y="5.5" width="16" height="13" rx="2" stroke="currentColor" strokeWidth={1.6} />
-                <circle cx="9" cy="10.5" r="1.6" stroke="currentColor" strokeWidth={1.4} />
-                <path d="M5 16l4.5-4 3 2.8L16 11l3 4" stroke="currentColor" strokeWidth={1.5} strokeLinejoin="round" />
               </svg>
             }
           />
