@@ -87,19 +87,15 @@ const NAV_ITEMS = [
     ),
   },
   {
-    href: "/settings",
-    label: "設定",
+    href: "/family-tree",
+    label: "家系図",
     icon: (active: boolean) => (
       <svg viewBox="0 0 24 24" fill="none" className="h-5 w-5">
-        <circle
-          cx="12"
-          cy="12"
-          r="2.75"
-          stroke="currentColor"
-          strokeWidth={active ? 2 : 1.5}
-        />
+        <circle cx="12" cy="6" r="2.2" stroke="currentColor" strokeWidth={active ? 2 : 1.5} />
+        <circle cx="6" cy="18" r="2.2" stroke="currentColor" strokeWidth={active ? 2 : 1.5} />
+        <circle cx="18" cy="18" r="2.2" stroke="currentColor" strokeWidth={active ? 2 : 1.5} />
         <path
-          d="M12 3.5v2.2M12 18.3v2.2M4.9 6.1l1.6 1.6M17.5 16.3l1.6 1.6M3.5 12h2.2M18.3 12h2.2M4.9 17.9l1.6-1.6M17.5 7.7l1.6-1.6"
+          d="M12 8.2V12M12 12 6 15.8M12 12l6 3.8"
           stroke="currentColor"
           strokeWidth={active ? 2 : 1.5}
           strokeLinecap="round"
