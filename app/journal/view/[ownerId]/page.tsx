@@ -6,6 +6,8 @@ import { BackButton } from "@/components/BackButton";
 import { FamilyJournalViewClient } from "@/components/FamilyJournalViewClient";
 import { getFamilyJournalHistory } from "@/app/actions/journal";
 import { getFamilyConversationHistory } from "@/app/actions/conversationLog";
+import { getFamilyMemberItems } from "@/app/actions/familyItems";
+import { FamilyItemsView } from "@/components/FamilyItemsView";
 
 export default async function FamilyJournalViewPage({
   params,
@@ -24,9 +26,10 @@ export default async function FamilyJournalViewPage({
     redirect("/journal");
   }
 
-  const [result, conversationLogs] = await Promise.all([
+  const [result, conversationLogs, itemsResult] = await Promise.all([
     getFamilyJournalHistory(ownerId),
     getFamilyConversationHistory(ownerId),
+    getFamilyMemberItems(ownerId),
   ]);
 
   let audioMap: Record<string, string> = {};
@@ -56,6 +59,9 @@ export default async function FamilyJournalViewPage({
               audioMap={audioMap}
               conversationLogs={conversationLogs}
             />
+            <div className="mt-10">
+              <FamilyItemsView ownerName={result.ownerName} result={itemsResult} />
+            </div>
           </>
         ) : (
           <p className="mt-4 rounded-lg bg-red-50 px-4 py-3 text-sm text-red-600">
