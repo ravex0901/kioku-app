@@ -5,6 +5,7 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import { FAMILY_RELATION_OPTIONS, familyRelationLabel } from "@/lib/constants";
 import { requestFamilyLink } from "@/app/actions/familyLinkRequests";
+import { logout } from "@/app/actions/auth";
 import { unlinkFamilyMember } from "@/app/actions/familyTree";
 import {
   setFamilyShareSettings,
@@ -48,7 +49,8 @@ export function SettingsClient({
   initialFamilyShareSettings?: FamilyShareSettings;
   initialDeceasedStatus?: Record<string, boolean>;
   initialLegacyShareStatus?: Record<string, boolean>;
-  // trueのときは、家族・AIの読み上げ音声・その他の管理を表示しない(「もしもの時」から開いた場合)
+  // trueのときは、引き継ぎの項目だけを表示する(「もしもの時」から開いた場合)。
+  // falseのときは、引き継ぎの項目を表示せず、家族・AIの読み上げ音声・その他の管理・ログアウトを表示する。
   handoverOnly?: boolean;
 }) {
   const [family, setFamily] = useState(initialFamily);
@@ -779,6 +781,8 @@ export function SettingsClient({
       </section>
       )}
 
+      {handoverOnly && (
+      <>
       <section
         id="handover"
         className="scroll-mt-20 rounded-[1.75rem] border border-gold/40 bg-gold/10 p-5 shadow-sm sm:p-6"
@@ -1069,6 +1073,8 @@ export function SettingsClient({
           </>
         )}
       </section>
+      </>
+      )}
 
       {!handoverOnly && (
       <>
@@ -1098,6 +1104,15 @@ export function SettingsClient({
           </Link>
         </div>
       </section>
+
+      <form action={logout} className="pt-2">
+        <button
+          type="submit"
+          className="flex min-h-[50px] w-full items-center justify-center rounded-full border border-black/10 bg-white/70 px-5 py-3 text-sm font-semibold text-ink/70 shadow-sm transition hover:bg-black/5"
+        >
+          ログアウト
+        </button>
+      </form>
       </>
       )}
     </div>
