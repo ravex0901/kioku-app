@@ -61,6 +61,8 @@ export type ServiceRequestStatus = "pending" | "in_progress" | "done";
 // (例)本人が「父」を追加した場合、relation = "father" のレコードができ、
 // 家系図では本人より1世代上に表示される。
 export type FamilyRelation =
+  | "great_grandfather"
+  | "great_grandmother"
   | "father"
   | "mother"
   | "grandfather"
@@ -76,6 +78,8 @@ export type FamilyRelation =
   | "daughter"
   | "grandson"
   | "granddaughter"
+  | "great_grandson"
+  | "great_granddaughter"
   | "other"
   // 旧バージョンの値(過去に登録されたデータとの互換性のために残す)。
   | "eldest_son"
