@@ -14,7 +14,12 @@ import type {
   Will,
 } from "@/lib/types";
 
-export default async function SettingsPage() {
+export default async function SettingsPage({
+  searchParams,
+}: PageProps<"/settings">) {
+  const params = await searchParams;
+  // 「もしもの時」から開いたときは、引き継ぎに関する項目だけを表示する。
+  const handoverOnly = params.view === "handover";
   const supabase = await createClient();
   const {
     data: { user },
@@ -114,6 +119,7 @@ export default async function SettingsPage() {
           initialFamilyShareSettings={familyShareSettings}
           initialDeceasedStatus={deceasedStatus}
           initialLegacyShareStatus={legacyShareStatus}
+          handoverOnly={handoverOnly}
         />
       </main>
     </div>
