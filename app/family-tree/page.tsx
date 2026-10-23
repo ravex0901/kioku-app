@@ -3,7 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import { Header } from "@/components/Header";
 import { BackButton } from "@/components/BackButton";
 import { FamilyTreeClient } from "@/components/FamilyTreeClient";
-import { getExtendedFamilyNetwork } from "@/app/actions/familyNetwork";
+import { getFamilyTreeGraph } from "@/app/actions/familyTree";
 import type { FamilyMember } from "@/lib/types";
 
 export default async function FamilyTreePage() {
@@ -16,7 +16,7 @@ export default async function FamilyTreePage() {
     redirect("/login");
   }
 
-  const [{ data: profile }, { data: familyData }, extendedNetworkResult] =
+  const [{ data: profile }, { data: familyData }, graphResult] =
     await Promise.all([
       supabase.from("profiles").select("*").eq("id", user.id).maybeSingle(),
       // 「アカウントIDで申請する」等でまだ相手が許可していないつながりは、
@@ -27,7 +27,7 @@ export default async function FamilyTreePage() {
         .eq("user_id", user.id)
         .not("linked_user_id", "is", null)
         .order("created_at", { ascending: true }),
-      getExtendedFamilyNetwork(),
+      getFamilyTreeGraph(),
     ]);
 
   const rawName =
@@ -37,10 +37,16 @@ export default async function FamilyTreePage() {
   const displayName =
     profile?.name || rawName || user.email?.split("@")[0] || "ご本人";
   const family = (familyData ?? []) as FamilyMember[];
-  // 間接の家族(2ホップ以上先)。本人同士が代々つながっていくほど、ここに増えていく。
-  const extendedNetwork = extendedNetworkResult.ok
-    ? extendedNetworkResult.network
-    : [];
+  // 承認済みのつながりをたどって合流した家族ネットワーク全体(本人を含む)。
+  // 本人同士が代々つながっていくほど、ここに増えていく。どこで紐づけが起きても、
+  // このネットワークに入っている全員に(本人が何もしなくても)自動的に反映される。
+  const graph = graphResult.ok
+    ? {
+        selfUserId: graphResult.selfUserId,
+        nodes: graphResult.nodes,
+        edges: graphResult.edges,
+      }
+    : undefined;
 
   return (
     <div className="min-h-screen bg-cream">
@@ -56,7 +62,7 @@ export default async function FamilyTreePage() {
         <FamilyTreeClient
           displayName={displayName}
           family={family}
-          extendedNetwork={extendedNetwork}
+          graph={graph}
         />
       </main>
     </div>
