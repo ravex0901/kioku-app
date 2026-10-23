@@ -194,6 +194,8 @@ export const FAMILY_RELATION_OPTIONS: {
   value: FamilyRelation;
   label: string;
 }[] = [
+  { value: "great_grandfather", label: "曾祖父" },
+  { value: "great_grandmother", label: "曾祖母" },
   { value: "father", label: "父親" },
   { value: "mother", label: "母親" },
   { value: "grandfather", label: "祖父" },
@@ -209,6 +211,8 @@ export const FAMILY_RELATION_OPTIONS: {
   { value: "daughter", label: "娘" },
   { value: "grandson", label: "孫息子" },
   { value: "granddaughter", label: "孫娘" },
+  { value: "great_grandson", label: "ひ孫息子" },
+  { value: "great_granddaughter", label: "ひ孫娘" },
   { value: "other", label: "その他" },
 ];
 
@@ -225,6 +229,8 @@ export function familyRelationLabel(value: string | null | undefined): string {
 }
 
 export const FAMILY_RELATION_GENERATION: Record<string, number> = {
+  great_grandfather: -3,
+  great_grandmother: -3,
   grandfather: -2,
   grandmother: -2,
   father: -1,
@@ -242,6 +248,8 @@ export const FAMILY_RELATION_GENERATION: Record<string, number> = {
   eldest_daughter: 1,
   grandson: 2,
   granddaughter: 2,
+  great_grandson: 3,
+  great_granddaughter: 3,
 };
 
 export function familyGenerationDelta(relation: string): number {
