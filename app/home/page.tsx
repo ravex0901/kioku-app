@@ -191,7 +191,6 @@ export default async function HomePage() {
       getPendingFamilyLinkRequests(),
       getMyFamilyNotifications(),
     ]);
-  const unreadNotificationCount = familyNotifications.filter((n) => !n.read).length;
 
   const total = totalRes.count ?? 0;
   const located = locatedRes.count ?? 0;
@@ -217,37 +216,6 @@ export default async function HomePage() {
     <div className="min-h-screen bg-cream">
       <Header />
       <main className="mx-auto flex max-w-5xl flex-col gap-6 px-4 py-8 sm:px-6">
-        <div className="flex items-start justify-end gap-4">
-          <span
-            aria-label={
-              unreadNotificationCount > 0
-                ? `未読のお知らせ${unreadNotificationCount}件`
-                : "お知らせ"
-            }
-            className="relative flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-green-100 bg-white/70 text-green-700"
-          >
-            {unreadNotificationCount > 0 && (
-              <span className="absolute -right-1 -top-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-red-500 px-1 text-[11px] font-bold text-white">
-                {unreadNotificationCount > 9 ? "9+" : unreadNotificationCount}
-              </span>
-            )}
-            <svg viewBox="0 0 24 24" fill="none" className="h-5 w-5">
-              <path
-                d="M12 5a5 5 0 0 0-5 5v3.5L5 17h14l-2-3.5V10a5 5 0 0 0-5-5Z"
-                stroke="currentColor"
-                strokeWidth={1.6}
-                strokeLinejoin="round"
-              />
-              <path
-                d="M10 20a2 2 0 0 0 4 0"
-                stroke="currentColor"
-                strokeWidth={1.6}
-                strokeLinecap="round"
-              />
-            </svg>
-          </span>
-        </div>
-
         <FamilyLinkRequestsCard initialRequests={pendingFamilyLinkRequests} />
 
         <FamilyNotificationsCard initialNotifications={familyNotifications} />
