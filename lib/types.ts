@@ -704,6 +704,14 @@ export type Database = {
         Args: Record<string, never>;
         Returns: Json;
       };
+      get_family_tree_graph: {
+        Args: Record<string, never>;
+        Returns: Json;
+      };
+      unlink_family_member: {
+        Args: { p_linked_user_id: string };
+        Returns: Json;
+      };
       approve_family_link_request: {
         Args: { p_request_id: string };
         Returns: Json;
