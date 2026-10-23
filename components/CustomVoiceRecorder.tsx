@@ -171,8 +171,13 @@ export function CustomVoiceRecorder({ onReady }: { onReady?: () => void }) {
         </div>
       )}
       {status === "failed" && (
-        <div className="rounded-lg bg-red-50 px-3 py-2 text-xs text-red-600">
-          音声クローンの作成に失敗しました。{errorMessage ? `(${errorMessage})` : ""}
+        <div className="break-words rounded-lg bg-red-50 px-3 py-2 text-xs text-red-600 [overflow-wrap:anywhere]">
+          {errorMessage &&
+          /payment_required|paid_plan_required|can_not_use_instant_voice_cloning/.test(
+            errorMessage
+          )
+            ? "音声クローンの作成に失敗しました。現在の音声サービスのプランでは、この機能をご利用いただけません。"
+            : `音声クローンの作成に失敗しました。${errorMessage ? `(${errorMessage})` : ""}`}
         </div>
       )}
 
