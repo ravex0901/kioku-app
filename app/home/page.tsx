@@ -447,7 +447,7 @@ export default async function HomePage() {
             }
           />
           <HomeGridCard
-            href="/settings#handover"
+            href="/settings?view=handover"
             label="もしもの時"
             bg="bg-gold/20"
             fg="text-green-800"
