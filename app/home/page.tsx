@@ -213,28 +213,11 @@ export default async function HomePage() {
   const dispositionPercent =
     total > 0 ? Math.round((dispositionDecided / total) * 100) : 0;
 
-  const rawName =
-    typeof user.user_metadata?.name === "string"
-      ? user.user_metadata.name.trim()
-      : "";
-  const displayName = rawName || user.email?.split("@")[0] || "ゲスト";
-
   return (
     <div className="min-h-screen bg-cream">
       <Header />
       <main className="mx-auto flex max-w-5xl flex-col gap-6 px-4 py-8 sm:px-6">
-        <div className="flex items-start justify-between gap-4">
-          <div>
-            <p className="text-xs font-semibold tracking-[0.2em] text-ink/40">
-              HOME
-            </p>
-            <h1 className="mt-2 font-serif-jp text-3xl font-bold text-ink">
-              おかえりなさい、{displayName}さん
-            </h1>
-            <p className="mt-1 text-lg text-ink/60">
-              きょうも、ひとつだけ進めてみましょう
-            </p>
-          </div>
+        <div className="flex items-start justify-end gap-4">
           <span
             aria-label={
               unreadNotificationCount > 0
