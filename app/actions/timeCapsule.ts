@@ -166,6 +166,29 @@ export async function createTimeCapsule(
     senderAgeAtCreation = calcAge(myProfile.birth_date, new Date());
   }
 
+  // 宛先の家族アカウントを、家族一覧の行から確定して直接保存する。
+  // (自分の家族一覧の行であることを確認し、他人の行を指定できないようにする)
+  let recipientUserId: string | null = null;
+  if (recipientFamilyMemberId) {
+    const { data: recipientRow } = await supabase
+      .from("family_members")
+      .select("linked_user_id")
+      .eq("id", recipientFamilyMemberId)
+      .eq("user_id", user.id)
+      .maybeSingle();
+    if (!recipientRow) {
+      return { ok: false, error: "宛先のご家族が見つかりません。" };
+    }
+    recipientUserId = recipientRow.linked_user_id ?? null;
+  }
+  if (unlockConditionType !== "date" && !recipientUserId) {
+    return {
+      ok: false,
+      error:
+        "年齢や結婚を条件にする場合は、アカウントが紐付いているご家族宛てに送る必要があります。",
+    };
+  }
+
   const { data: inserted, error: insertError } = await supabase
     .from("time_capsules")
     .insert({
@@ -173,6 +196,7 @@ export async function createTimeCapsule(
       title,
       recipient_name: recipientName || null,
       recipient_family_member_id: recipientFamilyMemberId || null,
+      recipient_user_id: recipientUserId,
       message_text: messageText || null,
       open_at: openAtIso,
       unlock_condition_type: unlockConditionType,
@@ -209,6 +233,19 @@ export async function createTimeCapsule(
     if (updateError) {
       console.error("createTimeCapsule update error", updateError);
       return { ok: false, error: "音声の保存に失敗しました。" };
+    }
+  }
+
+  // 届いたことを、宛先のアカウントに通知する(失敗してもタイムカプセル自体は作成済み)。
+  if (recipientUserId) {
+    const { error: notifyError } = await supabase.rpc("notify_family_event", {
+      p_recipient_id: recipientUserId,
+      p_kind: "capsule",
+      p_dedupe_key: inserted.id,
+      p_payload: { title },
+    });
+    if (notifyError) {
+      console.error("createTimeCapsule notify error", notifyError);
     }
   }
 
