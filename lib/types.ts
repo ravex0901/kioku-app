@@ -322,6 +322,8 @@ export type TimeCapsule = {
   recipient_name: string | null;
   // 紐付け済みの家族アカウント宛てに送る場合、その family_members.id(紐付け済みの行)
   recipient_family_member_id: string | null;
+  // 宛先の家族アカウント(紐付け済みの場合)。家族一覧の行が変わっても届くよう、アカウントで直接持つ。
+  recipient_user_id: string | null;
   message_text: string | null;
   message_audio_path: string | null;
   open_at: string;
@@ -425,6 +427,18 @@ export type VoiceCheckin = {
   created_by_user_id: string | null;
   created_at: string;
   updated_at: string;
+};
+
+// 家系図でつながっているご家族からのアプリ内通知(get_my_family_notifications()の形)
+export type FamilyNotificationKind = "mood" | "voice_message" | "capsule";
+export type FamilyNotification = {
+  id: string;
+  kind: FamilyNotificationKind;
+  payload: Record<string, unknown>;
+  createdAt: string;
+  read: boolean;
+  senderName: string;
+  senderId: string;
 };
 
 export type Database = {
@@ -763,6 +777,27 @@ export type Database = {
       get_voice_checkin_targets: {
         Args: Record<string, never>;
         Returns: Json;
+      };
+      notify_family_mood: {
+        Args: { p_mood: string };
+        Returns: number;
+      };
+      notify_family_event: {
+        Args: {
+          p_recipient_id: string;
+          p_kind: string;
+          p_dedupe_key: string;
+          p_payload: Json;
+        };
+        Returns: boolean;
+      };
+      get_my_family_notifications: {
+        Args: Record<string, never>;
+        Returns: Json;
+      };
+      mark_family_notifications_read: {
+        Args: Record<string, never>;
+        Returns: undefined;
       };
       verify_marriage_certificate: {
         Args: {
