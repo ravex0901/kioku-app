@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { familyRelationLabel } from "@/lib/constants";
 import type { FamilyMember, FamilyRelation } from "@/lib/types";
 import type { FamilyTreeEdge, FamilyTreeNode } from "@/app/actions/familyTree";
@@ -402,80 +402,218 @@ function buildIndependentComponents(
   return result;
 }
 
-// 家系図の表示領域をピンチズーム・ドラッグでパンできるようにする(スマホでの操作に対応)。
+// 家系図の表示領域を、スマホで直感的に触れるようにする。
+// - 開いた時は横幅に合わせて表示し(読める大きさを下限に)、「全体を表示」で全体が収まる倍率にできる
+// - 別々の家系の木は縦に並べるので、横幅がむやみに広がらない
+// - 2本指のピンチは、指の中心を基準に拡大縮小する(0.25〜3倍)
+// - 1本指のドラッグで移動する。ただし数ピクセル動くまではただのタップとして扱うので、
+//   人物カードのタップ(日記を見る)は邪魔されない
+// - パソコンではホイールで、カーソル位置を基準に拡大縮小できる
 // アプリ全体はレイアウト崩れ防止のためページ全体の拡大縮小を禁止しているため、
-// この家系図の中だけ、独自にジェスチャーを処理して拡大縮小・移動できるようにする。
+// この家系図の中だけ独自にジェスチャーを処理する。
+const MIN_SCALE = 0.25;
+const MAX_SCALE = 3;
+const DRAG_THRESHOLD = 6;
+const READABLE_SCALE = 0.5;
+
+type Transform = { scale: number; x: number; y: number };
+
+const useIsoLayoutEffect = typeof window === "undefined" ? useEffect : useLayoutEffect;
+
 function useForestZoomPan() {
-  const [transform, setTransform] = useState({ scale: 1, x: 0, y: 0 });
+  const containerRef = useRef<HTMLDivElement | null>(null);
+  const contentRef = useRef<HTMLDivElement | null>(null);
+  const [transform, setTransformState] = useState<Transform>({ scale: 1, x: 0, y: 0 });
+  const transformRef = useRef<Transform>(transform);
+  const setTransform = useCallback((t: Transform) => {
+    transformRef.current = t;
+    setTransformState(t);
+  }, []);
+
   const pointers = useRef(new Map<number, { x: number; y: number }>());
-  const pinchStart = useRef<{
-    distance: number;
-    scale: number;
-  } | null>(null);
-  const panStart = useRef<{ x: number; y: number; originX: number; originY: number } | null>(
-    null
-  );
+  const gesture = useRef<
+    | { kind: "pan"; startX: number; startY: number; origin: Transform; moved: boolean }
+    | { kind: "pinch"; distance: number; midX: number; midY: number; origin: Transform }
+    | null
+  >(null);
+  const justDragged = useRef(false);
 
-  const clampScale = (s: number) => Math.min(3, Math.max(1, s));
+  const clampScale = (s: number) => Math.min(MAX_SCALE, Math.max(MIN_SCALE, s));
 
-  const onPointerDown = useCallback(
-    (e: React.PointerEvent<HTMLDivElement>) => {
-      (e.currentTarget as Element).setPointerCapture?.(e.pointerId);
-      pointers.current.set(e.pointerId, { x: e.clientX, y: e.clientY });
-      if (pointers.current.size === 2) {
-        const pts = [...pointers.current.values()];
-        const dx = pts[0].x - pts[1].x;
-        const dy = pts[0].y - pts[1].y;
-        pinchStart.current = { distance: Math.hypot(dx, dy), scale: transform.scale };
-        panStart.current = null;
-      } else if (pointers.current.size === 1) {
-        panStart.current = {
-          x: e.clientX,
-          y: e.clientY,
-          originX: transform.x,
-          originY: transform.y,
-        };
-      }
+  const relPoint = (clientX: number, clientY: number) => {
+    const rect = containerRef.current?.getBoundingClientRect();
+    return { x: clientX - (rect?.left ?? 0), y: clientY - (rect?.top ?? 0) };
+  };
+
+  // 点(px,py)の下にある内容を動かさずに、倍率だけ変える。
+  const zoomAt = useCallback(
+    (px: number, py: number, nextScale: number, base?: Transform) => {
+      const t = base ?? transformRef.current;
+      const scale = clampScale(nextScale);
+      const cx = (px - t.x) / t.scale;
+      const cy = (py - t.y) / t.scale;
+      setTransform({ scale, x: px - cx * scale, y: py - cy * scale });
     },
-    [transform]
+    [setTransform]
   );
 
-  const onPointerMove = useCallback((e: React.PointerEvent<HTMLDivElement>) => {
-    if (!pointers.current.has(e.pointerId)) return;
-    pointers.current.set(e.pointerId, { x: e.clientX, y: e.clientY });
-    if (pointers.current.size === 2 && pinchStart.current) {
+  // 倍率・位置を整える。
+  // all=true:家系図全体が表示領域にちょうど収まるようにする(「全体を表示」ボタン)。
+  // all=false:横幅に合わせるが、文字が読めなくなるほど小さくはしない(最初の表示)。
+  //   はみ出す分は、ドラッグ・ピンチで動かして見る。
+  const fit = useCallback(
+    (all: boolean = true) => {
+      const container = containerRef.current;
+      const content = contentRef.current;
+      if (!container || !content) return;
+      const cw = container.clientWidth;
+      const ch = container.clientHeight;
+      const w = content.offsetWidth;
+      const h = content.offsetHeight;
+      if (!w || !h || !cw || !ch) return;
+      const pad = 16;
+      const byWidth = (cw - pad * 2) / w;
+      const byHeight = (ch - pad * 2) / h;
+      const scale = all
+        ? clampScale(Math.min(1, byWidth, byHeight))
+        : Math.max(READABLE_SCALE, clampScale(Math.min(1, byWidth)));
+      setTransform({
+        scale,
+        x: w * scale <= cw ? (cw - w * scale) / 2 : pad,
+        y: all ? Math.max(pad, (ch - h * scale) / 2) : pad,
+      });
+    },
+    [setTransform]
+  );
+
+  // 最初の表示時に全体を収める。
+  useIsoLayoutEffect(() => {
+    fit(false);
+    const id = requestAnimationFrame(() => fit(false));
+    return () => cancelAnimationFrame(id);
+  }, [fit]);
+
+  const onPointerDown = useCallback((e: React.PointerEvent<HTMLDivElement>) => {
+    const p = relPoint(e.clientX, e.clientY);
+    pointers.current.set(e.pointerId, p);
+    justDragged.current = false;
+    if (pointers.current.size === 2) {
       const pts = [...pointers.current.values()];
-      const dx = pts[0].x - pts[1].x;
-      const dy = pts[0].y - pts[1].y;
-      const distance = Math.hypot(dx, dy);
-      const nextScale = clampScale(
-        pinchStart.current.scale * (distance / Math.max(1, pinchStart.current.distance))
-      );
-      setTransform((prev) => ({ ...prev, scale: nextScale }));
-    } else if (pointers.current.size === 1 && panStart.current) {
-      const dx = e.clientX - panStart.current.x;
-      const dy = e.clientY - panStart.current.y;
-      setTransform((prev) => ({
-        ...prev,
-        x: panStart.current!.originX + dx,
-        y: panStart.current!.originY + dy,
-      }));
+      gesture.current = {
+        kind: "pinch",
+        distance: Math.max(1, Math.hypot(pts[0].x - pts[1].x, pts[0].y - pts[1].y)),
+        midX: (pts[0].x + pts[1].x) / 2,
+        midY: (pts[0].y + pts[1].y) / 2,
+        origin: transformRef.current,
+      };
+      justDragged.current = true;
+    } else if (pointers.current.size === 1) {
+      gesture.current = {
+        kind: "pan",
+        startX: p.x,
+        startY: p.y,
+        origin: transformRef.current,
+        moved: false,
+      };
     }
   }, []);
 
+  const onPointerMove = useCallback(
+    (e: React.PointerEvent<HTMLDivElement>) => {
+      if (!pointers.current.has(e.pointerId)) return;
+      const p = relPoint(e.clientX, e.clientY);
+      pointers.current.set(e.pointerId, p);
+      const g = gesture.current;
+      if (!g) return;
+      if (g.kind === "pinch" && pointers.current.size >= 2) {
+        const pts = [...pointers.current.values()];
+        const distance = Math.hypot(pts[0].x - pts[1].x, pts[0].y - pts[1].y);
+        const midX = (pts[0].x + pts[1].x) / 2;
+        const midY = (pts[0].y + pts[1].y) / 2;
+        const scale = clampScale(g.origin.scale * (distance / g.distance));
+        // 最初の中心にあった内容が、いまの中心に来るようにする(拡大縮小しながら移動も同時にできる)
+        const cx = (g.midX - g.origin.x) / g.origin.scale;
+        const cy = (g.midY - g.origin.y) / g.origin.scale;
+        setTransform({ scale, x: midX - cx * scale, y: midY - cy * scale });
+      } else if (g.kind === "pan" && pointers.current.size === 1) {
+        const dx = p.x - g.startX;
+        const dy = p.y - g.startY;
+        if (!g.moved && Math.hypot(dx, dy) < DRAG_THRESHOLD) return;
+        if (!g.moved) {
+          g.moved = true;
+          justDragged.current = true;
+          // ドラッグが始まってから初めてポインターを捕まえる(タップはカードにそのまま届く)
+          (e.currentTarget as Element).setPointerCapture?.(e.pointerId);
+        }
+        setTransform({ scale: g.origin.scale, x: g.origin.x + dx, y: g.origin.y + dy });
+      }
+    },
+    [setTransform]
+  );
+
   const endPointer = useCallback((e: React.PointerEvent<HTMLDivElement>) => {
     pointers.current.delete(e.pointerId);
-    pinchStart.current = null;
-    panStart.current = null;
+    if (pointers.current.size === 1) {
+      // ピンチから1本指に戻った時は、残った指でそのままドラッグを続けられるようにする。
+      const [rest] = [...pointers.current.values()];
+      gesture.current = {
+        kind: "pan",
+        startX: rest.x,
+        startY: rest.y,
+        origin: transformRef.current,
+        moved: true,
+      };
+    } else if (pointers.current.size === 0) {
+      gesture.current = null;
+    }
   }, []);
 
-  const zoomBy = useCallback((factor: number) => {
-    setTransform((prev) => ({ ...prev, scale: clampScale(prev.scale * factor) }));
+  // ドラッグ・ピンチの直後に、指を離した場所のカードが誤ってタップされるのを防ぐ。
+  const onClickCapture = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
+    if (justDragged.current) {
+      e.preventDefault();
+      e.stopPropagation();
+      justDragged.current = false;
+    }
   }, []);
 
-  const reset = useCallback(() => setTransform({ scale: 1, x: 0, y: 0 }), []);
+  // パソコン:ホイールでカーソル位置を基準に拡大縮小(ページのスクロールは止める)。
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+    const onWheel = (e: WheelEvent) => {
+      e.preventDefault();
+      const p = relPoint(e.clientX, e.clientY);
+      zoomAt(p.x, p.y, transformRef.current.scale * Math.exp(-e.deltaY * 0.0015));
+    };
+    el.addEventListener("wheel", onWheel, { passive: false });
+    return () => el.removeEventListener("wheel", onWheel);
+  }, [zoomAt]);
 
-  return { transform, onPointerDown, onPointerMove, endPointer, zoomBy, reset };
+  const zoomBy = useCallback(
+    (factor: number) => {
+      const container = containerRef.current;
+      if (!container) return;
+      zoomAt(
+        container.clientWidth / 2,
+        container.clientHeight / 2,
+        transformRef.current.scale * factor
+      );
+    },
+    [zoomAt]
+  );
+
+  return {
+    containerRef,
+    contentRef,
+    transform,
+    onPointerDown,
+    onPointerMove,
+    endPointer,
+    onClickCapture,
+    zoomBy,
+    fit,
+  };
 }
 
 export function FamilyTreeClient({
@@ -487,8 +625,17 @@ export function FamilyTreeClient({
   family: FamilyMember[];
   graph?: { selfUserId: string; nodes: FamilyTreeNode[]; edges: FamilyTreeEdge[] };
 }) {
-  const { transform, onPointerDown, onPointerMove, endPointer, zoomBy, reset } =
-    useForestZoomPan();
+  const {
+    containerRef,
+    contentRef,
+    transform,
+    onPointerDown,
+    onPointerMove,
+    endPointer,
+    onClickCapture,
+    zoomBy,
+    fit,
+  } = useForestZoomPan();
 
   // 「その他」は世代・関係が定まらないため、従来通り家系図の下に別枠で表示する。
   const others = family.filter((f) => f.relation === "other");
@@ -672,49 +819,55 @@ export function FamilyTreeClient({
 
   return (
     <div className="flex flex-col gap-8">
-      <div className="relative rounded-[1.75rem] border border-green-100 bg-white/70 px-4 py-8 shadow-sm sm:px-8">
-        <div className="mb-3 flex justify-end gap-2">
+      <div className="relative overflow-hidden rounded-[1.75rem] border border-green-100 bg-white/70 shadow-sm">
+        <div className="absolute right-3 top-3 z-10 flex gap-2">
           <button
             type="button"
-            onClick={() => zoomBy(1.25)}
+            onClick={() => zoomBy(1.3)}
             aria-label="家系図を拡大"
-            className="flex h-9 w-9 items-center justify-center rounded-full border border-green-200 bg-white text-lg font-bold text-green-700 shadow-sm"
+            className="flex h-11 w-11 items-center justify-center rounded-full border border-green-200 bg-white/95 text-xl font-bold text-green-700 shadow"
           >
             ＋
           </button>
           <button
             type="button"
-            onClick={() => zoomBy(0.8)}
+            onClick={() => zoomBy(1 / 1.3)}
             aria-label="家系図を縮小"
-            className="flex h-9 w-9 items-center justify-center rounded-full border border-green-200 bg-white text-lg font-bold text-green-700 shadow-sm"
+            className="flex h-11 w-11 items-center justify-center rounded-full border border-green-200 bg-white/95 text-xl font-bold text-green-700 shadow"
           >
             −
           </button>
           <button
             type="button"
-            onClick={reset}
-            className="rounded-full border border-green-200 bg-white px-3 text-xs font-semibold text-green-700 shadow-sm"
+            onClick={() => fit(true)}
+            className="h-11 rounded-full border border-green-200 bg-white/95 px-4 text-sm font-semibold text-green-700 shadow"
           >
-            リセット
+            全体を表示
           </button>
         </div>
         <div
-          className="touch-none select-none overflow-hidden"
+          ref={containerRef}
+          className="h-[70vh] min-h-[420px] cursor-grab touch-none select-none overflow-hidden active:cursor-grabbing"
           style={{ touchAction: "none" }}
           onPointerDown={onPointerDown}
           onPointerMove={onPointerMove}
           onPointerUp={endPointer}
           onPointerCancel={endPointer}
-          onPointerLeave={endPointer}
+          onClickCapture={onClickCapture}
         >
           <div
+            ref={contentRef}
             style={{
               transform: `translate(${transform.x}px, ${transform.y}px) scale(${transform.scale})`,
               transformOrigin: "0 0",
               width: "max-content",
+              willChange: "transform",
             }}
           >
-            <div className={styles.forest}>
+            <div
+              className={styles.forest}
+              style={{ flexDirection: "column", alignItems: "center", gap: 32 }}
+            >
               {roots.map((root) => (
                 <div key={root.id} className={styles.tree}>
                   <TreeLevel branches={[root]} />
@@ -723,8 +876,8 @@ export function FamilyTreeClient({
             </div>
           </div>
         </div>
-        <p className="mt-3 text-center text-[11px] text-ink/40">
-          2本の指でつまんで拡大縮小、1本の指でドラッグして移動できます。
+        <p className="pointer-events-none absolute inset-x-0 bottom-2 text-center text-[11px] text-ink/45">
+          2本の指でつまんで拡大縮小・1本の指でドラッグして移動
         </p>
       </div>
 
