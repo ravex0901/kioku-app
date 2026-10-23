@@ -49,6 +49,8 @@ export async function getExtendedFamilyNetwork(): Promise<GetExtendedFamilyNetwo
 export type FamilyShareSettings = {
   shareJournalWithNetwork: boolean;
   shareItemsWithNetwork: boolean;
+  // つながっているご家族(直接の家族)に、持ち物を見せるか。
+  shareItemsWithDirect: boolean;
 };
 
 /**
@@ -57,14 +59,33 @@ export type FamilyShareSettings = {
  */
 export async function getFamilyShareSettings(): Promise<FamilyShareSettings> {
   const supabase = await createClient();
-  const { data, error } = await supabase.rpc("get_family_share_settings");
+  const [{ data, error }, directResult] = await Promise.all([
+    supabase.rpc("get_family_share_settings"),
+    supabase.rpc("get_family_items_direct_share"),
+  ]);
+
+  const shareItemsWithDirect = directResult.error
+    ? false
+    : Boolean(directResult.data);
 
   if (error || !data) {
     console.error("getFamilyShareSettings error", error);
-    return { shareJournalWithNetwork: false, shareItemsWithNetwork: false };
+    return {
+      shareJournalWithNetwork: false,
+      shareItemsWithNetwork: false,
+      shareItemsWithDirect,
+    };
   }
 
-  return data as unknown as FamilyShareSettings;
+  const base = data as unknown as {
+    shareJournalWithNetwork: boolean;
+    shareItemsWithNetwork: boolean;
+  };
+  return {
+    shareJournalWithNetwork: base.shareJournalWithNetwork,
+    shareItemsWithNetwork: base.shareItemsWithNetwork,
+    shareItemsWithDirect,
+  };
 }
 
 export type SimpleActionResult = { ok: true } | { ok: false; error: string };
@@ -84,6 +105,30 @@ export async function setFamilyShareSettings(
 
   if (error || !data) {
     console.error("setFamilyShareSettings error", error);
+    return { ok: false, error: "設定の保存に失敗しました。" };
+  }
+
+  const result = data as unknown as { ok: boolean; error?: string };
+  if (!result.ok) {
+    return { ok: false, error: result.error ?? "設定の保存に失敗しました。" };
+  }
+  return { ok: true };
+}
+
+/**
+ * 自分の持ち物を、つながっているご家族(直接つながっている人)に見せるかどうかを設定する。
+ * (初期設定はOFF。ONにした人の持ち物だけが、つながっているご家族に表示される)
+ */
+export async function setFamilyItemsDirectShare(
+  share: boolean
+): Promise<SimpleActionResult> {
+  const supabase = await createClient();
+  const { data, error } = await supabase.rpc("set_family_items_direct_share", {
+    p_share: share,
+  });
+
+  if (error || !data) {
+    console.error("setFamilyItemsDirectShare error", error);
     return { ok: false, error: "設定の保存に失敗しました。" };
   }
 
