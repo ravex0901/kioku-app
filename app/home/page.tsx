@@ -120,7 +120,7 @@ function HomeGridCard({
   return (
     <Link
       href={href}
-      className="flex flex-col items-center gap-2 rounded-2xl border border-green-100 bg-white/70 px-2 py-4 text-center shadow-sm transition hover:shadow"
+      className="flex h-full min-h-[7.5rem] flex-col items-center justify-center gap-2 rounded-2xl border border-green-100 bg-white/70 px-2 py-4 text-center shadow-sm transition hover:shadow"
     >
       <span
         aria-hidden
@@ -410,7 +410,7 @@ export default async function HomePage() {
           </section>
         )}
 
-        <div className="grid grid-cols-3 gap-3">
+        <div className="grid auto-rows-fr grid-cols-3 gap-3">
           <HomeGridCard
             href="/journal"
             label="AIと日記"
@@ -503,6 +503,23 @@ export default async function HomePage() {
               <svg viewBox="0 0 24 24" fill="none" className="h-5 w-5">
                 <path d="M12 15a3 3 0 0 0 3-3V7a3 3 0 0 0-6 0v5a3 3 0 0 0 3 3Z" stroke="currentColor" strokeWidth={1.6} />
                 <path d="M7 11v1a5 5 0 0 0 10 0v-1M12 19v2" stroke="currentColor" strokeWidth={1.6} strokeLinecap="round" />
+              </svg>
+            }
+          />
+          <HomeGridCard
+            href="/settings"
+            label="設定"
+            bg="bg-black/5"
+            fg="text-ink/70"
+            icon={
+              <svg viewBox="0 0 24 24" fill="none" className="h-5 w-5">
+                <circle cx="12" cy="12" r="2.75" stroke="currentColor" strokeWidth={1.6} />
+                <path
+                  d="M12 3.5v2.2M12 18.3v2.2M4.9 6.1l1.6 1.6M17.5 16.3l1.6 1.6M3.5 12h2.2M18.3 12h2.2M4.9 17.9l1.6-1.6M17.5 7.7l1.6-1.6"
+                  stroke="currentColor"
+                  strokeWidth={1.6}
+                  strokeLinecap="round"
+                />
               </svg>
             }
           />
