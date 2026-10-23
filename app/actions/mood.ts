@@ -75,5 +75,14 @@ export async function setTodayMood(mood: MoodValue): Promise<SetTodayMoodResult>
         return { ok: false, error: "記録に失敗しました。もう一度お試しください。" };
   }
 
+  // 家系図でつながっている全員(何世代離れていても)に、アプリ内通知を届ける。
+  // 通知の失敗で調子の記録そのものを失敗にしない。
+  const { error: notifyError } = await supabase.rpc("notify_family_mood", {
+        p_mood: mood,
+  });
+  if (notifyError) {
+        console.error("notify_family_mood error", notifyError);
+  }
+
   return { ok: true };
 }
