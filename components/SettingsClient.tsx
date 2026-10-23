@@ -8,6 +8,7 @@ import { requestFamilyLink } from "@/app/actions/familyLinkRequests";
 import { unlinkFamilyMember } from "@/app/actions/familyTree";
 import {
   setFamilyShareSettings,
+  setFamilyItemsDirectShare,
   markFamilyMemberDeceased,
   setFamilyLegacyShare,
   type FamilyShareSettings,
@@ -56,6 +57,28 @@ export function SettingsClient({
   const [shareItemsWithNetwork, setShareItemsWithNetwork] = useState(
     initialFamilyShareSettings?.shareItemsWithNetwork ?? false
   );
+  // つながっているご家族(直接の家族)に、自分の持ち物を見せるか。
+  const [shareItemsWithDirect, setShareItemsWithDirect] = useState(
+    initialFamilyShareSettings?.shareItemsWithDirect ?? false
+  );
+  const [savingDirectShare, setSavingDirectShare] = useState(false);
+  const [directShareSaved, setDirectShareSaved] = useState(false);
+
+  async function handleSaveDirectShare(next: boolean) {
+    const previous = shareItemsWithDirect;
+    setShareItemsWithDirect(next);
+    setSavingDirectShare(true);
+    setDirectShareSaved(false);
+    const result = await setFamilyItemsDirectShare(next);
+    setSavingDirectShare(false);
+    if (result.ok) {
+      setDirectShareSaved(true);
+      setTimeout(() => setDirectShareSaved(false), 2000);
+    } else {
+      setShareItemsWithDirect(previous);
+    }
+  }
+
   const [savingNetworkShare, setSavingNetworkShare] = useState(false);
   const [networkShareSaved, setNetworkShareSaved] = useState(false);
 
@@ -684,6 +707,31 @@ export function SettingsClient({
           >
             {linking ? "送信しています…" : "アカウントIDで申請する"}
           </button>
+        </div>
+
+        <div className="my-5 flex items-center gap-3 text-xs text-ink/40">
+          <span className="h-px flex-1 bg-black/10" />
+          つながっているご家族への共有
+          <span className="h-px flex-1 bg-black/10" />
+        </div>
+
+        <p className="mb-3 text-xs text-ink/50">
+          チェックを入れると、アカウントでつながっているご家族が、ご家族の「AIと日記」の画面であなたの持ち物の記録(写真・名前・分類など)を見られるようになります。初期設定ではOFFです。
+        </p>
+        <div className="flex flex-col gap-3 rounded-xl border border-black/5 bg-white/70 p-4">
+          <label className="flex items-center gap-2 text-sm text-ink/80">
+            <input
+              type="checkbox"
+              checked={shareItemsWithDirect}
+              disabled={savingDirectShare}
+              onChange={(e) => handleSaveDirectShare(e.target.checked)}
+              className="h-4 w-4 rounded border-black/20"
+            />
+            持ち物の記録を、つながっているご家族にも見せる
+          </label>
+          {directShareSaved && (
+            <p className="text-xs text-green-700">設定を保存しました。</p>
+          )}
         </div>
 
         <div className="my-5 flex items-center gap-3 text-xs text-ink/40">
