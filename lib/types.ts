@@ -712,6 +712,18 @@ export type Database = {
         Args: { p_linked_user_id: string };
         Returns: Json;
       };
+      get_family_items_direct_share: {
+        Args: Record<string, never>;
+        Returns: boolean;
+      };
+      set_family_items_direct_share: {
+        Args: { p_share: boolean };
+        Returns: Json;
+      };
+      can_view_family_items: {
+        Args: { p_owner_id: string; p_viewer_id: string };
+        Returns: boolean;
+      };
       approve_family_link_request: {
         Args: { p_request_id: string };
         Returns: Json;
