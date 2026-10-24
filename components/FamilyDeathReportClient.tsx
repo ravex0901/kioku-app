@@ -79,6 +79,14 @@ function TargetCard({
       {status && (
         <p className="mt-1 text-sm text-ink/60">{STATUS_LABEL[status]}</p>
       )}
+      {status === "approved" && (
+        <a
+          href={"/family/legacy/" + target.ownerId}
+          className="mt-3 inline-flex min-h-[50px] items-center justify-center rounded-full bg-green-700 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-green-800"
+        >
+          「もしもの時」の内容を見る
+        </a>
+      )}
       {done && (
         <p
           role="status"
