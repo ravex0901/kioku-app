@@ -88,7 +88,11 @@ export default async function FamilyLegacyPage({
           {message}
         </p>
       ) : (
-        <HandoverView token="" initialStatus={status} />
+        <HandoverView
+          token=""
+          initialStatus={status}
+          checklistOwnerId={ownerId}
+        />
       )}
     </div>
   );
