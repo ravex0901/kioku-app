@@ -102,13 +102,12 @@ export function AccountSettingsForm({
 
       <div>
         <label htmlFor="address" className={labelClass}>
-          住所 <span className="text-red-600">必須</span>
+          住所 <span className="text-ink/40">任意</span>
         </label>
         <textarea
           id="address"
           name="address"
           defaultValue={initial.address}
-          required
           rows={2}
           autoComplete="street-address"
           className={inputClass}
