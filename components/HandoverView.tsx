@@ -16,6 +16,7 @@ import {
 } from "@/lib/priceRange";
 import { isKeepDisposition } from "@/lib/constants";
 import { InheritanceTaxCalculator } from "@/components/InheritanceTaxCalculator";
+import { PreparationScoreCard } from "@/components/PreparationScoreCard";
 import type {
   CategoryMajor,
   DigitalItemStatus,
@@ -32,6 +33,7 @@ type ItemRow = {
   status?: ItemStatus | null;
   estimated_price_range?: string | null;
   professional_appraisal?: string | null;
+  located?: boolean;
 };
 type DigitalItemRow = {
   title: string;
@@ -360,6 +362,24 @@ export function HandoverView({
           </p>
         </div>
       )}
+
+      <div className="mt-6">
+        <PreparationScoreCard
+          total={status.items.length}
+          located={status.items.filter((i) => i.located).length}
+          dispositionDecided={
+            status.items.filter(
+              (i) =>
+                !!i.disposition &&
+                (i.disposition as string) !== "unsure" &&
+                (i.disposition as string) !== "undecided"
+            ).length
+          }
+          digitalCount={status.digitalItems.length}
+          hasMessage={!!status.will?.message}
+          hasVideo={!!status.will?.video_url}
+        />
+      </div>
 
       <div className="mt-6">
         <h2 className="mb-3 text-lg font-bold text-ink">
