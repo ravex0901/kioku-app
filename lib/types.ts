@@ -442,7 +442,28 @@ export type VoiceCheckin = {
 };
 
 // 家系図でつながっているご家族からのアプリ内通知(get_my_family_notifications()の形)
-export type FamilyNotificationKind = "mood" | "voice_message" | "capsule";
+export type FamilyNotificationKind =
+  | "mood"
+  | "voice_message"
+  | "capsule"
+  // 開封日になった(開けられるようになった)タイムカプセル
+  | "capsule_open"
+  // 「もしもの時」が連絡待ちになった(死亡届の提出をお願いする)
+  | "handover_waiting"
+  // 運営が死亡届を確認し、「もしもの時」の開示を承認した
+  | "handover_approved";
+
+// family_notificationsテーブルの行(サーバー側の通知作成用)
+export type FamilyNotificationRow = {
+  id: string;
+  recipient_id: string;
+  sender_id: string;
+  kind: FamilyNotificationKind;
+  dedupe_key: string;
+  payload: Json;
+  created_at: string;
+  read_at: string | null;
+};
 export type FamilyNotification = {
   id: string;
   kind: FamilyNotificationKind;
@@ -466,6 +487,16 @@ export type Database = {
         Row: ProfileDetails;
         Insert: Partial<Omit<ProfileDetails, "user_id">> & { user_id: string };
         Update: Partial<Omit<ProfileDetails, "user_id">>;
+        Relationships: [];
+      };
+      family_notifications: {
+        Row: FamilyNotificationRow;
+        Insert: Partial<Omit<FamilyNotificationRow, "id" | "created_at">> & {
+          recipient_id: string;
+          sender_id: string;
+          kind: FamilyNotificationKind;
+        };
+        Update: Partial<Omit<FamilyNotificationRow, "id">>;
         Relationships: [];
       };
       locations: {
