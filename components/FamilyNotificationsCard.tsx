@@ -55,7 +55,7 @@ export function describeFamilyNotification(n: FamilyNotification): {
   if (n.kind === "handover_approved") {
     return {
       text: "「もしもの時」の内容が、運営の確認のうえ開示されました。",
-      href: null,
+      href: "/family/legacy/" + n.senderId,
       joiner: "さんの",
     };
   }
