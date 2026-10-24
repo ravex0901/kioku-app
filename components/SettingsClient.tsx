@@ -924,7 +924,7 @@ export function SettingsClient({
               onChange={(e) => setInactiveDays(e.target.value)}
               className="min-h-[50px] rounded-lg border border-black/10 bg-white px-4 py-2.5 text-sm outline-none focus:border-green-400 focus:ring-2 focus:ring-green-100"
             >
-              <option value="36500">なし(自動開示しない)</option>
+              <option value="36500">なし(死亡届の提出+運営の承認で開示)</option>
               <option value="7">7日</option>
               <option value="14">14日</option>
               <option value="30">30日</option>
