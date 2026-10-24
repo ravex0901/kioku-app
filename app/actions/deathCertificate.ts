@@ -93,3 +93,160 @@ export async function submitDeathCertificate(
 
   return { ok: true };
 }
+
+export type FamilyDeathReportTarget = {
+  ownerId: string;
+  name: string;
+  // 提出済みの書類があれば、その状態(確認待ち・承認済み・却下)
+  status: "pending" | "approved" | "rejected" | null;
+};
+
+/**
+ * ログイン中のアカウントとつながっているご家族(アカウント連携済み)の一覧と、
+ * それぞれの死亡届の提出状況を返す。
+ */
+export async function getFamilyDeathReportTargets(): Promise<FamilyDeathReportTarget[]> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return [];
+
+  const { data: members } = await supabase
+    .from("family_members")
+    .select("name, linked_user_id")
+    .eq("user_id", user.id)
+    .not("linked_user_id", "is", null);
+  const linked = (members ?? []).filter((m) => m.linked_user_id);
+  if (linked.length === 0) return [];
+
+  const ownerIds = [...new Set(linked.map((m) => m.linked_user_id as string))];
+  const statusByOwner = new Map<string, "pending" | "approved" | "rejected">();
+  const adminClient = createAdminClient();
+  if (adminClient) {
+    const { data: subs } = await adminClient
+      .from("death_certificate_submissions")
+      .select("user_id, status, submitted_at")
+      .in("user_id", ownerIds)
+      .order("submitted_at", { ascending: true });
+    // 新しい提出の状態を優先する
+    for (const s of subs ?? []) statusByOwner.set(s.user_id, s.status);
+  }
+
+  return ownerIds.map((id) => ({
+    ownerId: id,
+    name: linked.find((m) => m.linked_user_id === id)?.name ?? "ご家族",
+    status: statusByOwner.get(id) ?? null,
+  }));
+}
+
+/**
+ * ログイン中のアカウントから、つながっているご家族の死亡届(または除籍謄本等)を提出する。
+ * 共有リンクからの提出(submitDeathCertificate)と同じく、運営が確認・承認するまでは
+ * 「もしもの時」の内容は開示されない。
+ */
+export async function submitFamilyDeathReport(
+  ownerId: string,
+  formData: FormData
+): Promise<SubmitDeathCertificateResult> {
+  const image = formData.get("image");
+  if (!(image instanceof File) || image.size === 0) {
+    return { ok: false, error: "画像を選択してください。" };
+  }
+  if (image.size > MAX_IMAGE_BYTES) {
+    return { ok: false, error: "画像のサイズが大きすぎます。" };
+  }
+
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) {
+    return { ok: false, error: "ログインしてください。" };
+  }
+
+  const adminClient = createAdminClient();
+  if (!adminClient) {
+    return {
+      ok: false,
+      error: "現在この機能はご利用いただけません。しばらくしてから再度お試しください。",
+    };
+  }
+
+  // 直接つながっているご家族だけが提出できる
+  const { data: link } = await adminClient
+    .from("family_members")
+    .select("id")
+    .eq("user_id", user.id)
+    .eq("linked_user_id", ownerId)
+    .limit(1)
+    .maybeSingle();
+  if (!link) {
+    return { ok: false, error: "つながっているご家族のみ提出できます。" };
+  }
+
+  const { data: settings } = await adminClient
+    .from("handover_settings")
+    .select("disclosure_status")
+    .eq("user_id", ownerId)
+    .maybeSingle();
+  if (!settings) {
+    return {
+      ok: false,
+      error: "このご家族は、まだ「もしもの時」の設定をされていません。",
+    };
+  }
+  if (settings.disclosure_status === "approved") {
+    return { ok: false, error: "すでに運営が確認し、開示が承認されています。" };
+  }
+
+  const { data: pending } = await adminClient
+    .from("death_certificate_submissions")
+    .select("id")
+    .eq("user_id", ownerId)
+    .eq("status", "pending")
+    .limit(1)
+    .maybeSingle();
+  if (pending) {
+    return { ok: false, error: "すでに提出済みで、運営が確認中です。" };
+  }
+
+  const { data: me } = await adminClient
+    .from("profiles")
+    .select("name")
+    .eq("id", user.id)
+    .maybeSingle();
+
+  const arrayBuffer = await image.arrayBuffer();
+  const contentType = image.type || "image/jpeg";
+  const ext = contentType.includes("png") ? "png" : "jpg";
+  const path = ownerId + "/" + Date.now() + "." + ext;
+
+  const { error: uploadError } = await adminClient.storage
+    .from(DEATH_CERT_BUCKET)
+    .upload(path, arrayBuffer, { contentType, upsert: false });
+  if (uploadError) {
+    console.error("submitFamilyDeathReport upload error", uploadError);
+    return { ok: false, error: "画像のアップロードに失敗しました。" };
+  }
+
+  const { error: insertError } = await adminClient
+    .from("death_certificate_submissions")
+    .insert({
+      user_id: ownerId,
+      recipient_name: me?.name || "(アカウントからの提出)",
+      image_path: path,
+      status: "pending",
+    });
+  if (insertError) {
+    console.error("submitFamilyDeathReport insert error", insertError);
+    return { ok: false, error: "提出に失敗しました。もう一度お試しください。" };
+  }
+
+  await adminClient
+    .from("handover_settings")
+    .update({ disclosure_status: "certificate_submitted" })
+    .eq("user_id", ownerId);
+
+  return { ok: true };
+}
