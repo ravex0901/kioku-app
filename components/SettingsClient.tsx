@@ -1055,7 +1055,9 @@ export function SettingsClient({
                     className="min-h-[50px] rounded-lg border border-black/10 bg-white px-4 py-2.5 text-sm outline-none focus:border-green-400 focus:ring-2 focus:ring-green-100"
                   >
                     <option value="">選択しない(直接入力)</option>
-                    {family.map((member) => (
+                    {family
+                      .filter((member) => !approverId || member.id !== approverId)
+                      .map((member) => (
                       <option key={member.id} value={member.id}>
                         {member.name}(
                         {familyRelationLabel(member.relation)})
