@@ -17,7 +17,12 @@ const SLOT_TEXT: Record<string, string> = {
   night: "夜",
 };
 
-export function describeFamilyNotification(n: FamilyNotification): { text: string; href: string | null } {
+export function describeFamilyNotification(n: FamilyNotification): {
+  text: string;
+  href: string | null;
+  // 名前のあとに続く言い回し(省略時は「さんが、」)
+  joiner?: string;
+} {
   const payload = (n.payload ?? {}) as Record<string, unknown>;
   if (n.kind === "mood") {
     return {
@@ -33,6 +38,27 @@ export function describeFamilyNotification(n: FamilyNotification): { text: strin
     };
   }
   const title = typeof payload.title === "string" ? payload.title : "";
+  if (n.kind === "capsule_open") {
+    return {
+      text: `残してくれたタイムカプセル${title ? `「${title}」` : ""}を開けられるようになりました 💌`,
+      href: "/capsule",
+      joiner: "さんが",
+    };
+  }
+  if (n.kind === "handover_waiting") {
+    return {
+      text: "「もしもの時」の手続きが始まりました。ご本人と連絡が取れない場合は、死亡届などの書類を提出してください。",
+      href: `/family/report?owner=${n.senderId}`,
+      joiner: "さんの",
+    };
+  }
+  if (n.kind === "handover_approved") {
+    return {
+      text: "「もしもの時」の内容が、運営の確認のうえ開示されました。",
+      href: null,
+      joiner: "さんの",
+    };
+  }
   return {
     text: `タイムカプセル${title ? `「${title}」` : ""}を届けました 💌`,
     href: "/capsule",
@@ -77,11 +103,12 @@ export function FamilyNotificationsCard({
       {error && <p className="text-sm text-red-600">{error}</p>}
       <ul className="flex flex-col gap-2">
         {items.map((n) => {
-          const { text, href } = describeFamilyNotification(n);
+          const { text, href, joiner } = describeFamilyNotification(n);
           const body = (
             <>
               <span className="font-semibold">{n.senderName}</span>
-              さんが、{text}
+              {joiner ?? "さんが、"}
+              {text}
             </>
           );
           return (
