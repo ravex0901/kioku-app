@@ -4,7 +4,6 @@ import { useActionState } from "react";
 import { saveAccountSettings } from "@/app/actions/profile";
 
 type Initial = {
-  accountName: string;
   name: string;
   birthDate: string;
   gender: string;
@@ -26,10 +25,8 @@ const GENDER_OPTIONS = [
 
 export function AccountSettingsForm({
   initial,
-  loginEmail,
 }: {
   initial: Initial;
-  loginEmail: string;
 }) {
   const [state, formAction, pending] = useActionState(
     saveAccountSettings,
@@ -41,24 +38,6 @@ export function AccountSettingsForm({
       action={formAction}
       className="space-y-5 rounded-3xl border border-green-100 bg-white/80 p-5 sm:p-7"
     >
-      <div>
-        <label htmlFor="account_name" className={labelClass}>
-          アカウントネーム <span className="text-red-600">必須</span>
-        </label>
-        <input
-          id="account_name"
-          name="account_name"
-          defaultValue={initial.accountName}
-          required
-          maxLength={30}
-          autoComplete="username"
-          className={inputClass}
-        />
-        <p className="mt-1 text-xs text-ink/50">
-          2〜30文字。他の人と同じ名前は使えません。
-        </p>
-      </div>
-
       <div>
         <label htmlFor="name" className={labelClass}>
           名前 <span className="text-red-600">必須</span>
@@ -153,7 +132,7 @@ export function AccountSettingsForm({
           className={inputClass}
         />
         <p className="mt-1 text-xs text-ink/50">
-          連絡用のメールアドレスです。ログイン用（{loginEmail || "未設定"}）は変わりません。
+          連絡用のメールアドレスです。登録時のメールアドレスを入れてあります。ログイン用のメールアドレスは変わりません。
         </p>
       </div>
 
