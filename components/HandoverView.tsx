@@ -17,6 +17,7 @@ import {
 import { isKeepDisposition } from "@/lib/constants";
 import { InheritanceTaxCalculator } from "@/components/InheritanceTaxCalculator";
 import { PreparationScoreCard } from "@/components/PreparationScoreCard";
+import { PhotoLightbox } from "@/components/PhotoLightbox";
 import type {
   CategoryMajor,
   DigitalItemStatus,
@@ -114,6 +115,7 @@ export function HandoverView({
   const [status, setStatus] = useState(initialStatus);
   const [checkError, setCheckError] = useState<string | null>(null);
   const [openAlbumIndex, setOpenAlbumIndex] = useState<number | null>(null);
+  const [zoomUrl, setZoomUrl] = useState<string | null>(null);
 
   async function handleToggleChecklist(key: string, next: boolean) {
     if (!checklistOwnerId || !status.found || !status.unlocked) return;
@@ -628,8 +630,11 @@ export function HandoverView({
                 <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
                   {(status.albums ?? [])[openAlbumIndex].photos.map((photo, i) =>
                     photo.url ? (
-                      <div
+                      <button
                         key={i}
+                        type="button"
+                        onClick={() => setZoomUrl(photo.url)}
+                        aria-label="写真を拡大する"
                         className="aspect-square overflow-hidden rounded-xl border border-black/5 bg-white/60"
                       >
                         {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -638,7 +643,7 @@ export function HandoverView({
                           alt={photo.caption ?? ""}
                           className="h-full w-full object-cover"
                         />
-                      </div>
+                      </button>
                     ) : null
                   )}
                 </div>
@@ -678,6 +683,8 @@ export function HandoverView({
           )}
         </div>
       )}
+
+      <PhotoLightbox url={zoomUrl} onClose={() => setZoomUrl(null)} />
 
       {status.moodRecent && (
         <div className="mt-6">
