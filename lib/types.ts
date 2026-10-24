@@ -743,6 +743,10 @@ export type Database = {
         Args: { p_token: string };
         Returns: Json;
       };
+      get_handover_status_internal: {
+        Args: { p_token: string };
+        Returns: Json;
+      };
       approve_handover: {
         Args: { p_token: string };
         Returns: boolean;
