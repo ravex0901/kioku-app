@@ -4,6 +4,7 @@ import { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { buildInheritanceChecklist } from "@/lib/inheritanceProcedures";
 import { submitDeathCertificate } from "@/app/actions/deathCertificate";
+import { toggleFamilyChecklist } from "@/app/actions/familyChecklist";
 import type {
   CategoryMajor,
   DigitalItemType,
@@ -79,11 +80,29 @@ const DISABLED_THRESHOLD_DAYS = 36500;
 export function HandoverView({
   token,
   initialStatus,
+  checklistOwnerId,
 }: {
   token: string;
   initialStatus: HandoverStatus;
+  // 指定すると、相続手続きチェックリストにチェックを付けられる(アカウント内の表示のみ)
+  checklistOwnerId?: string;
 }) {
   const [status, setStatus] = useState(initialStatus);
+  const [checkError, setCheckError] = useState<string | null>(null);
+
+  async function handleToggleChecklist(key: string, next: boolean) {
+    if (!checklistOwnerId || !status.found || !status.unlocked) return;
+    setCheckError(null);
+    const prev = status.checklistProgress;
+    setStatus({ ...status, checklistProgress: { ...prev, [key]: next } });
+    const result = await toggleFamilyChecklist(checklistOwnerId, key, next);
+    if (!result.ok) {
+      setStatus((cur) =>
+        cur.found && cur.unlocked ? { ...cur, checklistProgress: prev } : cur
+      );
+      setCheckError(result.error ?? "保存に失敗しました。");
+    }
+  }
   const [approving, setApproving] = useState(false);
   const [approveError, setApproveError] = useState<string | null>(null);
 
@@ -312,6 +331,7 @@ export function HandoverView({
         <p className="mb-3 text-xs text-ink/50">
           登録された遺品・デジタル情報をもとに判定された、必要な手続き・期限・必要書類です。
         </p>
+        {checkError && <p className="mb-2 text-xs text-red-600">{checkError}</p>}
         <div className="flex flex-col gap-2">
           {checklist.map((procedure) => {
             const done = !!status.checklistProgress[procedure.key];
@@ -321,15 +341,30 @@ export function HandoverView({
                 className="rounded-xl border border-black/5 bg-white/80 p-3"
               >
                 <div className="flex items-center gap-2">
-                  <span
-                    className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-full border text-[10px] font-bold ${
-                      done
-                        ? "border-green-600 bg-green-600 text-white"
-                        : "border-black/20 text-transparent"
-                    }`}
-                  >
-                    ✓
-                  </span>
+                  {checklistOwnerId ? (
+                    <button
+                      type="button"
+                      onClick={() => handleToggleChecklist(procedure.key, !done)}
+                      aria-label={done ? "完了を解除する" : "完了にする"}
+                      className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full border text-xs font-bold transition ${
+                        done
+                          ? "border-green-600 bg-green-600 text-white"
+                          : "border-black/30 text-transparent hover:border-green-600"
+                      }`}
+                    >
+                      ✓
+                    </button>
+                  ) : (
+                    <span
+                      className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-full border text-[10px] font-bold ${
+                        done
+                          ? "border-green-600 bg-green-600 text-white"
+                          : "border-black/20 text-transparent"
+                      }`}
+                    >
+                      ✓
+                    </span>
+                  )}
                   <p
                     className={`text-sm font-semibold ${done ? "text-ink/40 line-through" : "text-ink"}`}
                   >
