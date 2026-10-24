@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { SignupExtraFields } from "@/components/SignupExtraFields";
 import { useActionState, useEffect, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { signupAndAcceptInvite } from "@/app/actions/auth";
@@ -234,21 +235,7 @@ function NewAccountAccept({ token }: { token: string }) {
             className="min-h-[50px] rounded-lg border border-black/10 bg-white px-4 py-2.5 text-ink outline-none focus:border-green-400 focus:ring-2 focus:ring-green-100"
           />
         </div>
-        <div className="flex flex-col gap-1.5">
-          <label htmlFor="birthDate" className="text-lg font-medium text-ink/80">
-            生年月日(任意)
-          </label>
-          <input
-            id="birthDate"
-            name="birthDate"
-            type="date"
-            autoComplete="bday"
-            className="min-h-[50px] rounded-lg border border-black/10 bg-white px-4 py-2.5 text-ink outline-none focus:border-green-400 focus:ring-2 focus:ring-green-100"
-          />
-          <p className="text-xs text-ink/40">
-            タイムカプセルの「成人になったら」などの開封条件の判定に使われます。
-          </p>
-        </div>
+        <SignupExtraFields />
         <div className="flex flex-col gap-1.5">
           <label htmlFor="myRelationSelect" className="text-lg font-medium text-ink/80">
             あなたから見て、招待した方はどのご関係ですか?
