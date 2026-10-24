@@ -42,11 +42,21 @@ export async function saveAccountSettings(
   const contactEmail = String(formData.get("contact_email") ?? "").trim();
 
   if (!name) return { error: "名前を入力してください。" };
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(birthDate) || Number.isNaN(Date.parse(birthDate))) {
-    return { error: "生年月日を正しく入力してください。" };
-  }
-  if (birthDate > new Date().toISOString().slice(0, 10)) {
-    return { error: "生年月日が未来の日付になっています。" };
+  // 生年月日は新規登録時に決まり、あとから変更できない(変更はカスタマーセンターへ)。
+  // すでに登録済みの場合はフォームの値を使わず、未登録の場合のみここで設定する。
+  const { data: current } = await supabase
+    .from("profiles")
+    .select("birth_date")
+    .eq("id", user.id)
+    .maybeSingle();
+  const birthDateLocked = Boolean(current?.birth_date);
+  if (!birthDateLocked) {
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(birthDate) || Number.isNaN(Date.parse(birthDate))) {
+      return { error: "生年月日を正しく入力してください。" };
+    }
+    if (birthDate > new Date().toISOString().slice(0, 10)) {
+      return { error: "生年月日が未来の日付になっています。" };
+    }
   }
   if (!(GENDERS as readonly string[]).includes(gender)) {
     return { error: "性別を選んでください。" };
@@ -77,7 +87,7 @@ export async function saveAccountSettings(
 
   const { error: profileError } = await supabase
     .from("profiles")
-    .update({ name, birth_date: birthDate })
+    .update(birthDateLocked ? { name } : { name, birth_date: birthDate })
     .eq("id", user.id);
   if (profileError) {
     console.error("saveAccountSettings profile error", profileError);
