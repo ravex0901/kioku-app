@@ -125,7 +125,7 @@ export default async function DashboardPage() {
       .from("items")
       .select("id", { count: "exact", head: true })
       .eq("user_id", user.id)
-      .not("disposition", "is", null),
+      .not("disposition", "is", null).not("disposition", "in", "(unsure,undecided)"),
     supabase
       .from("locations")
       .select("id", { count: "exact", head: true })
@@ -167,8 +167,6 @@ export default async function DashboardPage() {
   const dispositionDecided = dispositionRes.count ?? 0;
   const locationsCount = locationsRes.count ?? 0;
   const digitalCount = digitalRes.count ?? 0;
-
-  const registeredPercent = total > 0 ? 100 : 0;
   const locatedPercent = total > 0 ? Math.round((located / total) * 100) : 0;
   const dispositionPercent =
     total > 0 ? Math.round((dispositionDecided / total) * 100) : 0;
@@ -177,13 +175,12 @@ export default async function DashboardPage() {
   const willVideoPercent = willRes.data?.video_url ? 100 : 0;
 
   const overallScore = Math.round(
-    (registeredPercent +
-      locatedPercent +
+    (locatedPercent +
       dispositionPercent +
       digitalPercent +
       endingNotePercent +
       willVideoPercent) /
-      6
+      5
   );
 
   const checklistItems = (itemsForChecklistRes.data ?? []) as {
@@ -265,7 +262,6 @@ export default async function DashboardPage() {
             <p className="text-sm text-ink/60">準備の進み具合(100点満点)</p>
           </div>
           <div className="mt-5 flex flex-col gap-2.5">
-            <ScoreBar label="モノの登録" percent={registeredPercent} />
             <ScoreBar label="保管場所" percent={locatedPercent} />
             <ScoreBar label="仕分けの方針" percent={dispositionPercent} />
             <ScoreBar label="デジタルの情報" percent={digitalPercent} />
