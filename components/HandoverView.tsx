@@ -5,19 +5,39 @@ import { createClient } from "@/lib/supabase/client";
 import { buildInheritanceChecklist } from "@/lib/inheritanceProcedures";
 import { submitDeathCertificate } from "@/app/actions/deathCertificate";
 import { toggleFamilyChecklist } from "@/app/actions/familyChecklist";
+import {
+  buildFamilyBurdenTasks,
+  summarizeBurdenTasks,
+} from "@/lib/familyBurdenTasks";
+import {
+  estimateMaxYen,
+  isSellCandidate,
+  formatPriceDisplay,
+} from "@/lib/priceRange";
+import { isKeepDisposition } from "@/lib/constants";
+import { InheritanceTaxCalculator } from "@/components/InheritanceTaxCalculator";
 import type {
   CategoryMajor,
+  DigitalItemStatus,
   DigitalItemType,
   Disposition,
   HandoverDisclosureStatus,
+  ItemStatus,
 } from "@/lib/types";
 
 type ItemRow = {
   name: string;
   category_major: CategoryMajor | null;
   disposition: Disposition | null;
+  status?: ItemStatus | null;
+  estimated_price_range?: string | null;
+  professional_appraisal?: string | null;
 };
-type DigitalItemRow = { title: string; item_type: DigitalItemType };
+type DigitalItemRow = {
+  title: string;
+  item_type: DigitalItemType;
+  status?: DigitalItemStatus | null;
+};
 type BucketListRow = { title: string; done: boolean };
 type MedicalInfoShared = {
   doctor_name: string | null;
@@ -255,6 +275,43 @@ export function HandoverView({
 
   const checklist = buildInheritanceChecklist(status.items, status.digitalItems);
 
+  // ダッシュボードと同じ内容(家族に残る作業・売却候補)をご家族向けにも表示する
+  const burdenTasks = buildFamilyBurdenTasks(
+    status.items.map((i, idx) => ({
+      id: String(idx),
+      name: i.name,
+      status: i.status ?? null,
+      disposition: i.disposition,
+      category_major: i.category_major,
+    })),
+    status.digitalItems.map((d, idx) => ({
+      id: String(idx),
+      title: d.title,
+      item_type: d.item_type,
+      status: d.status ?? null,
+    }))
+  );
+  const burdenSummary = summarizeBurdenTasks(burdenTasks);
+  const totalRemainingHours = burdenSummary.reduce((sum, x) => sum + x.hours, 0);
+  const totalWorkUnits = status.items.length + status.digitalItems.length;
+  const remainingWorkUnits = burdenTasks.length;
+  const burdenProgressRatio =
+    totalWorkUnits > 0
+      ? Math.round(((totalWorkUnits - remainingWorkUnits) / totalWorkUnits) * 100)
+      : 100;
+  const sellCandidates = status.items
+    .filter(
+      (i) =>
+        !isKeepDisposition(i.disposition) &&
+        isSellCandidate(i.estimated_price_range ?? null)
+    )
+    .sort(
+      (a, b) =>
+        (estimateMaxYen(b.estimated_price_range ?? null) ?? 0) -
+        (estimateMaxYen(a.estimated_price_range ?? null) ?? 0)
+    )
+    .slice(0, 10);
+
   return (
     <div className="mx-auto max-w-2xl px-4 py-12">
       <p className="text-xs font-semibold tracking-[0.2em] text-ink/40">
@@ -383,6 +440,84 @@ export function HandoverView({
             );
           })}
         </div>
+      </div>
+
+      <div className="mt-6 rounded-[1.75rem] border border-green-100 bg-white/70 p-5 shadow-sm sm:p-6">
+        <div className="mb-1 flex items-center justify-between">
+          <h2 className="text-lg font-bold text-ink">ご家族に残る作業</h2>
+          <span className="text-xs font-medium text-ink/50">
+            進捗 {burdenProgressRatio}%
+          </span>
+        </div>
+        <p className="mb-4 text-xs text-ink/60">
+          登録された「モノ」や「デジタルの情報」をもとに、まだ残っている作業を種類ごとに自動で計算しています。かかる時間はあくまで目安です。
+        </p>
+        {burdenSummary.length === 0 ? (
+          <p className="rounded-xl bg-green-50 px-4 py-3 text-sm text-green-700">
+            今のところ、残っている作業はありません。
+          </p>
+        ) : (
+          <>
+            <div className="flex flex-col gap-2">
+              {burdenSummary.map((x) => (
+                <div key={x.category} className="flex items-center gap-3">
+                  <span className="w-20 shrink-0 text-xs font-medium text-ink/60">
+                    {x.label}
+                  </span>
+                  <div className="h-2 flex-1 overflow-hidden rounded-full bg-black/5">
+                    <div
+                      className="h-full rounded-full bg-amber-400"
+                      style={{
+                        width: `${Math.min(
+                          100,
+                          Math.round((x.count / Math.max(1, remainingWorkUnits)) * 100)
+                        )}%`,
+                      }}
+                    />
+                  </div>
+                  <span className="w-24 shrink-0 text-right text-xs font-semibold text-ink/70">
+                    {x.count}件・約{x.hours}h
+                  </span>
+                </div>
+              ))}
+            </div>
+            <p className="mt-3 text-xs text-ink/50">
+              残っている作業:合計{remainingWorkUnits}件・かかる時間の目安:約
+              {Math.round(totalRemainingHours * 10) / 10}時間
+            </p>
+          </>
+        )}
+      </div>
+
+      <div className="mt-6 rounded-[1.75rem] border border-green-100 bg-white/70 p-5 shadow-sm sm:p-6">
+        <h2 className="mb-1 text-lg font-bold text-ink">売れるかもしれないモノ</h2>
+        <p className="mb-4 text-xs text-ink/60">
+          AIが見積もった価格をもとに、一定額以上で売れそうなモノをリストアップしています。あくまで目安の金額です。
+        </p>
+        {sellCandidates.length === 0 ? (
+          <p className="rounded-xl bg-black/[0.03] px-4 py-3 text-sm text-ink/60">
+            今のところ、売却候補になるものはありません。
+          </p>
+        ) : (
+          <ul className="flex flex-col gap-2">
+            {sellCandidates.map((item, i) => (
+              <li
+                key={i}
+                className="flex items-center justify-between rounded-xl bg-gold/10 px-3 py-2.5 text-sm"
+              >
+                <span className="font-medium text-ink">{item.name}</span>
+                <span className="text-xs font-semibold text-green-800">
+                  {item.professional_appraisal ??
+                    formatPriceDisplay(item.estimated_price_range ?? null)}
+                </span>
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
+
+      <div className="mt-6">
+        <InheritanceTaxCalculator />
       </div>
 
       {status.bucketList.length > 0 && (
