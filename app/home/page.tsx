@@ -404,17 +404,6 @@ export default async function HomePage() {
             }
           />
           <HomeGridCard
-            href="/dashboard"
-            label="ダッシュボード"
-            bg="bg-gold/20"
-            fg="text-green-800"
-            icon={
-              <svg viewBox="0 0 24 24" fill="none" className="h-5 w-5">
-                <path d="M5 19V10M12 19V5M19 19v-6" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" />
-              </svg>
-            }
-          />
-          <HomeGridCard
             href="/settings?view=handover"
             label="もしもの時"
             bg="bg-gold/20"
