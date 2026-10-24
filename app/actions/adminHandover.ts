@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { isAdminEmail } from "@/lib/admin";
+import { notifyHandoverApproved } from "@/lib/adminNotify";
 
 // 運営(管理者)が、提出された死亡届(または除籍謄本等)の画像を確認し、
 // 「もしもの時」の内容を開示してよいか判断する。承認すると disclosure_status が
@@ -63,7 +64,11 @@ export async function approveDeathCertificate(
     return { ok: false, error: "開示設定の更新に失敗しました。" };
   }
 
+  // つながっているご家族に、開示されたことをアプリ内で知らせる
+  await notifyHandoverApproved(adminClient, submission.user_id);
+
   revalidatePath("/admin");
+  revalidatePath("/admin/handover");
   return { ok: true };
 }
 
