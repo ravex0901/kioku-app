@@ -17,6 +17,22 @@ export async function Header() {
           >
             きおく
           </Link>
+          <div className="flex items-center gap-1">
+          <Link
+            href="/account"
+            aria-label="アカウント設定"
+            className="flex h-10 w-10 items-center justify-center rounded-full text-green-700 transition hover:bg-divider/15"
+          >
+            <svg viewBox="0 0 24 24" fill="none" className="h-6 w-6">
+              <circle cx="12" cy="8.5" r="3.5" stroke="currentColor" strokeWidth={1.6} />
+              <path
+                d="M5 20a7 7 0 0 1 14 0"
+                stroke="currentColor"
+                strokeWidth={1.6}
+                strokeLinecap="round"
+              />
+            </svg>
+          </Link>
           <Link
             href="/notifications"
             aria-label={
@@ -44,6 +60,7 @@ export async function Header() {
               </span>
             )}
           </Link>
+          </div>
         </div>
       </header>
       <BottomNav />
