@@ -2,7 +2,7 @@
 
 import { createClient } from "@/lib/supabase/server";
 import { getSignedUrlMap } from "@/lib/storage";
-import type { AlbumPhoto } from "@/lib/types";
+import type { Album, AlbumPhoto } from "@/lib/types";
 
 // アルバム機能: スマホの写真を選んでアップロードし、このシステム内にも保存しておける機能。
 // 「もしもの時」共有ページでも家族に見せられるよう、アップロード時に長期有効の
@@ -16,7 +16,7 @@ const LONG_LIVED_URL_EXPIRES_IN = 60 * 60 * 24 * 365 * 10; // 10年
 export type AlbumPhotoWithUrl = AlbumPhoto & { url: string | null };
 
 export type AlbumListResult =
-    | { ok: true; photos: AlbumPhotoWithUrl[] }
+    | { ok: true; albums: Album[]; photos: AlbumPhotoWithUrl[] }
   | { ok: false; error: string };
 
 /**
@@ -40,6 +40,16 @@ export async function listAlbumPhotos(): Promise<AlbumListResult> {
         return { ok: false, error: "アルバムの取得に失敗しました。" };
   }
 
+  const { data: albumRows, error: albumError } = await supabase
+      .from("albums")
+      .select("*")
+      .eq("user_id", user.id)
+      .order("created_at", { ascending: true });
+  if (albumError) {
+        console.error("listAlbumPhotos albums error", albumError);
+        return { ok: false, error: "アルバムの取得に失敗しました。" };
+  }
+
   const photos = (data ?? []) as AlbumPhoto[];
     const urlMap = await getSignedUrlMap(
           supabase,
@@ -49,6 +59,7 @@ export async function listAlbumPhotos(): Promise<AlbumListResult> {
 
   return {
         ok: true,
+        albums: (albumRows ?? []) as Album[],
         photos: photos.map((p) => ({ ...p, url: urlMap[p.storage_path] ?? null })),
   };
 }
@@ -67,6 +78,16 @@ export async function uploadAlbumPhotos(formData: FormData): Promise<UploadPhoto
           data: { user },
     } = await supabase.auth.getUser();
     if (!user) return { ok: false, error: "ログインが必要です。" };
+
+  const albumId = String(formData.get("albumId") ?? "");
+    if (!albumId) return { ok: false, error: "アルバムが選ばれていません。" };
+    const { data: ownAlbum } = await supabase
+      .from("albums")
+      .select("id")
+      .eq("id", albumId)
+      .eq("user_id", user.id)
+      .maybeSingle();
+    if (!ownAlbum) return { ok: false, error: "アルバムが見つかりません。" };
 
   const files = formData.getAll("photos").filter((f): f is File => f instanceof File);
     if (files.length === 0) {
@@ -116,6 +137,7 @@ export async function uploadAlbumPhotos(formData: FormData): Promise<UploadPhoto
 
           const { error: insertError } = await supabase.from("album_photos").insert({
                     user_id: user.id,
+                    album_id: albumId,
                     storage_path: storagePath,
                     long_lived_url: signedData?.signedUrl ?? null,
           });
@@ -174,5 +196,105 @@ export async function deleteAlbumPhoto(id: string): Promise<SimpleResult> {
         return { ok: false, error: "削除に失敗しました。" };
   }
 
+  return { ok: true };
+}
+
+const MAX_ALBUM_NAME_LENGTH = 40;
+
+export type CreateAlbumResult =
+  | { ok: true; album: Album }
+  | { ok: false; error: string };
+
+/**
+ * 任意の名前でアルバムを新しく作る(いくつでも作れる)。
+ */
+export async function createAlbum(name: string): Promise<CreateAlbumResult> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { ok: false, error: "ログインが必要です。" };
+
+  const trimmed = name.trim();
+  if (!trimmed) return { ok: false, error: "アルバムの名前を入力してください。" };
+  if (trimmed.length > MAX_ALBUM_NAME_LENGTH) {
+    return {
+      ok: false,
+      error: `アルバムの名前は${MAX_ALBUM_NAME_LENGTH}文字以内にしてください。`,
+    };
+  }
+
+  const { data, error } = await supabase
+    .from("albums")
+    .insert({ user_id: user.id, name: trimmed })
+    .select("*")
+    .single();
+  if (error || !data) {
+    console.error("createAlbum error", error);
+    return { ok: false, error: "アルバムを作れませんでした。" };
+  }
+  return { ok: true, album: data as Album };
+}
+
+/**
+ * アルバムの名前を変更する。
+ */
+export async function renameAlbum(id: string, name: string): Promise<SimpleResult> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { ok: false, error: "ログインが必要です。" };
+
+  const trimmed = name.trim();
+  if (!trimmed) return { ok: false, error: "アルバムの名前を入力してください。" };
+  if (trimmed.length > MAX_ALBUM_NAME_LENGTH) {
+    return {
+      ok: false,
+      error: `アルバムの名前は${MAX_ALBUM_NAME_LENGTH}文字以内にしてください。`,
+    };
+  }
+
+  const { error } = await supabase
+    .from("albums")
+    .update({ name: trimmed })
+    .eq("id", id)
+    .eq("user_id", user.id);
+  if (error) {
+    console.error("renameAlbum error", error);
+    return { ok: false, error: "名前を変更できませんでした。" };
+  }
+  return { ok: true };
+}
+
+/**
+ * アルバムを削除する(中の写真もすべて削除される)。
+ */
+export async function deleteAlbum(id: string): Promise<SimpleResult> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { ok: false, error: "ログインが必要です。" };
+
+  const { data: photos } = await supabase
+    .from("album_photos")
+    .select("storage_path")
+    .eq("album_id", id)
+    .eq("user_id", user.id);
+  const paths = (photos ?? []).map((p) => p.storage_path).filter(Boolean);
+  if (paths.length > 0) {
+    await supabase.storage.from(ALBUM_BUCKET).remove(paths);
+  }
+
+  const { error } = await supabase
+    .from("albums")
+    .delete()
+    .eq("id", id)
+    .eq("user_id", user.id);
+  if (error) {
+    console.error("deleteAlbum error", error);
+    return { ok: false, error: "アルバムを削除できませんでした。" };
+  }
   return { ok: true };
 }
