@@ -83,17 +83,20 @@ export default async function FamilyLegacyPage({
     <div className="min-h-screen bg-cream">
       <Header />
       <BackButton fallbackHref="/home" />
-      {message ? (
-        <p className="mx-auto max-w-2xl px-4 py-12 text-sm text-ink/70">
-          {message}
-        </p>
-      ) : (
-        <HandoverView
-          token=""
-          initialStatus={status}
-          checklistOwnerId={ownerId}
-        />
-      )}
+      {/* main の下余白で、画面下の固定ナビに最後まで隠れないようにする */}
+      <main>
+        {message ? (
+          <p className="mx-auto max-w-2xl px-4 py-12 text-sm text-ink/70">
+            {message}
+          </p>
+        ) : (
+          <HandoverView
+            token=""
+            initialStatus={status}
+            checklistOwnerId={ownerId}
+          />
+        )}
+      </main>
     </div>
   );
 }
