@@ -496,12 +496,6 @@ export function SettingsClient({
         <h2 className="mb-3 text-xs font-semibold tracking-[0.15em] text-gold">
           家族
         </h2>
-        <Link
-          href="/family/report"
-          className="mb-3 inline-block text-sm text-green-700 underline hover:text-green-900"
-        >
-          ご家族の死亡届を提出する
-        </Link>
         {family.length === 0 ? (
           <p className="mb-4 text-sm text-ink/60">
             まだ家族が招待されていません。
@@ -1109,6 +1103,12 @@ export function SettingsClient({
             className="rounded-xl border border-green-100 bg-white px-4 py-3 text-sm font-medium text-ink transition hover:bg-black/[0.02]"
           >
             契約・情報のしおり(デジタル情報)
+          </Link>
+          <Link
+            href="/family/report"
+            className="rounded-xl border border-green-100 bg-white px-4 py-3 text-sm font-medium text-ink transition hover:bg-black/[0.02]"
+          >
+            もしもの書類提出
           </Link>
         </div>
       </section>
