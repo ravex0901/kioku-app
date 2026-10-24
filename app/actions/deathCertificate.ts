@@ -131,6 +131,13 @@ export async function getFamilyDeathReportTargets(): Promise<FamilyDeathReportTa
       .order("submitted_at", { ascending: true });
     // 新しい提出の状態を優先する
     for (const s of subs ?? []) statusByOwner.set(s.user_id, s.status);
+    // 運営が管理画面から直接承認した場合など、提出がなくても開示が承認済みなら「承認済み」にする
+    const { data: approved } = await adminClient
+      .from("handover_settings")
+      .select("user_id")
+      .in("user_id", ownerIds)
+      .eq("disclosure_status", "approved");
+    for (const a of approved ?? []) statusByOwner.set(a.user_id, "approved");
   }
 
   return ownerIds.map((id) => ({
