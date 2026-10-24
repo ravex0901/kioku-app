@@ -62,9 +62,19 @@ export function AccountSettingsForm({
           type="date"
           defaultValue={initial.birthDate}
           required
+          readOnly={Boolean(initial.birthDate)}
           autoComplete="bday"
-          className={inputClass}
+          className={
+            initial.birthDate
+              ? inputClass + " cursor-not-allowed bg-ink/5 text-ink/60"
+              : inputClass
+          }
         />
+        {initial.birthDate && (
+          <p className="mt-1 text-xs text-ink/50">
+            生年月日は変更できません。変更する場合はカスタマーセンターにご連絡ください。
+          </p>
+        )}
       </div>
 
       <fieldset>
