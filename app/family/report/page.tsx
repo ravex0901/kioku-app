@@ -29,7 +29,7 @@ export default async function FamilyReportPage({
             REPORT
           </p>
           <h1 className="mt-2 font-serif-jp text-3xl font-bold text-ink">
-            ご家族の死亡届の提出
+            もしもの書類提出
           </h1>
           <p className="mt-2 text-sm text-ink/60">
             つながっているご家族が亡くなられた場合に、死亡診断書(死体検案書)・除籍謄本・死亡届記載事項証明書・死亡届などの画像を提出できます。運営が内容を確認し、承認されると「もしもの時」の内容が開示されます。
