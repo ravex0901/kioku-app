@@ -101,6 +101,18 @@ export type Profile = {
   deceased_at: string | null;
 };
 
+// アカウント設定(本人のみ閲覧・編集できる。家族にも公開しない)
+export type Gender = "male" | "female" | "other" | "no_answer";
+export type ProfileDetails = {
+  user_id: string;
+  account_name: string | null;
+  gender: Gender | null;
+  address: string | null;
+  phone: string | null;
+  contact_email: string | null;
+  updated_at: string;
+};
+
 export type Json =
   | string
   | number
@@ -448,6 +460,12 @@ export type Database = {
         Row: Profile;
         Insert: Partial<Omit<Profile, "id">> & { id: string };
         Update: Partial<Omit<Profile, "id">>;
+        Relationships: [];
+      };
+      profile_details: {
+        Row: ProfileDetails;
+        Insert: Partial<Omit<ProfileDetails, "user_id">> & { user_id: string };
+        Update: Partial<Omit<ProfileDetails, "user_id">>;
         Relationships: [];
       };
       locations: {
