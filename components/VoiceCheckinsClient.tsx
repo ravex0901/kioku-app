@@ -20,6 +20,7 @@ type SlotState = {
   saving: boolean;
   error: string | null;
   saved: boolean;
+  deliveredTo?: string | null;
 };
 
 function initialStateFor(checkin: VoiceCheckinWithUrl | undefined): SlotState {
@@ -190,7 +191,11 @@ export function VoiceCheckinsClient({
       return;
     }
 
-    updateState({ saved: true, previewUrl: null });
+    updateState({
+      saved: true,
+      previewUrl: null,
+      deliveredTo: result.deliveredTo ?? null,
+    });
     if (state.previewUrl) {
       setExistingAudioUrls((prev) => ({ ...prev, [slot]: state.previewUrl }));
     }
@@ -247,13 +252,13 @@ export function VoiceCheckinsClient({
 
         {family.length > 0 && (
           <label className="flex flex-col gap-1">
-            <span className="text-xs font-medium text-ink/60">家族リストから選ぶ(任意)</span>
+            <span className="text-xs font-medium text-ink/60">送り先のご家族(選ぶとその方のホーム画面に届きます・アカウント紐付け済みの方のみ)</span>
             <select
               value={state.familyMemberId}
               onChange={(e) => updateState({ familyMemberId: e.target.value })}
               className="min-h-[50px] rounded-xl border border-green-100 bg-white px-4 py-2.5 text-sm text-ink outline-none focus:border-green-400"
             >
-              <option value="">選択しない</option>
+              <option value="">選択しない(自分のホーム画面に表示)</option>
               {family.map((f) => (
                 <option key={f.id} value={f.id}>
                   {f.name}
@@ -312,7 +317,13 @@ export function VoiceCheckinsClient({
         </div>
 
         {state.error && <p className="text-xs text-red-600">{state.error}</p>}
-        {state.saved && <p className="text-xs text-green-700">保存しました。</p>}
+        {state.saved && (
+          <p className="text-xs text-green-700">
+            {state.deliveredTo
+              ? `${state.deliveredTo}さんに送りました。選んだ時間帯に相手のホーム画面で表示されます。`
+              : "保存しました。"}
+          </p>
+        )}
 
         <div className="flex flex-wrap gap-2">
           <button
