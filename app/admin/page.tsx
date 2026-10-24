@@ -136,6 +136,21 @@ export default async function AdminPage() {
         <p className="mt-1 text-xs text-ink/50">{user.email} でログイン中</p>
       </div>
 
+      <div className="mb-6 flex flex-wrap gap-3">
+        <Link
+          href="/admin/capsules"
+          className="rounded-full border border-green-200 bg-white px-5 py-2 text-sm font-semibold text-green-700 hover:bg-green-50"
+        >
+          タイムカプセル一覧
+        </Link>
+        <Link
+          href="/admin/handover"
+          className="rounded-full border border-green-200 bg-white px-5 py-2 text-sm font-semibold text-green-700 hover:bg-green-50"
+        >
+          「もしもの時」一覧・承認
+        </Link>
+      </div>
+
       <div className="mb-8 grid grid-cols-1 gap-3 sm:grid-cols-3">
         <StatCard label="総ユーザー数" value={totalUsers.toLocaleString()} />
         <StatCard
@@ -214,7 +229,7 @@ export default async function AdminPage() {
                       href={`/admin/users/${p.id}`}
                       className="text-xs text-green-700 underline hover:text-green-900"
                     >
-                      持ち物を見る
+                      詳細・編集
                     </Link>
                   </td>
                 </tr>
