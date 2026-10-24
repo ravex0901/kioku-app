@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getSignedUrlMap } from "@/lib/storage";
+import { AdminAccountForm } from "@/components/AdminAccountForm";
 import {
   CATEGORY_OPTIONS,
   ITEM_STATUS_OPTIONS,
@@ -24,13 +25,22 @@ export default async function AdminUserItemsPage({
 
   const { data: profile } = await adminClient
     .from("profiles")
-    .select("id, name, purpose, created_at, last_active_at")
+    .select("id, name, purpose, birth_date, created_at, last_active_at")
     .eq("id", id)
     .maybeSingle();
 
   if (!profile) {
     notFound();
   }
+
+  const [{ data: details }, { data: authUserData }] = await Promise.all([
+    adminClient
+      .from("profile_details")
+      .select("gender, address, phone, contact_email")
+      .eq("user_id", id)
+      .maybeSingle(),
+    adminClient.auth.admin.getUserById(id),
+  ]);
 
   const { data: itemsData } = await adminClient
     .from("items")
@@ -56,7 +66,7 @@ export default async function AdminUserItemsPage({
           ADMIN
         </p>
         <h1 className="mt-2 font-serif-jp text-3xl font-bold text-ink">
-          {profile.name || "(未設定)"} さんの持ち物
+          {profile.name || "(未設定)"} さん
         </h1>
         <p className="mt-1 text-xs text-ink/50">
           登録日:{" "}
@@ -70,6 +80,30 @@ export default async function AdminUserItemsPage({
           登録件数: {items.length}件
         </p>
       </div>
+
+      <section className="mb-8 rounded-[1.75rem] border border-green-100 bg-white/70 p-5 shadow-sm">
+        <h2 className="mb-1 text-xs font-semibold tracking-[0.15em] text-gold">
+          アカウント情報
+        </h2>
+        <p className="mb-3 text-xs text-ink/50">
+          ログイン用メールアドレス: {authUserData?.user?.email ?? "-"}
+          {" ・ "}
+          <Link href="/admin/capsules" className="underline">タイムカプセル一覧</Link>
+          {" ・ "}
+          <Link href="/admin/handover" className="underline">「もしもの時」一覧</Link>
+        </p>
+        <AdminAccountForm
+          userId={id}
+          initial={{
+            name: profile.name ?? "",
+            birthDate: profile.birth_date ?? "",
+            gender: details?.gender ?? "",
+            address: details?.address ?? "",
+            phone: details?.phone ?? "",
+            contactEmail: details?.contact_email ?? "",
+          }}
+        />
+      </section>
 
       {items.length === 0 ? (
         <div className="rounded-[1.75rem] border border-green-100 bg-white/70 p-8 text-center text-sm text-ink/40 shadow-sm">
