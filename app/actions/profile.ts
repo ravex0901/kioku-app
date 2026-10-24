@@ -61,7 +61,6 @@ export async function saveAccountSettings(
   if (!(GENDERS as readonly string[]).includes(gender)) {
     return { error: "性別を選んでください。" };
   }
-  if (!address) return { error: "住所を入力してください。" };
   if (phone && !/^[0-9+\-() ]{8,20}$/.test(phone)) {
     return { error: "電話番号は数字とハイフンで入力してください。" };
   }
@@ -73,7 +72,7 @@ export async function saveAccountSettings(
     {
       user_id: user.id,
       gender: gender as (typeof GENDERS)[number],
-      address,
+      address: address || null,
       phone: phone || null,
       contact_email: contactEmail || null,
       updated_at: new Date().toISOString(),
