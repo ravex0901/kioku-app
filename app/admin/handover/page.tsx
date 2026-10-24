@@ -102,8 +102,10 @@ export default async function AdminHandoverPage() {
                 </span>
               </div>
               <p className="mt-1 text-xs text-ink/50">
-                未利用 {inactiveDays}日 / 開示条件 {s.inactive_days}日
-                {inactiveDays >= s.inactive_days ? "(条件を満たしています)" : ""}
+                未利用 {inactiveDays}日 /{" "}
+                {s.inactive_days >= 36500
+                  ? "アクティブ検知なし(死亡届+運営承認で開示)"
+                  : `開示条件 ${s.inactive_days}日${inactiveDays >= s.inactive_days ? "(条件を満たしています)" : ""}`}
                 {" ・ "}最終利用: {fmt(lastActive)}
               </p>
 
