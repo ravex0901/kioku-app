@@ -21,6 +21,12 @@ function statusOf(roomTotal: number, ratio: number) {
   return { label: "未着手", bar: "bg-black/20", text: "text-ink/50" };
 }
 
+// 方針が「決定」とみなされるのは「残す」「整理する」(旧データの形見・売る・処分も含む)。
+// 「わからない」(旧データの未定も含む)や未設定は、決定していない(不正解)として数える。
+function isDecidedDisposition(value: string | null): boolean {
+  return value !== null && value !== "unsure" && value !== "undecided";
+}
+
 export default async function ProgressPage() {
   const supabase = await createClient();
   const {
@@ -44,11 +50,11 @@ export default async function ProgressPage() {
 
   const total = allItems.length;
   const located = allItems.filter((i) => i.location_id !== null).length;
-  const dispositionDecided = allItems.filter(
-    (i) => i.disposition !== null
+  const dispositionDecided = allItems.filter((i) =>
+    isDecidedDisposition(i.disposition)
   ).length;
   const completed = allItems.filter(
-    (i) => i.location_id !== null && i.disposition !== null
+    (i) => i.location_id !== null && isDecidedDisposition(i.disposition)
   ).length;
   const overallRatio = total > 0 ? completed / total : 0;
 
@@ -70,8 +76,8 @@ export default async function ProgressPage() {
       (i) => i.location_id && descendantIds.has(i.location_id)
     );
     const roomTotal = roomItems.length;
-    const roomDecided = roomItems.filter(
-      (i) => i.disposition !== null
+    const roomDecided = roomItems.filter((i) =>
+      isDecidedDisposition(i.disposition)
     ).length;
     const ratio = roomTotal > 0 ? roomDecided / roomTotal : 0;
     return { room, roomTotal, roomDecided, ratio };
@@ -89,20 +95,16 @@ export default async function ProgressPage() {
           <p className="mt-2 text-sm text-ink/60">
             全体の完了度 {Math.round(overallRatio * 100)}%
           </p>
-          <div className="mt-4 grid grid-cols-3 gap-4 text-center">
-            <div>
-              <p className="text-2xl font-bold text-green-700">{total}</p>
-              <p className="text-xs text-ink/60">①登録件数</p>
-            </div>
+          <div className="mt-4 grid grid-cols-2 gap-4 text-center">
             <div>
               <p className="text-2xl font-bold text-green-700">{located}</p>
-              <p className="text-xs text-ink/60">②場所が確定</p>
+              <p className="text-xs text-ink/60">場所が確定</p>
             </div>
             <div>
               <p className="text-2xl font-bold text-green-700">
                 {dispositionDecided}
               </p>
-              <p className="text-xs text-ink/60">③方針が決定</p>
+              <p className="text-xs text-ink/60">方針が決定(残す・整理する)</p>
             </div>
           </div>
         </section>
