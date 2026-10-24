@@ -49,6 +49,7 @@ type MedicalInfoShared = {
   medications: string | null;
 } | null;
 type AlbumPhotoShared = { url: string | null; caption: string | null };
+type AlbumShared = { name: string; photos: AlbumPhotoShared[] };
 type MoodRecentShared = { mood: "good" | "normal" | "bad"; log_date: string } | null;
 
 const MOOD_EMOJI: Record<"good" | "normal" | "bad", string> = {
@@ -92,6 +93,7 @@ export type HandoverStatus =
       bucketList: BucketListRow[];
       medical: MedicalInfoShared;
       album: AlbumPhotoShared[];
+      albums?: AlbumShared[];
       moodRecent: MoodRecentShared;
     };
 
@@ -111,6 +113,7 @@ export function HandoverView({
 }) {
   const [status, setStatus] = useState(initialStatus);
   const [checkError, setCheckError] = useState<string | null>(null);
+  const [openAlbumIndex, setOpenAlbumIndex] = useState<number | null>(null);
 
   async function handleToggleChecklist(key: string, next: boolean) {
     if (!checklistOwnerId || !status.found || !status.unlocked) return;
@@ -604,26 +607,75 @@ export function HandoverView({
         </div>
       )}
 
-      {status.album.length > 0 && (
+      {(status.albums ?? []).length > 0 && (
         <div className="mt-6">
           <h2 className="mb-3 text-lg font-bold text-ink">アルバム</h2>
-          <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
-            {status.album.map((photo, i) =>
-              photo.url ? (
-                <div
-                  key={i}
-                  className="aspect-square overflow-hidden rounded-xl border border-black/5 bg-white/60"
-                >
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
-                    src={photo.url}
-                    alt={photo.caption ?? ""}
-                    className="h-full w-full object-cover"
-                  />
+          {openAlbumIndex !== null && (status.albums ?? [])[openAlbumIndex] ? (
+            <div>
+              <button
+                type="button"
+                onClick={() => setOpenAlbumIndex(null)}
+                className="mb-3 rounded-full border border-green-200 bg-white/70 px-4 py-2 text-xs font-semibold text-green-800 transition hover:bg-green-50"
+              >
+                ← アルバム一覧へ
+              </button>
+              <p className="mb-3 text-sm font-semibold text-ink">
+                {(status.albums ?? [])[openAlbumIndex].name}
+              </p>
+              {(status.albums ?? [])[openAlbumIndex].photos.length === 0 ? (
+                <p className="text-sm text-ink/50">写真がありません。</p>
+              ) : (
+                <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+                  {(status.albums ?? [])[openAlbumIndex].photos.map((photo, i) =>
+                    photo.url ? (
+                      <div
+                        key={i}
+                        className="aspect-square overflow-hidden rounded-xl border border-black/5 bg-white/60"
+                      >
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img
+                          src={photo.url}
+                          alt={photo.caption ?? ""}
+                          className="h-full w-full object-cover"
+                        />
+                      </div>
+                    ) : null
+                  )}
                 </div>
-              ) : null
-            )}
-          </div>
+              )}
+            </div>
+          ) : (
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+              {(status.albums ?? []).map((album, i) => {
+                const cover = album.photos.find((ph) => ph.url)?.url ?? null;
+                return (
+                  <button
+                    key={i}
+                    type="button"
+                    onClick={() => setOpenAlbumIndex(i)}
+                    className="overflow-hidden rounded-2xl border border-black/5 bg-white/80 text-left transition hover:border-green-300"
+                  >
+                    <div className="aspect-square bg-green-50">
+                      {cover ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img src={cover} alt="" className="h-full w-full object-cover" />
+                      ) : (
+                        <div className="flex h-full w-full items-center justify-center text-xs text-green-300">
+                          写真なし
+                        </div>
+                      )}
+                    </div>
+                    <div className="px-3 py-2.5">
+                      <p className="truncate text-sm font-semibold text-ink">
+                        {album.name}
+                      </p>
+                      <p className="text-[11px] text-ink/50">{album.photos.length}枚</p>
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+          )}
         </div>
       )}
 
