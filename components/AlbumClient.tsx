@@ -11,6 +11,7 @@ import {
 } from "@/app/actions/album";
 import type { AlbumPhotoWithUrl } from "@/app/actions/album";
 import type { Album } from "@/lib/types";
+import { PhotoLightbox } from "@/components/PhotoLightbox";
 
 /**
  * アルバム機能。好きな名前のアルバムをいくつでも作れる。
@@ -32,6 +33,7 @@ export function AlbumClient({
   const [renameValue, setRenameValue] = useState("");
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [zoomUrl, setZoomUrl] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement | null>(null);
 
   const selected = albums.find((a) => a.id === selectedId) ?? null;
@@ -237,6 +239,8 @@ export function AlbumClient({
 
         {errorBox}
 
+        <PhotoLightbox url={zoomUrl} onClose={() => setZoomUrl(null)} />
+
         {selectedPhotos.length === 0 ? (
           <p className="rounded-[1.75rem] border border-green-100 bg-white/50 px-5 py-10 text-center text-sm text-ink/50">
             このアルバムにはまだ写真がありません。上のボタンから追加してみましょう。
@@ -249,12 +253,19 @@ export function AlbumClient({
                 className="group relative aspect-square overflow-hidden rounded-2xl border border-green-100 bg-green-50 shadow-sm"
               >
                 {photo.url ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img
-                    src={photo.url}
-                    alt={photo.caption ?? "アルバムの写真"}
-                    className="h-full w-full object-cover"
-                  />
+                  <button
+                    type="button"
+                    onClick={() => setZoomUrl(photo.url)}
+                    aria-label="写真を拡大する"
+                    className="block h-full w-full"
+                  >
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={photo.url}
+                      alt={photo.caption ?? "アルバムの写真"}
+                      className="h-full w-full object-cover"
+                    />
+                  </button>
                 ) : (
                   <div className="flex h-full w-full items-center justify-center text-xs text-green-300">
                     読み込めません
@@ -264,7 +275,7 @@ export function AlbumClient({
                   type="button"
                   onClick={() => handleDeletePhoto(photo.id)}
                   aria-label="削除する"
-                  className="absolute right-2 top-2 flex h-8 w-8 items-center justify-center rounded-full bg-black/40 text-white opacity-0 transition group-hover:opacity-100 focus:opacity-100"
+                  className="absolute right-2 top-2 flex h-8 w-8 items-center justify-center rounded-full bg-black/40 text-white opacity-100 transition sm:opacity-0 sm:group-hover:opacity-100 focus:opacity-100"
                 >
                   <svg viewBox="0 0 24 24" fill="none" className="h-4 w-4">
                     <path
