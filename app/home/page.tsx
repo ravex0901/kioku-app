@@ -173,13 +173,15 @@ export default async function HomePage() {
         .from("items")
         .select("id", { count: "exact", head: true })
         .eq("user_id", user.id)
-        .not("disposition", "is", null),
+        .not("disposition", "is", null)
+        .not("disposition", "in", "(unsure,undecided)"),
       supabase
         .from("items")
         .select("id", { count: "exact", head: true })
         .eq("user_id", user.id)
         .not("location_id", "is", null)
-        .not("disposition", "is", null),
+        .not("disposition", "is", null)
+        .not("disposition", "in", "(unsure,undecided)"),
       supabase
         .from("items")
         .select("*, location:locations(name)")
@@ -207,7 +209,6 @@ export default async function HomePage() {
   );
 
   const completionRatio = total > 0 ? completed / total : 0;
-  const registeredPercent = total > 0 ? 100 : 0;
   const locatedPercent = total > 0 ? Math.round((located / total) * 100) : 0;
   const dispositionPercent =
     total > 0 ? Math.round((dispositionDecided / total) * 100) : 0;
@@ -316,9 +317,8 @@ export default async function HomePage() {
             </div>
           </div>
           <div className="mt-5 flex flex-col gap-2.5">
-            <ProgressMiniBar label="①登録" percent={registeredPercent} />
-            <ProgressMiniBar label="②場所" percent={locatedPercent} />
-            <ProgressMiniBar label="③方針" percent={dispositionPercent} />
+            <ProgressMiniBar label="場所" percent={locatedPercent} />
+            <ProgressMiniBar label="方針" percent={dispositionPercent} />
           </div>
         </Link>
 
