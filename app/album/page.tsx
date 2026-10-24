@@ -26,11 +26,11 @@ export default async function AlbumPage() {
           アルバム
         </h1>
         <p className="mb-6 text-lg text-ink/60">
-          スマホの写真を選ぶだけで、このシステムの中にも保存しておけます。
+          好きな名前のアルバムをいくつでも作って、スマホの写真を保存しておけます。
         </p>
 
         {result.ok ? (
-          <AlbumClient initialPhotos={result.photos} />
+          <AlbumClient initialAlbums={result.albums} initialPhotos={result.photos} />
         ) : (
           <p className="rounded-lg bg-red-50 px-4 py-3 text-sm text-red-600">
             {result.error}
