@@ -46,6 +46,8 @@ export type HandoverStatus =
       thresholdDays: number;
       recipientName?: string | null;
       ownerUserId?: string;
+      // 開示承認済み。内容は共有リンクではなく、指定されたアカウント内でのみ表示する。
+      accountOnly?: boolean;
     }
   | {
       found: true;
@@ -120,6 +122,30 @@ export function HandoverView({
     );
   }
 
+  if (!status.unlocked && status.accountOnly) {
+    return (
+      <div className="mx-auto max-w-md px-4 py-16">
+        <p className="text-xs font-semibold tracking-[0.2em] text-ink/40">
+          もしもの時
+        </p>
+        <h1 className="mt-2 font-serif-jp text-3xl font-bold text-ink">
+          アカウントにログインしてご覧ください
+        </h1>
+        <div className="mt-6 rounded-2xl border border-gold/40 bg-gold/10 p-5">
+          <p className="text-sm text-ink/70">
+            開示が承認されています。安全のため、遺言書・遺言動画などの内容は共有リンクでは表示されません。ご本人から指定されたアカウントでログインし、設定の「ご家族の死亡届の提出」から「『もしもの時』の内容を見る」を開いてください。
+          </p>
+          <a
+            href="/login"
+            className="mt-4 inline-flex min-h-[50px] items-center justify-center rounded-full bg-green-700 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-green-800"
+          >
+            ログインする
+          </a>
+        </div>
+      </div>
+    );
+  }
+
   if (!status.unlocked) {
     if (status.thresholdDays >= DISABLED_THRESHOLD_DAYS) {
       return (
@@ -128,13 +154,18 @@ export function HandoverView({
             もしもの時
           </p>
           <h1 className="mt-2 font-serif-jp text-3xl font-bold text-ink">
-            自動開示は設定されていません
+            ご本人の内容を確認する
           </h1>
           <div className="mt-6 rounded-2xl border border-gold/40 bg-gold/10 p-5">
             <p className="text-sm text-ink/70">
-              本人は「非アクティブと判定するまでの日数」を「なし」に設定しているため、このリンクからの自動開示は行われません。
+              ご本人は自動開示(非アクティブ検知)を設定していません。死亡診断書などの画像を提出し、運営が内容を確認・承認すると、この画面で内容をご覧いただけます。
             </p>
           </div>
+          <DeathCertificateStage
+            token={token}
+            disclosureStatus={status.disclosureStatus}
+            onSubmitted={refresh}
+          />
         </div>
       );
     }
