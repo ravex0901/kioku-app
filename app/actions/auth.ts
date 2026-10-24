@@ -4,6 +4,48 @@ import { redirect } from "next/navigation";
 import { headers } from "next/headers";
 import { createClient } from "@/lib/supabase/server";
 
+const SIGNUP_GENDERS = ["male", "female", "other", "no_answer"];
+
+// 新規登録の追加項目(生年月日・性別・電話番号)を検証する。問題があればエラー文を返す。
+function validateSignupExtras(
+  birthDate: string,
+  gender: string,
+  phone: string
+): string | null {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(birthDate) || Number.isNaN(Date.parse(birthDate))) {
+    return "生年月日を入力してください。";
+  }
+  if (birthDate > new Date().toISOString().slice(0, 10)) {
+    return "生年月日が未来の日付になっています。";
+  }
+  if (!SIGNUP_GENDERS.includes(gender)) {
+    return "性別を選んでください。";
+  }
+  if (phone && !/^[0-9+\-() ]{8,20}$/.test(phone)) {
+    return "電話番号は数字とハイフンで入力してください。";
+  }
+  return null;
+}
+
+// 登録直後(ログイン済み)に、生年月日・性別・電話番号を保存する。
+async function saveSignupExtras(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  userId: string,
+  birthDate: string,
+  gender: string,
+  phone: string
+) {
+  await supabase.from("profiles").update({ birth_date: birthDate }).eq("id", userId);
+  await supabase.from("profile_details").upsert(
+    {
+      user_id: userId,
+      gender: gender as "male" | "female" | "other" | "no_answer",
+      phone: phone || null,
+    },
+    { onConflict: "user_id" }
+  );
+}
+
 export type AuthFormState = { error?: string } | undefined;
 
 export type ForgotPasswordState =
@@ -45,6 +87,8 @@ export async function signup(
   const password = String(formData.get("password") ?? "");
   const passwordConfirm = String(formData.get("passwordConfirm") ?? "");
   const birthDate = String(formData.get("birthDate") ?? "").trim();
+  const gender = String(formData.get("gender") ?? "").trim();
+  const phone = String(formData.get("phone") ?? "").trim();
 
   if (!name) {
     return { error: "お名前を入力してください。" };
@@ -59,11 +103,18 @@ export async function signup(
     return { error: "パスワード(確認)が一致しません。" };
   }
 
+  const extrasError = validateSignupExtras(birthDate, gender, phone);
+  if (extrasError) {
+    return { error: extrasError };
+  }
+
   const supabase = await createClient();
   const { data, error } = await supabase.auth.signUp({
     email,
     password,
-    options: { data: { name } },
+    options: {
+      data: { name, birth_date: birthDate, gender, phone },
+    },
   });
 
   if (error) {
@@ -79,8 +130,8 @@ export async function signup(
     redirect("/login?message=confirm-email");
   }
 
-  if (birthDate && data.user) {
-    await supabase.from("profiles").update({ birth_date: birthDate }).eq("id", data.user.id);
+  if (data.user) {
+    await saveSignupExtras(supabase, data.user.id, birthDate, gender, phone);
   }
 
   redirect("/onboarding/purpose");
@@ -103,6 +154,8 @@ export async function signupAndAcceptInvite(
   const password = String(formData.get("password") ?? "");
   const passwordConfirm = String(formData.get("passwordConfirm") ?? "");
   const birthDate = String(formData.get("birthDate") ?? "").trim();
+  const gender = String(formData.get("gender") ?? "").trim();
+  const phone = String(formData.get("phone") ?? "").trim();
   const myRelation = String(formData.get("myRelation") ?? "other").trim();
 
   if (!token) {
@@ -121,6 +174,11 @@ export async function signupAndAcceptInvite(
     return { error: "パスワード(確認)が一致しません。" };
   }
 
+  const extrasError = validateSignupExtras(birthDate, gender, phone);
+  if (extrasError) {
+    return { error: extrasError };
+  }
+
   // メール確認が必要な設定の場合、確認メール内のリンクはここで指定した
   // emailRedirectTo に(クエリパラメータも含めて)戻ってくる。招待トークンと
   // 選択した続柄をクエリに乗せておくことで、メール確認後に招待受け入れの
@@ -136,7 +194,7 @@ export async function signupAndAcceptInvite(
     email,
     password,
     options: {
-      data: { name },
+      data: { name, birth_date: birthDate, gender, phone },
       emailRedirectTo: `${origin}/invite/${token}?relation=${relationParam}`,
     },
   });
@@ -156,9 +214,7 @@ export async function signupAndAcceptInvite(
     redirect(`/invite/${token}?confirmEmail=1&relation=${relationParam}`);
   }
 
-  if (birthDate) {
-    await supabase.from("profiles").update({ birth_date: birthDate }).eq("id", data.user.id);
-  }
+  await saveSignupExtras(supabase, data.user.id, birthDate, gender, phone);
 
   const { data: acceptData, error: acceptError } = await supabase.rpc(
     "accept_family_invite",
