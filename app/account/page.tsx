@@ -24,6 +24,12 @@ export default async function AccountPage() {
       .maybeSingle(),
   ]);
 
+  const meta = (user.user_metadata ?? {}) as {
+    birth_date?: string;
+    gender?: string;
+    phone?: string;
+  };
+
   return (
     <div className="min-h-screen bg-cream">
       <Header />
@@ -47,10 +53,10 @@ export default async function AccountPage() {
               (typeof user.user_metadata?.name === "string"
                 ? user.user_metadata.name
                 : ""),
-            birthDate: profile?.birth_date ?? "",
-            gender: details?.gender ?? "",
+            birthDate: profile?.birth_date ?? meta.birth_date ?? "",
+            gender: details?.gender ?? meta.gender ?? "",
             address: details?.address ?? "",
-            phone: details?.phone ?? "",
+            phone: details?.phone ?? meta.phone ?? "",
             contactEmail: details?.contact_email ?? user.email ?? "",
           }}
         />
