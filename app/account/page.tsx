@@ -14,12 +14,12 @@ export default async function AccountPage() {
   const [{ data: profile }, { data: details }] = await Promise.all([
     supabase
       .from("profiles")
-      .select("name, birth_date, account_code")
+      .select("name, birth_date")
       .eq("id", user.id)
       .maybeSingle(),
     supabase
       .from("profile_details")
-      .select("account_name, gender, address, phone, contact_email")
+      .select("gender, address, phone, contact_email")
       .eq("user_id", user.id)
       .maybeSingle(),
   ]);
@@ -42,15 +42,17 @@ export default async function AccountPage() {
         </div>
         <AccountSettingsForm
           initial={{
-            accountName: details?.account_name ?? "",
-            name: profile?.name ?? "",
+            name:
+              profile?.name ??
+              (typeof user.user_metadata?.name === "string"
+                ? user.user_metadata.name
+                : ""),
             birthDate: profile?.birth_date ?? "",
             gender: details?.gender ?? "",
             address: details?.address ?? "",
             phone: details?.phone ?? "",
-            contactEmail: details?.contact_email ?? "",
+            contactEmail: details?.contact_email ?? user.email ?? "",
           }}
-          loginEmail={user.email ?? ""}
         />
       </main>
     </div>
