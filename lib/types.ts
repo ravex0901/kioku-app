@@ -411,6 +411,15 @@ export type AlbumPhoto = {
   caption: string | null;
   // 「もしもの時」共有ページで都度署名を発行せず表示できる長期有効の署名付きURL
   long_lived_url: string | null;
+  // 所属するアルバム(複数の任意アルバムを作れる)
+  album_id: string | null;
+  created_at: string;
+};
+
+export type Album = {
+  id: string;
+  user_id: string;
+  name: string;
   created_at: string;
 };
 
@@ -691,6 +700,15 @@ export type Database = {
           user_id: string;
         };
         Update: Partial<Omit<MedicalInfo, "user_id">>;
+        Relationships: [];
+      };
+      albums: {
+        Row: Album;
+        Insert: Partial<Omit<Album, "id" | "created_at">> & {
+          user_id: string;
+          name: string;
+        };
+        Update: Partial<Omit<Album, "id" | "user_id" | "created_at">>;
         Relationships: [];
       };
       album_photos: {
