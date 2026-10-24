@@ -52,11 +52,12 @@ export function NotificationsList({
       {error && <p className="text-sm text-red-600">{error}</p>}
       <ul className="flex flex-col gap-2">
         {items.map((n) => {
-          const { text, href } = describeFamilyNotification(n);
+          const { text, href, joiner } = describeFamilyNotification(n);
           const body = (
             <>
               <span className="font-semibold">{n.senderName}</span>
-              さんが、{text}
+              {joiner ?? "さんが、"}
+              {text}
             </>
           );
           return (
