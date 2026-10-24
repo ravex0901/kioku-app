@@ -106,7 +106,9 @@ export async function getCurrentVoiceCheckin(): Promise<TodayCheckinResult> {
   return { ok: true, checkin: { ...row, audioUrl }, slot };
 }
 
-export type SaveCheckinResult = { ok: true } | { ok: false; error: string };
+export type SaveCheckinResult =
+  | { ok: true; deliveredTo?: string }
+  | { ok: false; error: string };
 
 /**
  * 時間帯ごとのボイスメッセージを登録・上書きする。
@@ -132,6 +134,28 @@ export async function saveVoiceCheckin(formData: FormData): Promise<SaveCheckinR
   const familyMemberIdRaw = String(formData.get("familyMemberId") ?? "").trim();
     const familyMemberId = familyMemberIdRaw || null;
     const messageText = String(formData.get("messageText") ?? "").trim() || null;
+
+  // 家族リストから相手を選んだ場合は、その人(アカウント紐付け済み)のホーム画面に届ける。
+  if (familyMemberId) {
+    const { data: member } = await supabase
+      .from("family_members")
+      .select("name, linked_user_id")
+      .eq("id", familyMemberId)
+      .eq("user_id", user.id)
+      .maybeSingle();
+    if (!member) {
+      return { ok: false, error: "選んだご家族が見つかりません。" };
+    }
+    if (!member.linked_user_id) {
+      return {
+        ok: false,
+        error: `${member.name}さんはまだアカウントが紐付いていないため、メッセージを届けられません。家族の設定から招待リンクを送ってアカウントをつないでください。`,
+      };
+    }
+    const delivered = await saveFamilyVoiceCheckin(member.linked_user_id, formData);
+    if (!delivered.ok) return delivered;
+    return { ok: true, deliveredTo: member.name };
+  }
 
   let storagePath: string | null = null;
     const audio = formData.get("audio");
