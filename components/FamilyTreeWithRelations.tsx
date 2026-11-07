@@ -43,6 +43,8 @@ type Props = {
   /** ご本人が登録した家族のうち、アカウントのない人 */
   memberRows: FamilyRow[];
   people: PersonOption[];
+  /** アカウントのない家族のうち、家系図にいつも出す方(招待リンクのない方:前の配偶者・残した方) */
+  alwaysShowMemberIds?: string[];
   saved: ExplicitRelRow[];
   /** 保存できるか(テーブルがあるか) */
   available: boolean;
@@ -71,6 +73,7 @@ export function FamilyTreeWithRelations({
   accounts,
   memberRows: initialMemberRows,
   people: initialPeople,
+  alwaysShowMemberIds,
   saved: initialSaved,
   available,
   editHref,
@@ -94,9 +97,11 @@ export function FamilyTreeWithRelations({
       if (e.b.memberId) used.add(e.b.memberId);
     }
     const have = new Set(rows.map((r) => r.id));
-    // アカウントのない家族は、「元配偶者」か、つながりを登録した人だけ家系図に出す
+    const always = new Set(alwaysShowMemberIds ?? []);
+    // アカウントのない家族は、「元配偶者」・家系図に残すために登録した方・つながりを登録した方だけ家系図に出す
+    // (招待リンクを送って、まだ参加していない方は出さない)
     const extra = memberRows.filter(
-      (r) => !have.has(r.id) && (used.has(r.id) || r.relation === "ex_spouse")
+      (r) => !have.has(r.id) && (used.has(r.id) || always.has(r.id) || r.relation === "ex_spouse")
     );
     try {
       return buildTreeInput({
@@ -112,7 +117,7 @@ export function FamilyTreeWithRelations({
       console.error("buildTreeInput failed", e);
       return null;
     }
-  }, [saved, rows, memberRows, accounts, viewerId, viewerName, viewerDeceased]);
+  }, [saved, rows, memberRows, alwaysShowMemberIds, accounts, viewerId, viewerName, viewerDeceased]);
 
   // ---- 配偶者・お子さん ----
   const marriageWith = (key: string) =>

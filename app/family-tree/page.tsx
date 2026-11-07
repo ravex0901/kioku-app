@@ -68,6 +68,7 @@ export default async function FamilyTreePage({
     accounts: { userId: string; name: string; isDeceased?: boolean; canViewJournal?: boolean }[];
     memberRows: FamilyRow[];
     people: PersonOption[];
+    alwaysShowMemberIds: string[];
   } | null = null;
   if (!legacy) {
     try {
@@ -145,7 +146,13 @@ export default async function FamilyTreePage({
         })),
       ];
 
-      treeProps = { rows, accounts, memberRows, people };
+      // 招待リンクのない、アカウントのない家族 = 家系図に残すために登録した方
+      // (前の配偶者・「紐づけを解除」で削除したときに残した方)。家系図にいつも出す。
+      const alwaysShowMemberIds = allFamily
+        .filter((f) => !f.linked_user_id && !f.invite_token)
+        .map((f) => f.id);
+
+      treeProps = { rows, accounts, memberRows, people, alwaysShowMemberIds };
     } catch (e) {
       // 新しい家系図の作成に失敗しても、従来の表示で見られるようにする
       console.error("buildTreeInput failed", e);
@@ -171,6 +178,7 @@ export default async function FamilyTreePage({
             accounts={treeProps.accounts}
             memberRows={treeProps.memberRows}
             people={treeProps.people}
+            alwaysShowMemberIds={treeProps.alwaysShowMemberIds}
             saved={relResult && relResult.ok ? relResult.relationships : []}
             available={Boolean(relResult && relResult.ok && relResult.available)}
             editHref="/settings#family"

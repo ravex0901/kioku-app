@@ -100,7 +100,7 @@ describe("家系図レイアウト:世代と並び", () => {
 });
 
 describe("家系図特有の構造", () => {
-  it("再婚:前妻(離婚)・父・後妻が一列に並び、離婚は斜線の線で区別される", () => {
+  it("再婚:前妻(離婚)・父・後妻が一列に並び、離婚(離別)は点々線で区別される", () => {
     const s = SCENARIOS.find((x) => x.key === "t07") as (typeof SCENARIOS)[number];
     const L = layoutFamilyTree(s.input);
     const ids = ["X", "P", "Y"];
@@ -108,7 +108,7 @@ describe("家系図特有の構造", () => {
     assert.ok(xs[0] < xs[1] && xs[1] < xs[2]);
     const divorced = L.edges.find((e) => e.kind === "marriage" && e.style === "divorced");
     assert.ok(divorced, "離婚の線がある");
-    assert.ok(divorced?.mark?.type === "slash");
+    assert.equal(divorced?.mark, undefined, "離別は斜線ではなく点々線で表す");
     const married = L.edges.find((e) => e.kind === "marriage" && e.style === "marriage");
     assert.ok(married && married.segments.length === 2, "婚姻中は二重線");
     // 前妻の子は前妻との union から、後妻の子は後妻との union から出ている

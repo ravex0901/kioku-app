@@ -49,7 +49,8 @@ function strokeFor(style: EdgeStyle): EdgeStroke {
     case "marriage":
       return { color: TREE_COLORS.lineStrong, width: 2 };
     case "divorced":
-      return { color: TREE_COLORS.deceased, width: 2 };
+      // 離別(離婚):点々線(丸い点)。事実婚の破線と見分けがつくようにする
+      return { color: TREE_COLORS.deceased, width: 2.6, dash: "0.1 6" };
     case "widowed":
       return { color: TREE_COLORS.deceased, width: 2 };
     case "common_law":
@@ -161,7 +162,7 @@ export function renderTreeSvg(layout: LayoutResult, opts: RenderOptions = {}): s
 /** 凡例(線の見方)のデータ。画面の凡例と画像出力で共通に使う。 */
 export const LEGEND_ITEMS: { style: EdgeStyle; label: string }[] = [
   { style: "marriage", label: "婚姻中の夫婦" },
-  { style: "divorced", label: "離婚" },
+  { style: "divorced", label: "離別(離婚)" },
   { style: "widowed", label: "死別" },
   { style: "common_law", label: "事実婚" },
   { style: "biological", label: "実の親子" },
@@ -180,9 +181,6 @@ export function legendSwatchSvg(style: EdgeStyle): string {
     inner = `<path d="M2 7H38M2 13H38" stroke="${st.color}" stroke-width="2" stroke-linecap="round"/>`;
   } else {
     inner = `<path d="M2 10H38" stroke="${st.color}" stroke-width="${st.width}" stroke-linecap="round"${st.dash ? ` stroke-dasharray="${st.dash}"` : ""}/>`;
-    if (style === "divorced") {
-      inner += `<path d="M17 17L21 3M21 17L25 3" stroke="${TREE_COLORS.danger}" stroke-width="2" stroke-linecap="round"/>`;
-    }
     if (style === "widowed") {
       inner += `<path d="M15 5L25 15M25 5L15 15" stroke="${TREE_COLORS.deceased}" stroke-width="2" stroke-linecap="round"/>`;
     }

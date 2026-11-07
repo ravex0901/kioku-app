@@ -6,7 +6,7 @@ import { createClient } from "@/lib/supabase/client";
 import { FAMILY_RELATION_OPTIONS, familyRelationLabel } from "@/lib/constants";
 import { requestFamilyLink } from "@/app/actions/familyLinkRequests";
 import { logout } from "@/app/actions/auth";
-import { unlinkFamilyMember } from "@/app/actions/familyTree";
+import { UnlinkFamilyDialog } from "@/components/UnlinkFamilyDialog";
 import {
   setFamilyShareSettings,
   setFamilyItemsDirectShare,
@@ -114,26 +114,15 @@ export function SettingsClient({
   const [savingDeceasedId, setSavingDeceasedId] = useState<string | null>(
     null
   );
-  const [unlinkingId, setUnlinkingId] = useState<string | null>(null);
-
-  // 直接つながっている相手とのアカウントの紐づけを解除する。
-  // 紐づけの申請・承認手続きとは別の操作で、こちらは「解除」のみを行う。
-  // 相手経由でだけつながっていた間接の家族ネットワークは、家系図側で
-  // 都度その場で再計算されるため、ここでは family_members の行を消すだけでよい。
-  async function handleUnlinkFamilyMember(member: FamilyMember) {
+  // 「紐づけを解除」を押した先の画面(離別か削除かを選ぶ)。
+  // 削除のときは、相手を通じてだけつながっていた方を、ひとりずつ残すか選べる。
+  const [unlinkTarget, setUnlinkTarget] = useState<FamilyMember | null>(null);
+  function handleUnlinkFamilyMember(member: FamilyMember) {
     if (!member.linked_user_id) return;
-    const confirmed = window.confirm(
-      `${member.name}さんとのアカウントの紐づけを解除しますか?\n解除すると、${member.name}さん経由でつながっていた間接のご家族が、家系図に表示されなくなることがあります。この操作は取り消せません。`
-    );
-    if (!confirmed) return;
-    setUnlinkingId(member.linked_user_id);
-    const result = await unlinkFamilyMember(member.linked_user_id);
-    setUnlinkingId(null);
-    if (!result.ok) {
-      alert(result.error);
-      return;
-    }
-    setFamily((prev) => prev.filter((f) => f.id !== member.id));
+    setUnlinkTarget(member);
+  }
+  function handleUnlinkDone(removedMemberId: string, added: FamilyMember[]) {
+    setFamily((prev) => [...prev.filter((f) => f.id !== removedMemberId), ...added]);
   }
 
   async function handleToggleDeceased(linkedUserId: string, next: boolean) {
@@ -476,6 +465,13 @@ export function SettingsClient({
 
   return (
     <div className="flex flex-col gap-6">
+      {unlinkTarget && (
+        <UnlinkFamilyDialog
+          member={unlinkTarget}
+          onClose={() => setUnlinkTarget(null)}
+          onDone={handleUnlinkDone}
+        />
+      )}
       <div className="flex items-center gap-3 rounded-[1.75rem] border border-green-100 bg-white/70 p-5 shadow-sm">
         <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-green-700 text-sm font-bold text-white">
           {displayName.slice(0, 1)}
@@ -542,12 +538,9 @@ export function SettingsClient({
                       <button
                         type="button"
                         onClick={() => handleUnlinkFamilyMember(member)}
-                        disabled={unlinkingId === member.linked_user_id}
-                        className="rounded-full border border-black/10 px-2.5 py-1 text-[11px] font-medium text-ink/50 transition hover:bg-black/5 disabled:opacity-50"
+                        className="rounded-full border border-black/10 px-2.5 py-1 text-[11px] font-medium text-ink/50 transition hover:bg-black/5"
                       >
-                        {unlinkingId === member.linked_user_id
-                          ? "解除中…"
-                          : "紐づけを解除"}
+                        紐づけを解除
                       </button>
                     </div>
                     <label className="flex items-center gap-2 text-[11px] text-ink/60">

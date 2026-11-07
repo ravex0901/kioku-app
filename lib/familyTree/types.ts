@@ -130,7 +130,7 @@ export type Segment = { x1: number; y1: number; x2: number; y2: number };
 
 export type EdgeStyle =
   | "marriage" // 婚姻中:二重線
-  | "divorced" // 離婚:一重線+斜線
+  | "divorced" // 離別(離婚):点々線
   | "widowed" // 死別:一重線+印
   | "common_law" // 事実婚:点線
   | "coparent" // 婚姻の記録がない親同士

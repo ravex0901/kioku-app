@@ -5,6 +5,7 @@ import { createClient } from "@/lib/supabase/server";
 import type { ExplicitRelRow, PersonRef } from "@/lib/familyTree/fromRows";
 import type { MarriageStatus, ParentKind } from "@/lib/familyTree/types";
 import type { Database } from "@/lib/types";
+import { isMissingRelationshipsTable } from "@/lib/familyRelationshipsDb";
 
 // 家系図:明示的な親族関係(離婚・再婚・「どの配偶者との子か」・養子・継子)の読み書き。
 // テーブル family_relationships(supabase/migrations/20261107_family_relationships.sql)を使う。
@@ -24,16 +25,6 @@ type DbRow = {
   marriage_status: MarriageStatus | null;
   marriage_order: number | null;
 };
-
-function isMissingTable(error: { code?: string; message?: string } | null): boolean {
-  if (!error) return false;
-  return (
-    error.code === "42P01" ||
-    error.code === "PGRST205" ||
-    (/family_relationships/.test(error.message ?? "") &&
-      /(does not exist|schema cache)/.test(error.message ?? ""))
-  );
-}
 
 function toExplicit(r: DbRow): ExplicitRelRow {
   return {
@@ -67,7 +58,7 @@ export async function listFamilyRelationships(): Promise<ListRelationshipsResult
     .eq("owner_id", user.id)
     .order("created_at", { ascending: true });
 
-  if (isMissingTable(error)) return { ok: true, available: false, relationships: [] };
+  if (isMissingRelationshipsTable(error)) return { ok: true, available: false, relationships: [] };
   if (error) {
     console.error("listFamilyRelationships error", error);
     return { ok: false, error: "親族関係の読み込みに失敗しました。" };
@@ -135,7 +126,7 @@ export async function addFamilyRelationship(input: RelationshipInput): Promise<S
     .select("id")
     .single();
 
-  if (isMissingTable(error)) {
+  if (isMissingRelationshipsTable(error)) {
     return { ok: false, unavailable: true, error: "保存の準備がまだできていません(データベースの準備待ち)。" };
   }
   if (error || !data) {
@@ -180,7 +171,7 @@ export async function addFormerSpouse(name: string): Promise<AddFormerSpouseResu
 
   const { data, error } = await supabase
     .from("family_members")
-    .insert({ user_id: user.id, name: trimmed, relation: "ex_spouse" })
+    .insert({ user_id: user.id, name: trimmed, relation: "ex_spouse", invite_token: null })
     .select("id, name, relation, created_at")
     .single();
   if (error || !data) {

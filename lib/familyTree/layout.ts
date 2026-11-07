@@ -1074,12 +1074,8 @@ function layoutBand(args: BandArgs): BandResult {
         fromIds: [left],
         toIds: [right],
         segments,
-        mark:
-          style === "divorced"
-            ? { x: (x1 + x2) / 2, y: yy, type: "slash" }
-            : style === "widowed"
-              ? { x: (x1 + x2) / 2, y: yy, type: "cross" }
-              : undefined,
+        // 離別(離婚)は点々線で表すので印は付けない。死別だけ「×」の印を付ける
+        mark: style === "widowed" ? { x: (x1 + x2) / 2, y: yy, type: "cross" } : undefined,
         bandIndex: 0,
       });
     } else {
@@ -1102,7 +1098,7 @@ function layoutBand(args: BandArgs): BandResult {
           seg(cxl, arcY, cxr, arcY),
           seg(cxr, arcY, cxr, rowY[g] + cardH),
         ],
-        mark: style === "divorced" ? { x: (cxl + cxr) / 2, y: arcY, type: "slash" } : undefined,
+        mark: style === "widowed" ? { x: (cxl + cxr) / 2, y: arcY, type: "cross" } : undefined,
         bandIndex: 0,
       });
     }

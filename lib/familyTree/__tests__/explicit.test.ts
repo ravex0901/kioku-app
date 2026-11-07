@@ -5,6 +5,7 @@ import type { ExplicitRelRow, FamilyRow } from "../fromRows";
 import { layoutFamilyTree } from "../layout";
 import { familyRelationLabel } from "../../constants";
 import { isClean, verifyLayout } from "../verify";
+import { legendSwatchSvg, renderTreeSvg } from "../svg";
 
 // 明示的な親族関係(family_relationships)のテスト。
 // 離婚・再婚・「どの配偶者との子か」を、家族の登録画面から入れたときの描画を確かめる。
@@ -111,5 +112,40 @@ describe("続柄「元配偶者」(ex_spouse)", () => {
     const pair = input.marriages.filter((m) => [m.a, m.b].includes("m:mX"));
     assert.equal(pair.length, 1);
     assert.equal(pair[0].status, "widowed");
+  });
+});
+
+describe("離別(離婚)の線の見た目", () => {
+  const input = build(
+    [row("mX", "ex_spouse", "前の妻"), row("mY", "spouse", "今の妻")],
+    [
+      { id: "r1", type: "marriage", a: self, b: mem("mX"), marriageStatus: "divorced", marriageOrder: 1 },
+      { id: "r2", type: "marriage", a: self, b: mem("mY"), marriageStatus: "married", marriageOrder: 2 },
+    ]
+  );
+  const L = layoutFamilyTree(input);
+  const svg = renderTreeSvg(L);
+  const pathOf = (style: string) => {
+    const e = L.edges.find((x) => x.kind === "marriage" && x.style === style);
+    assert.ok(e, `${style} の線がない`);
+    const m = svg.match(new RegExp(`<path data-edge-id="${e.id.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}"[^>]*>`));
+    assert.ok(m, "線が描かれていない");
+    return m[0];
+  };
+
+  it("離別は点々線(丸い点)で描かれる", () => {
+    const p = pathOf("divorced");
+    assert.match(p, /stroke-dasharray="0\.1 6"/);
+    assert.match(p, /stroke-linecap="round"/);
+  });
+
+  it("婚姻中は点々線にならない", () => {
+    assert.doesNotMatch(pathOf("marriage"), /stroke-dasharray/);
+  });
+
+  it("凡例の「離別」も点々線で、斜線は付かない", () => {
+    const sw = legendSwatchSvg("divorced");
+    assert.match(sw, /stroke-dasharray="0\.1 6"/);
+    assert.equal((sw.match(/<path/g) ?? []).length, 1);
   });
 });
