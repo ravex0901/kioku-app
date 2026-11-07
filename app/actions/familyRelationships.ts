@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import type { ExplicitRelRow, PersonRef } from "@/lib/familyTree/fromRows";
 import type { MarriageStatus, ParentKind } from "@/lib/familyTree/types";
+import type { Database } from "@/lib/types";
 
 // 家系図:明示的な親族関係(離婚・再婚・「どの配偶者との子か」・養子・継子)の読み書き。
 // テーブル family_relationships(supabase/migrations/20261107_family_relationships.sql)を使う。
@@ -80,10 +81,9 @@ export type RelationshipInput =
 
 export type SaveRelationshipResult = { ok: true; id: string } | { ok: false; error: string; unavailable?: boolean };
 
-function refColumns(prefix: "a" | "b", ref: PersonRef) {
-  const accountId = ref.accountId || null;
-  const memberId = accountId ? null : ref.memberId || null;
-  return { [`${prefix}_account_id`]: accountId, [`${prefix}_member_id`]: memberId };
+function refColumns(ref: PersonRef): { account: string | null; member: string | null } {
+  const account = ref.accountId || null;
+  return { account, member: account ? null : ref.memberId || null };
 }
 
 function sameRef(x: PersonRef, y: PersonRef): boolean {
@@ -106,22 +106,32 @@ export async function addFamilyRelationship(input: RelationshipInput): Promise<S
   }
   if (sameRef(a, b)) return { ok: false, error: "同じ人どうしは登録できません。" };
 
-  let fields: Record<string, unknown>;
+  const ra = refColumns(a);
+  const rb = refColumns(b);
+  const row: Database["public"]["Tables"]["family_relationships"]["Insert"] = {
+    owner_id: user.id,
+    type: input.type,
+    a_account_id: ra.account,
+    a_member_id: ra.member,
+    b_account_id: rb.account,
+    b_member_id: rb.member,
+  };
   if (input.type === "marriage") {
     if (!MARRIAGE_STATUSES.includes(input.marriageStatus)) return { ok: false, error: "夫婦の状態を選んでください。" };
     const order = input.marriageOrder ?? null;
     if (order !== null && (!Number.isInteger(order) || order < 1 || order > 20)) {
       return { ok: false, error: "結婚の順番は1〜20で入れてください。" };
     }
-    fields = { type: "marriage", marriage_status: input.marriageStatus, marriage_order: order };
+    row.marriage_status = input.marriageStatus;
+    row.marriage_order = order;
   } else {
     if (!PARENT_KINDS.includes(input.parentKind)) return { ok: false, error: "親子の種類を選んでください。" };
-    fields = { type: "parent_child", parent_kind: input.parentKind };
+    row.parent_kind = input.parentKind;
   }
 
   const { data, error } = await supabase
     .from("family_relationships")
-    .insert({ owner_id: user.id, ...fields, ...refColumns("a", a), ...refColumns("b", b) })
+    .insert(row)
     .select("id")
     .single();
 

@@ -483,6 +483,22 @@ export type FamilyNotification = {
   senderId: string;
 };
 
+// 家系図:明示的な親族関係(supabase/migrations/20261107_family_relationships.sql)
+export type FamilyRelationshipRow = {
+  id: string;
+  owner_id: string;
+  type: "parent_child" | "marriage";
+  a_account_id: string | null;
+  a_member_id: string | null;
+  b_account_id: string | null;
+  b_member_id: string | null;
+  parent_kind: "biological" | "legal" | "adoptive" | "special_adoptive" | "step" | null;
+  marriage_status: "married" | "divorced" | "widowed" | "common_law" | null;
+  marriage_order: number | null;
+  created_at: string;
+  updated_at: string;
+};
+
 export type Database = {
   public: {
     Tables: {
@@ -594,6 +610,15 @@ export type Database = {
           relation: FamilyRelation;
         };
         Update: Partial<Omit<FamilyMember, "id" | "user_id" | "created_at">>;
+        Relationships: [];
+      };
+      family_relationships: {
+        Row: FamilyRelationshipRow;
+        Insert: Partial<Omit<FamilyRelationshipRow, "id" | "created_at" | "updated_at">> & {
+          owner_id: string;
+          type: FamilyRelationshipRow["type"];
+        };
+        Update: Partial<Omit<FamilyRelationshipRow, "id" | "owner_id" | "created_at" | "updated_at">>;
         Relationships: [];
       };
       wills: {
