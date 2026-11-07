@@ -72,7 +72,7 @@ type RelationInfo = {
   /** 対象(T)の性別 */
   gender?: Gender;
   /** T が O の親/子/配偶者/兄弟 など */
-  role: "parent" | "child" | "spouse" | "sibling" | "other";
+  role: "parent" | "child" | "spouse" | "ex_spouse" | "sibling" | "other";
   /** 世代の目安:gen(T) - gen(O) */
   delta: number;
   /** 兄弟の年長(-1)/年少(+1)、長子(-2) */
@@ -93,6 +93,7 @@ const RELATIONS: Record<string, RelationInfo> = {
   younger_brother: { gender: "male", role: "sibling", delta: 0, rank: 1 },
   younger_sister: { gender: "female", role: "sibling", delta: 0, rank: 1 },
   spouse: { role: "spouse", delta: 0 },
+  ex_spouse: { role: "ex_spouse", delta: 0 },
   son: { gender: "male", role: "child", delta: 1 },
   daughter: { gender: "female", role: "child", delta: 1 },
   eldest_son: { gender: "male", role: "child", delta: 1, rank: -2 },
@@ -234,11 +235,12 @@ export function buildTreeInput(args: BuildArgs): TreeInput {
         });
         break;
       case "spouse":
+      case "ex_spouse":
         marriages.push({
           id: `m:${[ownerPid, targetPid].sort().join("+")}`,
           a: ownerPid,
           b: targetPid,
-          status: "married",
+          status: info.role === "ex_spouse" ? "divorced" : "married",
           priority,
         });
         break;

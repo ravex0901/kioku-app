@@ -161,3 +161,32 @@ export async function deleteFamilyRelationship(id: string): Promise<{ ok: true }
   revalidatePath("/family-tree");
   return { ok: true };
 }
+
+export type AddFormerSpouseResult =
+  | { ok: true; member: { id: string; name: string; relation: string; created_at: string } }
+  | { ok: false; error: string };
+
+/** 前の配偶者(離婚した方)を、家族として登録する(続柄「元配偶者」)。 */
+export async function addFormerSpouse(name: string): Promise<AddFormerSpouseResult> {
+  const trimmed = name.trim();
+  if (!trimmed) return { ok: false, error: "お名前を入れてください。" };
+  if (trimmed.length > 50) return { ok: false, error: "お名前は50文字までで入れてください。" };
+
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { ok: false, error: "ログインしてください。" };
+
+  const { data, error } = await supabase
+    .from("family_members")
+    .insert({ user_id: user.id, name: trimmed, relation: "ex_spouse" })
+    .select("id, name, relation, created_at")
+    .single();
+  if (error || !data) {
+    console.error("addFormerSpouse error", error);
+    return { ok: false, error: "追加できませんでした。もう一度お試しください。" };
+  }
+  revalidatePath("/family-tree");
+  return { ok: true, member: data };
+}

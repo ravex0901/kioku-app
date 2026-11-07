@@ -81,6 +81,8 @@ export type FamilyRelation =
   | "great_grandson"
   | "great_granddaughter"
   | "other"
+  // 前の配偶者(離婚した方)。家系図の「つながり」欄から登録する。
+  | "ex_spouse"
   // 旧バージョンの値(過去に登録されたデータとの互換性のために残す)。
   | "eldest_son"
   | "eldest_daughter";

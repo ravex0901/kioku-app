@@ -3,6 +3,7 @@ import { describe, it } from "node:test";
 import { buildTreeInput } from "../fromRows";
 import type { ExplicitRelRow, FamilyRow } from "../fromRows";
 import { layoutFamilyTree } from "../layout";
+import { familyRelationLabel } from "../../constants";
 import { isClean, verifyLayout } from "../verify";
 
 // 明示的な親族関係(family_relationships)のテスト。
@@ -17,7 +18,7 @@ function row(id: string, relation: string, name: string, linked: string | null =
 }
 
 function build(rows: FamilyRow[], explicit: ExplicitRelRow[]) {
-  return buildTreeInput({ viewerId: V, viewerName: "本人", rows, accounts: [], explicit });
+  return buildTreeInput({ viewerId: V, viewerName: "本人", rows, accounts: [], explicit, relationLabel: familyRelationLabel });
 }
 
 describe("明示的な親族関係:離婚した相手との間の子", () => {
@@ -90,5 +91,25 @@ describe("明示的な親族関係:続柄の登録より優先される", () => 
     );
     assert.equal(input.parentChild.length, 0);
     assert.equal(input.persons.length, 2);
+  });
+});
+
+describe("続柄「元配偶者」(ex_spouse)", () => {
+  it("「元配偶者」で登録した人は、明示的な登録がなくても離婚の線になる", () => {
+    const input = build([row("mX", "ex_spouse", "前の妻")], []);
+    const pair = input.marriages.filter((m) => [m.a, m.b].includes("m:mX"));
+    assert.equal(pair.length, 1);
+    assert.equal(pair[0].status, "divorced");
+    assert.equal(input.persons.find((p) => p.id === "m:mX")?.relationLabel, "元配偶者");
+  });
+
+  it("「元配偶者」でも、明示的に「死別」と登録すればそちらが優先される", () => {
+    const input = build(
+      [row("mX", "ex_spouse", "前の夫")],
+      [{ id: "r1", type: "marriage", a: self, b: mem("mX"), marriageStatus: "widowed" }]
+    );
+    const pair = input.marriages.filter((m) => [m.a, m.b].includes("m:mX"));
+    assert.equal(pair.length, 1);
+    assert.equal(pair[0].status, "widowed");
   });
 });

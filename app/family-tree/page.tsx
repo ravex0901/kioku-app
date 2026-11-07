@@ -120,10 +120,10 @@ export default async function FamilyTreePage({
 
       // 関係の登録で選べる人:ご本人・家系図に出ているアカウントの方・ご本人が登録した家族
       const relationByAccount = new Map(
-        family.map((f) => [f.linked_user_id as string, familyRelationLabel(f.relation)])
+        family.map((f) => [f.linked_user_id as string, f.relation as string])
       );
       const people: PersonOption[] = [
-        { key: `a:${user.id}`, ref: { accountId: user.id }, label: `${displayName}(ご本人)` },
+        { key: `a:${user.id}`, ref: { accountId: user.id }, name: displayName, label: `${displayName}(ご本人)` },
         ...accounts
           .filter((a) => a.userId !== user.id)
           .map((a) => {
@@ -131,13 +131,17 @@ export default async function FamilyTreePage({
             return {
               key: `a:${a.userId}`,
               ref: { accountId: a.userId },
-              label: rel ? `${a.name}(${rel})` : a.name,
+              name: a.name,
+              relation: rel,
+              label: rel ? `${a.name}(${familyRelationLabel(rel)})` : a.name,
             };
           }),
         ...memberRows.map((r) => ({
           key: `m:${r.id}`,
           ref: { memberId: r.id },
-          label: `${r.name}(${familyRelationLabel(r.relation)}・アプリ未利用)`,
+          name: r.name,
+          relation: r.relation,
+          label: `${r.name}(${familyRelationLabel(r.relation)})`,
         })),
       ];
 

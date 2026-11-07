@@ -10,16 +10,27 @@ import {
   type FamilyRow,
   type PersonRef,
 } from "@/lib/familyTree/fromRows";
-import type { MarriageStatus, ParentKind } from "@/lib/familyTree/types";
-import { addFamilyRelationship, deleteFamilyRelationship } from "@/app/actions/familyRelationships";
+import type { MarriageStatus } from "@/lib/familyTree/types";
+import {
+  addFamilyRelationship,
+  addFormerSpouse,
+  deleteFamilyRelationship,
+  type RelationshipInput,
+} from "@/app/actions/familyRelationships";
 
-// 家系図+「離婚・再婚・親子のつながり」を登録する欄。
-// 登録した関係は、その場で家系図に反映される(家系図は画面側で作り直す)。
-// データベースの準備(family_relationships テーブル)がまだのときは「お試し」で動き、保存はしない。
+// 家系図+「ご家族のつながり」欄。
+// むずかしい選び方をせず、質問に答えてボタンを押すだけで登録できる:
+//   1. 配偶者ごとに「結婚している/離婚した/亡くなった」
+//   2. お子さんごとに「もう一人の親はどなた?」
+// 登録した内容は、その場で家系図に反映される(家系図は画面側で作り直す)。
+// データベースの準備(family_relationships テーブル)がまだのときは「お試し」で動き、何も保存しない。
 
 export type PersonOption = {
   key: string;
   ref: PersonRef;
+  name: string;
+  /** ご本人から見た続柄(ご本人は undefined) */
+  relation?: string;
   label: string;
 };
 
@@ -29,7 +40,7 @@ type Props = {
   viewerDeceased?: boolean;
   rows: FamilyRow[];
   accounts: AccountNode[];
-  /** 本人が登録した家族のうち、アカウントのない人(関係を登録したときだけ家系図に出す) */
+  /** ご本人が登録した家族のうち、アカウントのない人 */
   memberRows: FamilyRow[];
   people: PersonOption[];
   saved: ExplicitRelRow[];
@@ -38,32 +49,19 @@ type Props = {
   editHref?: string;
 };
 
-const MARRIAGE_OPTIONS: { value: MarriageStatus; label: string }[] = [
+const SPOUSE_BUTTONS: { value: MarriageStatus; label: string }[] = [
   { value: "married", label: "結婚している" },
   { value: "divorced", label: "離婚した" },
-  { value: "widowed", label: "死別した" },
-  { value: "common_law", label: "事実婚" },
+  { value: "widowed", label: "亡くなった" },
 ];
 
-const PARENT_OPTIONS: { value: ParentKind; label: string }[] = [
-  { value: "biological", label: "実の親子" },
-  { value: "adoptive", label: "養子(普通養子)" },
-  { value: "special_adoptive", label: "養子(特別養子)" },
-  { value: "step", label: "連れ子(継親子)" },
-];
-
-const ORDER_OPTIONS = [
-  { value: "", label: "わからない" },
-  { value: "1", label: "1回目の結婚" },
-  { value: "2", label: "2回目の結婚" },
-  { value: "3", label: "3回目の結婚" },
-  { value: "4", label: "4回目の結婚" },
-];
-
-const selectCls =
-  "min-h-[50px] w-full rounded-lg border border-black/10 bg-white px-4 py-2.5 text-base outline-none focus:border-green-400 focus:ring-2 focus:ring-green-100";
+const CHILD_RELATIONS = new Set(["son", "daughter", "eldest_son", "eldest_daughter"]);
+const SPOUSE_RELATIONS = new Set(["spouse", "ex_spouse"]);
 
 const refKey = (r: PersonRef) => (r.accountId ? `a:${r.accountId}` : `m:${r.memberId}`);
+
+let draftSeq = 0;
+const draftId = (prefix: string) => `draft-${prefix}-${Date.now()}-${++draftSeq}`;
 
 export function FamilyTreeWithRelations({
   viewerId,
@@ -71,43 +69,35 @@ export function FamilyTreeWithRelations({
   viewerDeceased,
   rows,
   accounts,
-  memberRows,
-  people,
+  memberRows: initialMemberRows,
+  people: initialPeople,
   saved: initialSaved,
   available,
   editHref,
 }: Props) {
   const [saved, setSaved] = useState<ExplicitRelRow[]>(initialSaved);
-  const [drafts, setDrafts] = useState<ExplicitRelRow[]>([]);
-  const [mode, setMode] = useState<"marriage" | "parent_child">("marriage");
+  const [memberRows, setMemberRows] = useState<FamilyRow[]>(initialMemberRows);
+  const [people, setPeople] = useState<PersonOption[]>(initialPeople);
   const [pending, startTransition] = useTransition();
   const [message, setMessage] = useState<{ kind: "ok" | "error"; text: string } | null>(null);
+  const [adding, setAdding] = useState(false);
+  const [newName, setNewName] = useState("");
 
   const selfKey = `a:${viewerId}`;
-  // 夫婦
-  const [mA, setMA] = useState(selfKey);
-  const [mB, setMB] = useState("");
-  const [mStatus, setMStatus] = useState<MarriageStatus>("divorced");
-  const [mOrder, setMOrder] = useState("");
-  // 親子
-  const [pChild, setPChild] = useState("");
-  const [pParent, setPParent] = useState("");
-  const [pKind, setPKind] = useState<ParentKind>("biological");
+  const selfRef: PersonRef = { accountId: viewerId };
 
-  const byKey = useMemo(() => new Map(people.map((p) => [p.key, p])), [people]);
-  const nameOf = (r: PersonRef) => byKey.get(refKey(r))?.label ?? "(登録が見つからない人)";
-
-  const all = useMemo(() => [...saved, ...drafts], [saved, drafts]);
-
+  // ---- 家系図(登録内容をその場で反映) ----
   const input = useMemo(() => {
-    // 関係に出てくる、アカウントのない家族だけを家系図に加える
     const used = new Set<string>();
-    for (const e of all) {
+    for (const e of saved) {
       if (e.a.memberId) used.add(e.a.memberId);
       if (e.b.memberId) used.add(e.b.memberId);
     }
     const have = new Set(rows.map((r) => r.id));
-    const extra = memberRows.filter((r) => used.has(r.id) && !have.has(r.id));
+    // アカウントのない家族は、「元配偶者」か、つながりを登録した人だけ家系図に出す
+    const extra = memberRows.filter(
+      (r) => !have.has(r.id) && (used.has(r.id) || r.relation === "ex_spouse")
+    );
     try {
       return buildTreeInput({
         viewerId,
@@ -115,94 +105,157 @@ export function FamilyTreeWithRelations({
         viewerDeceased,
         rows: [...rows, ...extra],
         accounts,
-        explicit: all,
+        explicit: saved,
         relationLabel: familyRelationLabel,
       });
     } catch (e) {
       console.error("buildTreeInput failed", e);
       return null;
     }
-  }, [all, rows, memberRows, accounts, viewerId, viewerName, viewerDeceased]);
+  }, [saved, rows, memberRows, accounts, viewerId, viewerName, viewerDeceased]);
 
-  function describe(e: ExplicitRelRow): string {
-    if (e.type === "marriage") {
-      const st = MARRIAGE_OPTIONS.find((o) => o.value === e.marriageStatus)?.label ?? "夫婦";
-      const ord = e.marriageOrder ? `(${e.marriageOrder}回目の結婚)` : "";
-      return `${nameOf(e.a)} と ${nameOf(e.b)}:${st}${ord}`;
-    }
-    const kind = PARENT_OPTIONS.find((o) => o.value === e.parentKind)?.label ?? "親子";
-    return `${nameOf(e.b)} の親は ${nameOf(e.a)}(${kind})`;
-  }
+  // ---- 配偶者・お子さん ----
+  const marriageWith = (key: string) =>
+    saved.find(
+      (e) =>
+        e.type === "marriage" &&
+        ((refKey(e.a) === selfKey && refKey(e.b) === key) || (refKey(e.b) === selfKey && refKey(e.a) === key))
+    );
 
-  function add() {
-    setMessage(null);
-    let row: ExplicitRelRow;
-    if (mode === "marriage") {
-      const a = byKey.get(mA);
-      const b = byKey.get(mB);
-      if (!a || !b) return setMessage({ kind: "error", text: "2人とも選んでください。" });
-      if (a.key === b.key) return setMessage({ kind: "error", text: "同じ人どうしは登録できません。" });
-      row = {
-        id: "",
-        type: "marriage",
-        a: a.ref,
-        b: b.ref,
-        marriageStatus: mStatus,
-        marriageOrder: mOrder ? Number(mOrder) : null,
-      };
-    } else {
-      const child = byKey.get(pChild);
-      const parent = byKey.get(pParent);
-      if (!child || !parent) return setMessage({ kind: "error", text: "子どもと親を選んでください。" });
-      if (child.key === parent.key) return setMessage({ kind: "error", text: "同じ人どうしは登録できません。" });
-      row = { id: "", type: "parent_child", a: parent.ref, b: child.ref, parentKind: pKind };
-    }
+  const spouses = people.filter(
+    (p) => p.key !== selfKey && (SPOUSE_RELATIONS.has(p.relation ?? "") || Boolean(marriageWith(p.key)))
+  );
+  const children = people.filter((p) => p.key !== selfKey && CHILD_RELATIONS.has(p.relation ?? ""));
 
+  const spouseStatus = (p: PersonOption): MarriageStatus => {
+    const e = marriageWith(p.key);
+    if (e?.marriageStatus) return e.marriageStatus;
+    return p.relation === "ex_spouse" ? "divorced" : "married";
+  };
+
+  const otherParentOf = (child: PersonOption) =>
+    saved.find(
+      (e) =>
+        e.type === "parent_child" &&
+        refKey(e.b) === child.key &&
+        refKey(e.a) !== selfKey &&
+        spouses.some((s) => s.key === refKey(e.a))
+    );
+
+  // ---- 保存(お試しのときは画面の中だけで反映) ----
+  async function replace(old: ExplicitRelRow | undefined, next: RelationshipInput | null): Promise<boolean> {
     if (!available) {
-      setDrafts((d) => [...d, { ...row, id: `draft-${Date.now()}` }]);
-      setMessage({ kind: "ok", text: "お試しで家系図に反映しました(保存はされていません)。" });
-      return;
+      setSaved((list) => {
+        const rest = old ? list.filter((x) => x.id !== old.id) : list;
+        if (!next) return rest;
+        const row: ExplicitRelRow =
+          next.type === "marriage"
+            ? { id: draftId("r"), type: "marriage", a: next.a, b: next.b, marriageStatus: next.marriageStatus }
+            : { id: draftId("r"), type: "parent_child", a: next.parent, b: next.child, parentKind: next.parentKind };
+        return [...rest, row];
+      });
+      return true;
     }
-
-    startTransition(async () => {
-      const res = await addFamilyRelationship(
-        row.type === "marriage"
-          ? {
-              type: "marriage",
-              a: row.a,
-              b: row.b,
-              marriageStatus: row.marriageStatus as MarriageStatus,
-              marriageOrder: row.marriageOrder ?? null,
-            }
-          : { type: "parent_child", parent: row.a, child: row.b, parentKind: row.parentKind as ParentKind }
-      );
+    if (old) {
+      const res = await deleteFamilyRelationship(old.id);
       if (!res.ok) {
         setMessage({ kind: "error", text: res.error });
-        return;
+        return false;
       }
-      setSaved((s) => [...s, { ...row, id: res.id }]);
-      setMessage({ kind: "ok", text: "保存して、家系図に反映しました。" });
-    });
+      setSaved((list) => list.filter((x) => x.id !== old.id));
+    }
+    if (next) {
+      const res = await addFamilyRelationship(next);
+      if (!res.ok) {
+        setMessage({ kind: "error", text: res.error });
+        return false;
+      }
+      const row: ExplicitRelRow =
+        next.type === "marriage"
+          ? { id: res.id, type: "marriage", a: next.a, b: next.b, marriageStatus: next.marriageStatus }
+          : { id: res.id, type: "parent_child", a: next.parent, b: next.child, parentKind: next.parentKind };
+      setSaved((list) => [...list, row]);
+    }
+    return true;
   }
 
-  function remove(e: ExplicitRelRow) {
+  const done = (text: string) =>
+    setMessage({ kind: "ok", text: available ? `${text}家系図に反映しました。` : `${text}お試しで家系図に反映しました(保存はされていません)。` });
+
+  function chooseSpouseStatus(p: PersonOption, status: MarriageStatus) {
     setMessage(null);
-    if (e.id.startsWith("draft-")) {
-      setDrafts((d) => d.filter((x) => x.id !== e.id));
+    if (spouseStatus(p) === status) return;
+    const old = marriageWith(p.key);
+    // 続柄どおりの状態に戻すときは、登録を消すだけでよい
+    const defaultStatus: MarriageStatus = p.relation === "ex_spouse" ? "divorced" : "married";
+    const next: RelationshipInput | null =
+      status === defaultStatus && SPOUSE_RELATIONS.has(p.relation ?? "")
+        ? null
+        : { type: "marriage", a: selfRef, b: p.ref, marriageStatus: status };
+    startTransition(async () => {
+      if (await replace(old, next)) done(`${p.name}さんを「${SPOUSE_BUTTONS.find((b) => b.value === status)?.label}」にして、`);
+    });
+  }
+
+  function chooseOtherParent(child: PersonOption, parent: PersonOption | null) {
+    setMessage(null);
+    const old = otherParentOf(child);
+    if ((old ? refKey(old.a) : null) === (parent?.key ?? null)) return;
+    const next: RelationshipInput | null = parent
+      ? { type: "parent_child", parent: parent.ref, child: child.ref, parentKind: "biological" }
+      : null;
+    startTransition(async () => {
+      if (await replace(old, next)) {
+        done(parent ? `${child.name}さんのもう一人の親を${parent.name}さんにして、` : `${child.name}さんのもう一人の親を「わからない」にして、`);
+      }
+    });
+  }
+
+  function addEx() {
+    setMessage(null);
+    const name = newName.trim();
+    if (!name) {
+      setMessage({ kind: "error", text: "お名前を入れてください。" });
       return;
     }
-    if (!window.confirm(`「${describe(e)}」を削除しますか?`)) return;
+    const register = (member: { id: string; name: string; created_at: string }) => {
+      setMemberRows((list) => [
+        ...list,
+        { id: member.id, ownerId: viewerId, name: member.name, relation: "ex_spouse", linkedUserId: null, createdAt: member.created_at },
+      ]);
+      setPeople((list) => [
+        ...list,
+        {
+          key: `m:${member.id}`,
+          ref: { memberId: member.id },
+          name: member.name,
+          relation: "ex_spouse",
+          label: `${member.name}(元配偶者)`,
+        },
+      ]);
+      setNewName("");
+      setAdding(false);
+    };
+    if (!available) {
+      register({ id: draftId("m"), name, created_at: new Date().toISOString() });
+      done(`${name}さんを前の配偶者として追加し、`);
+      return;
+    }
     startTransition(async () => {
-      const res = await deleteFamilyRelationship(e.id);
+      const res = await addFormerSpouse(name);
       if (!res.ok) {
         setMessage({ kind: "error", text: res.error });
         return;
       }
-      setSaved((s) => s.filter((x) => x.id !== e.id));
+      register(res.member);
+      done(`${res.member.name}さんを前の配偶者として追加し、`);
     });
   }
 
-  const others = people.filter((p) => p.key !== selfKey);
+  const pill = (active: boolean) =>
+    `min-h-[52px] rounded-xl border-2 px-4 text-base font-semibold transition disabled:opacity-60 ${
+      active ? "border-green-700 bg-green-700 text-white" : "border-black/10 bg-white text-ink hover:border-green-400"
+    }`;
 
   return (
     <div className="flex flex-col gap-8">
@@ -213,206 +266,168 @@ export function FamilyTreeWithRelations({
       )}
 
       <section className="rounded-[1.75rem] border border-divider bg-card p-5 shadow-sm sm:p-7">
-        <h2 className="font-serif-jp text-2xl font-bold text-ink">離婚・再婚・親子のつながり</h2>
+        <h2 className="font-serif-jp text-2xl font-bold text-ink">ご家族のつながりを教えてください</h2>
         <p className="mt-2 text-base leading-relaxed text-ink/70">
-          離婚した方や再婚した方、「どの方との間のお子さんか」を登録すると、家系図に正しく線が引かれます。
-          離婚は一本線に斜線、結婚中は二重線で表示されます。
-        </p>
-        <p className="mt-2 text-sm leading-relaxed text-ink/60">
-          ここに登録した内容は、ご本人だけが見られます。ご家族の画面には表示されません。
+          あてはまるボタンを押すだけで、家系図に反映されます。わからないところは、そのままで大丈夫です。
         </p>
 
         {!available && (
-          <div className="mt-4 rounded-xl border border-gold/50 bg-gold/10 p-4 text-base leading-relaxed text-ink">
-            <p className="font-semibold">いまは「お試し」です</p>
-            <p className="mt-1 text-sm text-ink/80">
-              ここで追加した関係は、家系図にすぐ反映されますが、保存はされません(ページを開き直すと消えます)。
-              保存できるようにするには、データベースの準備が必要です。
+          <div className="mt-4 rounded-xl border border-gold/50 bg-gold/10 p-4">
+            <p className="text-base font-semibold text-ink">いまは「お試し」です</p>
+            <p className="mt-1 text-sm leading-relaxed text-ink/80">
+              押した内容は家系図にすぐ反映されますが、保存はされません(ページを開き直すと元に戻ります)。
             </p>
           </div>
         )}
 
-        <div className="mt-5 flex gap-2" role="tablist" aria-label="登録する関係の種類">
-          {(
-            [
-              ["marriage", "夫婦の関係"],
-              ["parent_child", "親子の関係"],
-            ] as const
-          ).map(([value, label]) => (
+        {/* 1. 配偶者 */}
+        <div className="mt-6">
+          <h3 className="text-xl font-bold text-ink">① 配偶者</h3>
+          {spouses.length === 0 && (
+            <p className="mt-2 text-base text-ink/70">配偶者はまだ登録されていません。</p>
+          )}
+          <ul className="mt-3 flex flex-col gap-4">
+            {spouses.map((p) => {
+              const st = spouseStatus(p);
+              return (
+                <li key={p.key} className="rounded-2xl bg-white p-4 shadow-sm">
+                  <p className="text-lg font-semibold text-ink">{p.name}さん</p>
+                  <div className="mt-3 grid grid-cols-3 gap-2" role="group" aria-label={`${p.name}さんとの関係`}>
+                    {SPOUSE_BUTTONS.map((b) => (
+                      <button
+                        key={b.value}
+                        type="button"
+                        aria-pressed={st === b.value}
+                        disabled={pending}
+                        onClick={() => chooseSpouseStatus(p, b.value)}
+                        className={pill(st === b.value)}
+                      >
+                        {b.label}
+                      </button>
+                    ))}
+                  </div>
+                </li>
+              );
+            })}
+          </ul>
+
+          {adding ? (
+            <div className="mt-4 rounded-2xl border-2 border-dashed border-green-700/40 bg-white p-4">
+              <label className="flex flex-col gap-2">
+                <span className="text-base font-semibold text-ink">前の配偶者のお名前</span>
+                <input
+                  type="text"
+                  value={newName}
+                  onChange={(e) => setNewName(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" && !e.nativeEvent.isComposing) addEx();
+                  }}
+                  maxLength={50}
+                  placeholder="例:山田 花子"
+                  className="min-h-[52px] rounded-lg border border-black/10 bg-white px-4 text-lg outline-none focus:border-green-400 focus:ring-2 focus:ring-green-100"
+                  autoFocus
+                />
+              </label>
+              <div className="mt-3 grid grid-cols-2 gap-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setAdding(false);
+                    setNewName("");
+                  }}
+                  className="min-h-[52px] rounded-full border border-black/15 bg-white text-base text-ink"
+                >
+                  やめる
+                </button>
+                <button
+                  type="button"
+                  onClick={addEx}
+                  disabled={pending}
+                  className="min-h-[52px] rounded-full bg-green-700 text-base font-semibold text-white disabled:opacity-60"
+                >
+                  追加する
+                </button>
+              </div>
+            </div>
+          ) : (
             <button
-              key={value}
               type="button"
-              role="tab"
-              aria-selected={mode === value}
               onClick={() => {
-                setMode(value);
+                setAdding(true);
                 setMessage(null);
               }}
-              className={`min-h-[48px] flex-1 rounded-full px-4 text-base font-semibold transition ${
-                mode === value ? "bg-green-700 text-white" : "border border-green-700/40 bg-white text-green-800"
-              }`}
+              className="mt-4 min-h-[52px] w-full rounded-full border-2 border-green-700/50 bg-white text-base font-semibold text-green-800 hover:bg-green-50"
             >
-              {label}
+              ＋ 前の配偶者(離婚した方)を追加する
             </button>
-          ))}
+          )}
         </div>
 
-        {people.length < 2 ? (
-          <p className="mt-5 text-base text-ink/70">
-            まず「設定」からご家族を登録してください。登録した方を、ここで選べるようになります。
-          </p>
-        ) : mode === "marriage" ? (
-          <div className="mt-5 grid gap-4 sm:grid-cols-2">
-            <label className="flex flex-col gap-1.5">
-              <span className="text-base font-semibold text-ink">1人目</span>
-              <select className={selectCls} value={mA} onChange={(e) => setMA(e.target.value)}>
-                {people.map((p) => (
-                  <option key={p.key} value={p.key}>
-                    {p.label}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <label className="flex flex-col gap-1.5">
-              <span className="text-base font-semibold text-ink">2人目(お相手)</span>
-              <select className={selectCls} value={mB} onChange={(e) => setMB(e.target.value)}>
-                <option value="">選んでください</option>
-                {people
-                  .filter((p) => p.key !== mA)
-                  .map((p) => (
-                    <option key={p.key} value={p.key}>
-                      {p.label}
-                    </option>
-                  ))}
-              </select>
-            </label>
-            <fieldset className="sm:col-span-2">
-              <legend className="mb-1.5 text-base font-semibold text-ink">いまの状態</legend>
-              <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
-                {MARRIAGE_OPTIONS.map((o) => (
-                  <label
-                    key={o.value}
-                    className={`flex min-h-[48px] cursor-pointer items-center justify-center rounded-lg border px-3 text-base ${
-                      mStatus === o.value
-                        ? "border-green-700 bg-green-50 font-semibold text-green-800"
-                        : "border-black/10 bg-white text-ink"
-                    }`}
-                  >
-                    <input
-                      type="radio"
-                      name="marriage-status"
-                      className="sr-only"
-                      checked={mStatus === o.value}
-                      onChange={() => setMStatus(o.value)}
-                    />
-                    {o.label}
-                  </label>
-                ))}
-              </div>
-            </fieldset>
-            <label className="flex flex-col gap-1.5 sm:col-span-2">
-              <span className="text-base font-semibold text-ink">何回目の結婚か(わかれば)</span>
-              <select className={selectCls} value={mOrder} onChange={(e) => setMOrder(e.target.value)}>
-                {ORDER_OPTIONS.map((o) => (
-                  <option key={o.value} value={o.value}>
-                    {o.label}
-                  </option>
-                ))}
-              </select>
-              <span className="text-sm text-ink/60">前の結婚の方が左、いまの結婚の方が右に並びます。</span>
-            </label>
-          </div>
-        ) : (
-          <div className="mt-5 grid gap-4 sm:grid-cols-2">
-            <label className="flex flex-col gap-1.5">
-              <span className="text-base font-semibold text-ink">お子さん</span>
-              <select className={selectCls} value={pChild} onChange={(e) => setPChild(e.target.value)}>
-                <option value="">選んでください</option>
-                {others.map((p) => (
-                  <option key={p.key} value={p.key}>
-                    {p.label}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <label className="flex flex-col gap-1.5">
-              <span className="text-base font-semibold text-ink">その方の親</span>
-              <select className={selectCls} value={pParent} onChange={(e) => setPParent(e.target.value)}>
-                <option value="">選んでください</option>
-                {people
-                  .filter((p) => p.key !== pChild)
-                  .map((p) => (
-                    <option key={p.key} value={p.key}>
-                      {p.label}
-                    </option>
-                  ))}
-              </select>
-            </label>
-            <label className="flex flex-col gap-1.5 sm:col-span-2">
-              <span className="text-base font-semibold text-ink">親子の種類</span>
-              <select className={selectCls} value={pKind} onChange={(e) => setPKind(e.target.value as ParentKind)}>
-                {PARENT_OPTIONS.map((o) => (
-                  <option key={o.value} value={o.value}>
-                    {o.label}
-                  </option>
-                ))}
-              </select>
-              <span className="text-sm text-ink/60">
-                ご本人の「息子」「娘」として登録済みの方は、ご本人が親として自動で入っています。
-                もう一人の親(前の配偶者など)だけを登録すると、お二人の線の下に入ります。
-              </span>
-            </label>
-          </div>
-        )}
-
-        {people.length >= 2 && (
-          <button
-            type="button"
-            onClick={add}
-            disabled={pending}
-            className="mt-5 min-h-[52px] w-full rounded-full bg-green-700 px-6 text-lg font-semibold text-white shadow-sm transition hover:bg-green-800 disabled:opacity-60"
-          >
-            {pending ? "保存しています…" : available ? "登録する" : "お試しで家系図に反映する"}
-          </button>
-        )}
+        {/* 2. お子さん */}
+        <div className="mt-8">
+          <h3 className="text-xl font-bold text-ink">② お子さん</h3>
+          {children.length === 0 ? (
+            <p className="mt-2 text-base text-ink/70">
+              お子さんはまだ登録されていません。「設定」の家族のところから登録できます。
+            </p>
+          ) : spouses.length === 0 ? (
+            <p className="mt-2 text-base text-ink/70">
+              配偶者を登録すると、お子さんがどなたとのお子さんかを選べるようになります。
+            </p>
+          ) : (
+            <ul className="mt-3 flex flex-col gap-4">
+              {children.map((c) => {
+                const cur = otherParentOf(c);
+                const curKey = cur ? refKey(cur.a) : null;
+                return (
+                  <li key={c.key} className="rounded-2xl bg-white p-4 shadow-sm">
+                    <p className="text-lg font-semibold text-ink">
+                      {c.name}さんの、もう一人の親は?
+                    </p>
+                    <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-3">
+                      {spouses.map((s) => (
+                        <button
+                          key={s.key}
+                          type="button"
+                          aria-pressed={curKey === s.key}
+                          disabled={pending}
+                          onClick={() => chooseOtherParent(c, s)}
+                          className={pill(curKey === s.key)}
+                        >
+                          {s.name}さん
+                        </button>
+                      ))}
+                      <button
+                        type="button"
+                        aria-pressed={curKey === null}
+                        disabled={pending}
+                        onClick={() => chooseOtherParent(c, null)}
+                        className={pill(curKey === null)}
+                      >
+                        わからない
+                      </button>
+                    </div>
+                  </li>
+                );
+              })}
+            </ul>
+          )}
+        </div>
 
         {message && (
           <p
             role={message.kind === "error" ? "alert" : "status"}
-            className={`mt-3 text-base ${message.kind === "error" ? "text-red-600" : "text-green-800"}`}
+            className={`mt-5 rounded-xl px-4 py-3 text-base ${
+              message.kind === "error" ? "bg-red-50 text-red-700" : "bg-green-50 text-green-800"
+            }`}
           >
             {message.text}
           </p>
         )}
 
-        {all.length > 0 && (
-          <div className="mt-6">
-            <h3 className="text-lg font-semibold text-ink">登録した関係</h3>
-            <ul className="mt-2 flex flex-col gap-2">
-              {all.map((e) => (
-                <li
-                  key={e.id}
-                  className="flex items-center gap-3 rounded-xl border border-black/5 bg-white px-4 py-3 text-base text-ink"
-                >
-                  <span className="min-w-0 flex-1 break-words">
-                    {describe(e)}
-                    {e.id.startsWith("draft-") && (
-                      <span className="ml-2 rounded-full bg-gold/20 px-2 py-0.5 text-xs text-ink/70">お試し</span>
-                    )}
-                  </span>
-                  <button
-                    type="button"
-                    onClick={() => remove(e)}
-                    disabled={pending}
-                    className="min-h-[44px] shrink-0 rounded-full border border-red-300 px-4 text-sm text-red-700 hover:bg-red-50 disabled:opacity-60"
-                  >
-                    削除
-                  </button>
-                </li>
-              ))}
-            </ul>
-          </div>
-        )}
+        <p className="mt-6 text-sm leading-relaxed text-ink/60">
+          ここで登録した内容は、ご本人だけが見られます。ご家族の画面には表示されません。
+        </p>
       </section>
     </div>
   );

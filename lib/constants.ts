@@ -219,6 +219,8 @@ export const FAMILY_RELATION_OPTIONS: {
 const LEGACY_FAMILY_RELATION_LABEL: Record<string, string> = {
   eldest_son: "長男",
   eldest_daughter: "長女",
+  // 家系図の「つながり」欄から登録する(続柄の選択肢には出さない)
+  ex_spouse: "元配偶者",
 };
 
 export function familyRelationLabel(value: string | null | undefined): string {
@@ -229,6 +231,7 @@ export function familyRelationLabel(value: string | null | undefined): string {
 }
 
 export const FAMILY_RELATION_GENERATION: Record<string, number> = {
+  ex_spouse: 0,
   great_grandfather: -3,
   great_grandmother: -3,
   grandfather: -2,
