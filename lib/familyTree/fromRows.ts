@@ -321,11 +321,21 @@ export function buildTreeInput(args: BuildArgs): TreeInput {
     return [...map.values()];
   };
 
+  // 同じ2人の夫婦関係が、続柄(「配偶者」)と明示的な登録の両方にあるときは、明示的な登録だけを使う。
+  // (例:「配偶者」で登録した人を、あとから「離婚」に変えた場合に、婚姻中の線を残さない)
+  const pairKey = (a: string, b: string) => [a, b].sort().join("+");
+  const explicitPairs = new Set(
+    marriages.filter((m) => m.id.startsWith("x:")).map((m) => pairKey(m.a, m.b))
+  );
+  const marriagesFinal = marriages.filter(
+    (m) => m.id.startsWith("x:") || !explicitPairs.has(pairKey(m.a, m.b))
+  );
+
   return {
     viewerId: viewerPid,
     persons: [...persons.values()],
     parentChild: uniq(parentChild),
-    marriages: uniq(marriages),
+    marriages: uniq(marriagesFinal),
     siblings: uniq(siblings),
     hints: uniq(hints),
   };
