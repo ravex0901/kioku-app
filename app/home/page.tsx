@@ -15,8 +15,6 @@ import { getTodayMood } from "@/app/actions/mood";
 import { getCurrentVoiceCheckin } from "@/app/actions/voiceCheckins";
 import { getPendingFamilyLinkRequests } from "@/app/actions/familyLinkRequests";
 import { FamilyLinkRequestsCard } from "@/components/FamilyLinkRequestsCard";
-import { getMyFamilyNotifications } from "@/app/actions/familyNotifications";
-import { FamilyNotificationsCard } from "@/components/FamilyNotificationsCard";
 import type { Disposition } from "@/lib/types";
 
 type RecentItem = {
@@ -158,7 +156,6 @@ export default async function HomePage() {
     todayMoodResult,
     voiceCheckinResult,
     pendingFamilyLinkRequests,
-    familyNotifications,
   ] = await Promise.all([
       supabase
         .from("items")
@@ -191,7 +188,6 @@ export default async function HomePage() {
       getTodayMood(),
       getCurrentVoiceCheckin(),
       getPendingFamilyLinkRequests(),
-      getMyFamilyNotifications(),
     ]);
 
   const total = totalRes.count ?? 0;
@@ -219,7 +215,7 @@ export default async function HomePage() {
       <main className="mx-auto flex max-w-5xl flex-col gap-6 px-4 py-8 sm:px-6">
         <FamilyLinkRequestsCard initialRequests={pendingFamilyLinkRequests} />
 
-        <FamilyNotificationsCard initialNotifications={familyNotifications} />
+        {/* ご家族からのお知らせは、上のベルのボタンから開く(ホームには赤い件数だけ出す) */}
 
         <TodayMoodCard initialMood={todayMood} />
 
@@ -229,6 +225,7 @@ export default async function HomePage() {
             speakerName={voiceCheckin.speaker_name}
             messageText={voiceCheckin.message_text}
             audioUrl={voiceCheckin.audioUrl}
+            hasRecording={Boolean(voiceCheckin.storage_path)}
           />
         )}
 
