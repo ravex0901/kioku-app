@@ -18,6 +18,7 @@ import type { FamilyRelation } from "@/lib/types";
 //   相手側の登録とつながりから割り出した続柄に直す(割り出せなければそのまま)。
 // - 相手がプロフィールで性別を登録していて、続柄がその性別と食い違うもの(女性なのに「父」など)は、
 //   同じ立場の続柄に直す(「父」→「母」)。
+// - 自動追加で新しく作る行は invite_token を空にする(=自動追加の印。紐づけ解除で「相手側の家族」を割り出すのに使う)。
 // - 相手側の行は RLS では作れないため、サーバー側の管理用クライアントで書く。
 //   どの人を加えるかは、この関数の中で DB のデータから計算し直す(画面から相手を指定させない)。
 
@@ -84,7 +85,8 @@ export async function syncAutoFamily(): Promise<SyncResult> {
     if (op.kind === "link_existing") {
       const { error } = await admin
         .from("family_members")
-        .update({ linked_user_id: op.other, linked_at: now, invite_token: null })
+        // 招待トークンは消さない(本人が登録した人なので「自動追加」とは区別する。紐づけ解除の計算で使う)
+        .update({ linked_user_id: op.other, linked_at: now })
         .eq("id", op.rowId)
         .is("linked_user_id", null);
       if (error) {

@@ -87,17 +87,31 @@ export function analyzeUnlink(args: {
     link(e.toUserId, e.fromUserId);
   }
 
-  const reached = new Set<string>([viewerId]);
-  const queue = [viewerId];
-  while (queue.length) {
-    const cur = queue.shift()!;
-    for (const nx of adj.get(cur) ?? []) {
-      if (!reached.has(nx)) {
-        reached.add(nx);
-        queue.push(nx);
+  const reachFrom = (graph: Map<string, Set<string>>) => {
+    const seen = new Set<string>([viewerId]);
+    const queue = [viewerId];
+    while (queue.length) {
+      const cur = queue.shift()!;
+      for (const nx of graph.get(cur) ?? []) {
+        if (!seen.has(nx)) {
+          seen.add(nx);
+          queue.push(nx);
+        }
       }
     }
+    return seen;
+  };
+  const reached = reachFrom(adj);
+  // 解除前のつながり(解除で「一緒に消える」のは、解除前にはつながっていた人だけ)
+  const before = new Map<string, Set<string>>();
+  for (const e of args.edges) {
+    if (e.fromUserId === e.toUserId) continue;
+    if (!before.has(e.fromUserId)) before.set(e.fromUserId, new Set());
+    if (!before.has(e.toUserId)) before.set(e.toUserId, new Set());
+    before.get(e.fromUserId)!.add(e.toUserId);
+    before.get(e.toUserId)!.add(e.fromUserId);
   }
+  const reachedBefore = reachFrom(before);
 
   const nameOf = new Map(args.nodes.map((n) => [n.userId, n.name]));
   const removedStillConnected = reached.has(removedId);
@@ -119,7 +133,7 @@ export function analyzeUnlink(args: {
   }
 
   const dependents: Dependent[] = args.nodes
-    .filter((n) => n.userId !== viewerId && n.userId !== removedId && !reached.has(n.userId))
+    .filter((n) => n.userId !== viewerId && n.userId !== removedId && reachedBefore.has(n.userId) && !reached.has(n.userId))
     .map((n) => {
       const rel = relFromRemoved.get(n.userId) ?? null;
       return {

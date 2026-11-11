@@ -94,3 +94,24 @@ describe("紐づけ解除の影響", () => {
     assert.equal(r.dependents.find((d) => d.userId === "gkid")?.suggestedRelation, "other");
   });
 });
+
+describe("削除で一緒に外す人(2026-11-11)", () => {
+  it("解除の前から本人とつながっていなかった人は、一緒に消える人に入れない", () => {
+    const nodes = [N("me"), N("sp"), N("spDad"), N("lonely")];
+    const edges = [E("me", "sp", "spouse"), E("sp", "me", "spouse"), E("sp", "spDad", "father"), E("spDad", "sp", "son")];
+    const r = analyzeUnlink({ viewerId: "me", removedId: "sp", removedRelation: "spouse", nodes, edges });
+    assert.deepEqual(r.dependents.map((d) => d.userId), ["spDad"]);
+  });
+
+  it("自動追加の線を除いて渡せば、自動で本人とつながった相手の親も一緒に消える人になる", () => {
+    // me と spDad の自動追加の線は、呼び出し側(familyUnlink)で取り除いてから渡す
+    const nodes = [N("me"), N("sp"), N("spDad")];
+    const manual = [E("me", "sp", "spouse"), E("sp", "me", "spouse"), E("sp", "spDad", "father"), E("spDad", "sp", "son")];
+    const r = analyzeUnlink({ viewerId: "me", removedId: "sp", removedRelation: "spouse", nodes, edges: manual });
+    assert.deepEqual(r.dependents.map((d) => d.userId), ["spDad"]);
+    // 取り除かずに渡すと、自動追加の線で本人とつながっているので消える人に入らない(=以前の不具合)
+    const withAuto = [...manual, E("me", "spDad", "father_in_law"), E("spDad", "me", "son_in_law")];
+    const r2 = analyzeUnlink({ viewerId: "me", removedId: "sp", removedRelation: "spouse", nodes, edges: withAuto });
+    assert.deepEqual(r2.dependents, []);
+  });
+});

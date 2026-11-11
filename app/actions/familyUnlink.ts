@@ -13,8 +13,13 @@ import type { FamilyMember, FamilyRelation } from "@/lib/types";
 //   - 離別 … アカウントのつながりは切る(相手は日記・持ち物などを見られなくなる)。
 //            家系図には「元配偶者」として残し、点々線でつなぐ。
 //   - 削除 … アカウントのつながりを切り、家系図からも消す。
-//            相手を通じてだけつながっていた人は、ひとりずつ「残す/残さない」を選べる。
-//            残した人は、アプリのつながりのない家族(名前だけ)としてご本人の家族に登録する。
+//            相手を通じてつながっていた人(家系図の自動追加で本人とつながった相手の家族も含む)も、
+//            本人とのアカウントのつながりを解除して家系図から外す(2026-11-11 オーナー決定)。
+//            ひとりずつ「残す/残さない」を選べ、残した人はアプリのつながりのない家族(名前だけ)として登録する。
+//
+// 「相手を通じてつながっていた人」は、家系図の自動追加でできたつながり(双方の行が invite_token なし)を
+// 除いて計算する。自動追加のつながりは、もとになった誰かのつながりから作られたものなので、
+// それだけでは「本人と直接つながっている」とはみなさない。
 // 保存先テーブル(family_relationships)がまだ無い間は「お試し」で、何も書き込まずに結果だけ返す。
 
 const SEPARABLE = new Set(["spouse", "ex_spouse", "other"]);
@@ -60,16 +65,47 @@ async function loadContext(linkedUserId: string): Promise<Ctx | { error: string 
     .maybeSingle();
   if (!member) return { error: "直接つながっているご家族のみ解除できます。" };
 
-  const [graph, available] = await Promise.all([getFamilyTreeGraph(), relationshipsTableAvailable(supabase)]);
+  const [graph, available, { data: myRows }] = await Promise.all([
+    getFamilyTreeGraph(),
+    relationshipsTableAvailable(supabase),
+    supabase.from("family_members").select("linked_user_id, relation").eq("user_id", user.id),
+  ]);
   if (!graph.ok) return { error: graph.error };
+
+  // 自動追加だけでできたつながり(双方の行とも招待トークンなし)を除いた線で計算する
+  const ids = graph.nodes.map((n) => n.userId);
+  const admin = createAdminClient();
+  let edges = graph.edges;
+  if (admin && ids.length > 0) {
+    const { data: rows } = await admin
+      .from("family_members")
+      .select("user_id, linked_user_id, invite_token")
+      .in("user_id", ids)
+      .not("linked_user_id", "is", null);
+    const auto = new Set(
+      (rows ?? []).filter((r) => !r.invite_token).map((r) => `${r.user_id}>${r.linked_user_id}`)
+    );
+    edges = graph.edges.filter(
+      (e) => !(auto.has(`${e.fromUserId}>${e.toUserId}`) && auto.has(`${e.toUserId}>${e.fromUserId}`))
+    );
+  }
 
   const impact = analyzeUnlink({
     viewerId: user.id,
     removedId: linkedUserId,
     removedRelation: (member as FamilyMember).relation,
     nodes: graph.nodes.map((n) => ({ userId: n.userId, name: n.name })),
-    edges: graph.edges,
+    edges,
   });
+  // 残すときの続柄:本人がすでにその人とつながっていれば、その続柄をそのまま使う
+  const myRelation = new Map<string, string>();
+  for (const r of (myRows ?? []) as { linked_user_id: string | null; relation: string }[]) {
+    if (r.linked_user_id) myRelation.set(r.linked_user_id, r.relation);
+  }
+  for (const d of impact.dependents) {
+    const r = myRelation.get(d.userId);
+    if (r) d.suggestedRelation = r;
+  }
   return { supabase, userId: user.id, member: member as FamilyMember, available, impact };
 }
 
@@ -213,6 +249,21 @@ export async function removeFamilyMember(linkedUserId: string, keepUserIds: stri
   const err = await unlinkRpc(ctx.supabase, linkedUserId);
   if (err) return { ok: false, error: err };
   await recordExclusion(ctx.userId, linkedUserId);
+
+  // 相手を通じてつながっていた人も、本人とのアカウントのつながりを解除し、自動で付け直さないようにする
+  for (const d of ctx.impact.dependents) {
+    const { data: direct } = await ctx.supabase
+      .from("family_members")
+      .select("id")
+      .eq("user_id", ctx.userId)
+      .eq("linked_user_id", d.userId)
+      .maybeSingle();
+    if (direct) {
+      const e = await unlinkRpc(ctx.supabase, d.userId);
+      if (e) console.error("remove: unlink dependent failed", d.userId, e);
+    }
+    await recordExclusion(ctx.userId, d.userId);
+  }
 
   const added: FamilyMember[] = [];
   const failed: string[] = [];

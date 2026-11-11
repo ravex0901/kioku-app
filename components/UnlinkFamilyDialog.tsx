@@ -45,7 +45,8 @@ export function UnlinkFamilyDialog({ member, onClose, onDone }: Props) {
         setStep({ kind: "error", text: r.error });
         return;
       }
-      setKeep(Object.fromEntries(r.dependents.map((d) => [d.userId, true])));
+      // 初めは「残さない」(相手側の家族はまとめて家系図から外す。残したい方だけ選ぶ)
+      setKeep(Object.fromEntries(r.dependents.map((d) => [d.userId, false])));
       setStep({ kind: "choose", p: r });
     });
     return () => {
@@ -178,7 +179,7 @@ export function UnlinkFamilyDialog({ member, onClose, onDone }: Props) {
         {step.kind === "keep" && (
           <>
             <p className="mt-3 text-base leading-relaxed text-ink/80">
-              {name}さんを削除すると、{name}さんを通じてつながっている次の方も、家系図から消えます。残す方を選んでください。
+              {name}さんを削除すると、{name}さんを通じてつながっている次の方も、家系図から消え、あなたとのアカウントのつながりも解除されます。残したい方だけ「残す」を選んでください(アカウントのつながりのない家族として、名前だけ残ります)。
             </p>
             <ul className="mt-4 flex flex-col gap-3">
               {step.p.dependents.map((d) => (
