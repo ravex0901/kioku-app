@@ -73,7 +73,7 @@ export async function syncAutoFamily(): Promise<SyncResult> {
       .update({ relation: rel as FamilyRelation })
       .eq("id", r.id)
       .eq("user_id", user.id)
-      .eq("relation", r.relation);
+      .eq("relation", r.relation as FamilyRelation);
     if (error) console.error("syncAutoFamily: fix relation failed", error);
     else r.relation = rel;
   }
