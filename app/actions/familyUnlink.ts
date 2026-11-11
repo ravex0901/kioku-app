@@ -47,6 +47,10 @@ type Ctx = {
   member: FamilyMember;
   available: boolean;
   impact: ReturnType<typeof analyzeUnlink>;
+  /** 自動追加でない線(解除の計算に使う) */
+  manualEdges: { fromUserId: string; toUserId: string; relation: string }[];
+  /** 自動追加だけでできたつながり(双方の行とも招待トークンなし) */
+  autoPairs: [string, string][];
 };
 
 async function loadContext(linkedUserId: string): Promise<Ctx | { error: string }> {
@@ -76,6 +80,7 @@ async function loadContext(linkedUserId: string): Promise<Ctx | { error: string 
   const ids = graph.nodes.map((n) => n.userId);
   const admin = createAdminClient();
   let edges = graph.edges;
+  let autoPairs: [string, string][] = [];
   if (admin && ids.length > 0) {
     const { data: rows } = await admin
       .from("family_members")
@@ -88,6 +93,10 @@ async function loadContext(linkedUserId: string): Promise<Ctx | { error: string 
     edges = graph.edges.filter(
       (e) => !(auto.has(`${e.fromUserId}>${e.toUserId}`) && auto.has(`${e.toUserId}>${e.fromUserId}`))
     );
+    autoPairs = graph.edges
+      .filter((e) => e.fromUserId < e.toUserId)
+      .filter((e) => auto.has(`${e.fromUserId}>${e.toUserId}`) && auto.has(`${e.toUserId}>${e.fromUserId}`))
+      .map((e) => [e.fromUserId, e.toUserId]);
   }
 
   const impact = analyzeUnlink({
@@ -106,7 +115,46 @@ async function loadContext(linkedUserId: string): Promise<Ctx | { error: string 
     const r = myRelation.get(d.userId);
     if (r) d.suggestedRelation = r;
   }
-  return { supabase, userId: user.id, member: member as FamilyMember, available, impact };
+  return { supabase, userId: user.id, member: member as FamilyMember, available, impact, manualEdges: edges, autoPairs };
+}
+
+/**
+ * 自動追加のつながりは、もとになったつながり(自動追加でない線)でつながっている間だけ残す。
+ * 解除によって、もとのつながりが切れた自動追加のつながり(ほかのご家族どうしのものも含む)を消す。
+ */
+async function pruneOrphanedAutoLinks(ctx: Ctx, cut: [string, string]) {
+  const admin = createAdminClient();
+  if (!admin || ctx.autoPairs.length === 0) return;
+  const comp = (skipCut: boolean) => {
+    const parent = new Map<string, string>();
+    const find = (x: string): string => {
+      let p = parent.get(x) ?? x;
+      if (p !== x) {
+        p = find(p);
+        parent.set(x, p);
+      }
+      return p;
+    };
+    for (const e of ctx.manualEdges) {
+      const isCut =
+        (e.fromUserId === cut[0] && e.toUserId === cut[1]) || (e.fromUserId === cut[1] && e.toUserId === cut[0]);
+      if (skipCut && isCut) continue;
+      parent.set(find(e.fromUserId), find(e.toUserId));
+    }
+    return find;
+  };
+  const before = comp(false);
+  const after = comp(true);
+  for (const [a, b] of ctx.autoPairs) {
+    if (before(a) === before(b) && after(a) !== after(b)) {
+      const { error } = await admin
+        .from("family_members")
+        .delete()
+        .or(`and(user_id.eq.${a},linked_user_id.eq.${b}),and(user_id.eq.${b},linked_user_id.eq.${a})`)
+        .is("invite_token", null);
+      if (error) console.error("pruneOrphanedAutoLinks error", error);
+    }
+  }
 }
 
 export async function previewUnlink(linkedUserId: string): Promise<UnlinkPreview | { ok: false; error: string }> {
@@ -264,6 +312,8 @@ export async function removeFamilyMember(linkedUserId: string, keepUserIds: stri
     }
     await recordExclusion(ctx.userId, d.userId);
   }
+  // もとのつながりが切れた自動追加のつながり(ほかのご家族どうしのもの)も消す
+  await pruneOrphanedAutoLinks(ctx, [ctx.userId, linkedUserId]);
 
   const added: FamilyMember[] = [];
   const failed: string[] = [];

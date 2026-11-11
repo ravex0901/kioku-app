@@ -113,5 +113,10 @@ describe("削除で一緒に外す人(2026-11-11)", () => {
     const withAuto = [...manual, E("me", "spDad", "father_in_law"), E("spDad", "me", "son_in_law")];
     const r2 = analyzeUnlink({ viewerId: "me", removedId: "sp", removedRelation: "spouse", nodes, edges: withAuto });
     assert.deepEqual(r2.dependents, []);
+    // 解除前の判定には自動追加の線も含めて渡す(もとのつながりが先に消えていた人も外せる)
+    const orphan = [...manual, E("me", "spDad", "father_in_law"), E("spDad", "me", "son_in_law")];
+    const manualOnly = manual.filter((e) => e.fromUserId !== "sp" || e.toUserId !== "spDad").filter((e) => e.fromUserId !== "spDad");
+    const r3 = analyzeUnlink({ viewerId: "me", removedId: "sp", removedRelation: "spouse", nodes, edges: manualOnly, beforeEdges: orphan });
+    assert.deepEqual(r3.dependents.map((d) => d.userId), ["spDad"]);
   });
 });

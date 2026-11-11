@@ -69,7 +69,10 @@ export function analyzeUnlink(args: {
   /** 本人から見た相手の続柄 */
   removedRelation: string;
   nodes: ImpactNode[];
+  /** 解除したあとに残るかどうかを決める線 */
   edges: ImpactEdge[];
+  /** 解除の前につながっていたかどうかを決める線(省略時は edges。自動追加の線も含めて渡す) */
+  beforeEdges?: ImpactEdge[];
 }): UnlinkImpact {
   const { viewerId, removedId } = args;
   const isCut = (a: string, b: string) =>
@@ -104,7 +107,7 @@ export function analyzeUnlink(args: {
   const reached = reachFrom(adj);
   // 解除前のつながり(解除で「一緒に消える」のは、解除前にはつながっていた人だけ)
   const before = new Map<string, Set<string>>();
-  for (const e of args.edges) {
+  for (const e of args.beforeEdges ?? args.edges) {
     if (e.fromUserId === e.toUserId) continue;
     if (!before.has(e.fromUserId)) before.set(e.fromUserId, new Set());
     if (!before.has(e.toUserId)) before.set(e.toUserId, new Set());
