@@ -10,6 +10,8 @@ import { getFamilyTreeGraph } from "@/app/actions/familyTree";
 import { listFamilyRelationships } from "@/app/actions/familyRelationships";
 import { syncAutoFamily } from "@/app/actions/familyAutoLink";
 import { computeKinship } from "@/lib/familyTree/kinship";
+import { FamilySection } from "@/components/FamilySection";
+import { loadFamilySectionData } from "@/lib/familySectionData";
 import type { FamilyMember } from "@/lib/types";
 
 export default async function FamilyTreePage({
@@ -58,6 +60,8 @@ export default async function FamilyTreePage({
   const displayName =
     profile?.name || rawName || user.email?.split("@")[0] || "ご本人";
   const allFamily = (familyData ?? []) as FamilyMember[];
+  // 図の下の「家族」の欄(もとは設定画面にあったもの)。新しく登録した人から並べる。
+  const sectionData = await loadFamilySectionData(supabase, allFamily);
   const family = allFamily.filter((f) => f.linked_user_id);
   // 承認済みのつながりをたどって合流した家族ネットワーク全体(本人を含む)。
   // 本人同士が代々つながっていくほど、ここに増えていく。どこで紐づけが起きても、
@@ -204,7 +208,6 @@ export default async function FamilyTreePage({
             alwaysShowMemberIds={treeProps.alwaysShowMemberIds}
             saved={relResult && relResult.ok ? relResult.relationships : []}
             available={Boolean(relResult && relResult.ok && relResult.available)}
-            editHref="/settings#family"
           />
         ) : (
           <FamilyTreeClient
@@ -213,6 +216,17 @@ export default async function FamilyTreePage({
             graph={graph}
           />
         )}
+
+        <div className="mt-8">
+          <FamilySection
+            userId={user.id}
+            accountCode={profile?.account_code ?? null}
+            initialFamily={[...allFamily].reverse()}
+            initialFamilyShareSettings={sectionData.familyShareSettings}
+            initialDeceasedStatus={sectionData.deceasedStatus}
+            initialLegacyShareStatus={sectionData.legacyShareStatus}
+          />
+        </div>
       </main>
     </div>
   );

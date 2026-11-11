@@ -805,10 +805,10 @@ export function FamilyTreeClient({
       <div className="flex flex-col items-center gap-4 rounded-[1.75rem] border border-green-100 bg-white/70 px-6 py-10 text-center shadow-sm">
         <PersonCard name={displayName} subtitle="本人" isRoot />
         <p className="max-w-xs text-sm text-ink/60">
-          まだご家族が登録されていません。設定画面からご家族を登録すると、ここに家系図として表示されます。
+          まだご家族が登録されていません。下の「家族」の欄からご家族を登録すると、ここに家系図として表示されます。
         </p>
         <Link
-          href="/settings#family"
+          href="#family"
           className="inline-flex min-h-[50px] items-center justify-center rounded-full bg-green-700 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-green-800"
         >
           家族を登録する
@@ -893,12 +893,6 @@ export function FamilyTreeClient({
       )}
 
       <div className="flex flex-wrap gap-x-5 gap-y-2">
-        <Link
-          href="/settings#family"
-          className="self-start text-sm text-green-700 underline underline-offset-2"
-        >
-          家族を追加・編集する
-        </Link>
         {family.some((f) => f.linked_user_id) && (
           <Link
             href="/family/voice-checkin"

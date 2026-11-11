@@ -215,7 +215,7 @@ export function UnlinkFamilyDialog({ member, onClose, onDone }: Props) {
                 </li>
               ))}
             </ul>
-            <p className="mt-3 text-sm text-ink/60">続柄は、あとから「設定」の家族で直せます。</p>
+            <p className="mt-3 text-sm text-ink/60">続柄は、あとから家系図の下の「家族」の欄で直せます。</p>
             <div className="mt-5 grid grid-cols-2 gap-2">
               <button
                 type="button"

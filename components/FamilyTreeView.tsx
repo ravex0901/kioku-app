@@ -14,8 +14,6 @@ import { centerOn, clampPan, fitView, pinch, zoomAt, type View } from "@/lib/fam
 
 type Props = {
   input: TreeInput;
-  /** 家族を追加・編集する画面へのリンク */
-  editHref?: string;
   /** 前回の配置(更新時に関係のない人物を動かさないため) */
   onLayoutDone?: (positions: Record<string, number>) => void;
   previousX?: Record<string, number>;
@@ -34,7 +32,7 @@ const GEN_OPTIONS: { value: string; label: string; up: number | null; down: numb
   { value: "me", label: "ご自身の世代だけ", up: 0, down: 0 },
 ];
 
-export function FamilyTreeView({ input, editHref, previousX, onLayoutDone }: Props) {
+export function FamilyTreeView({ input, previousX, onLayoutDone }: Props) {
   const boxRef = useRef<HTMLDivElement>(null);
   const wrapRef = useRef<HTMLDivElement>(null);
   const [box, setBox] = useState({ w: 360, h: 520 });
@@ -267,7 +265,6 @@ export function FamilyTreeView({ input, editHref, previousX, onLayoutDone }: Pro
   const btnBase =
     "inline-flex min-h-[44px] items-center justify-center rounded-full border border-black/10 px-4 text-sm font-semibold transition disabled:opacity-50";
   const btn = `${btnBase} bg-white text-ink hover:bg-black/5`;
-  const btnPrimary = `${btnBase} border-transparent bg-green-700 text-white hover:bg-green-800`;
 
   return (
     <div ref={wrapRef} className={`flex flex-col gap-3 ${fullscreen ? "bg-cream p-3" : ""}`} data-testid="tree-root">
@@ -364,11 +361,6 @@ export function FamilyTreeView({ input, editHref, previousX, onLayoutDone }: Pro
         <button type="button" onClick={exportPdf} className={btn}>
           PDFで保存
         </button>
-        {editHref && (
-          <a href={editHref} className={btnPrimary}>
-            家族を追加・編集
-          </a>
-        )}
       </div>
 
       {showLegend && (
@@ -426,11 +418,6 @@ export function FamilyTreeView({ input, editHref, previousX, onLayoutDone }: Pro
             {sel.href && (
               <a href={sel.href} className={btn}>
                 日記を見る
-              </a>
-            )}
-            {editHref && (
-              <a href={editHref} className={btn}>
-                家族の情報を編集
               </a>
             )}
           </div>

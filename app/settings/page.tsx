@@ -4,10 +4,6 @@ import { createClient } from "@/lib/supabase/server";
 import { Header } from "@/components/Header";
 import { BackButton } from "@/components/BackButton";
 import { SettingsClient } from "@/components/SettingsClient";
-import {
-  getFamilyShareSettings,
-  getFamilyLegacyShare,
-} from "@/app/actions/familyNetwork";
 import type {
   FamilyMember,
   HandoverRecipient,
@@ -30,7 +26,7 @@ export default async function SettingsPage({
     redirect("/login");
   }
 
-  // 家系図の範囲内の人を、家族欄に自動で加えてから読み込む(失敗しても設定画面は表示する)
+  // 家系図の範囲内の人を、家族欄に自動で加えてから読み込む(「もしもの時」の承認者・引き継ぎ先の選択に使う。失敗しても設定画面は表示する)
   const sync = await syncAutoFamily();
   if (!sync.ok) console.error("syncAutoFamily failed", sync.error);
 
@@ -40,7 +36,6 @@ export default async function SettingsPage({
     { data: willData },
     { data: handoverData },
     { data: recipientsData },
-    familyShareSettings,
   ] = await Promise.all([
     supabase.from("profiles").select("*").eq("id", user.id).maybeSingle(),
     supabase
@@ -59,7 +54,6 @@ export default async function SettingsPage({
       .select("*")
       .eq("user_id", user.id)
       .order("created_at", { ascending: false }),
-    getFamilyShareSettings(),
   ]);
 
   const rawName =
@@ -68,36 +62,6 @@ export default async function SettingsPage({
       : "";
   const displayName = profile?.name || rawName || user.email?.split("@")[0] || "ゲスト";
   const family = (familyData ?? []) as FamilyMember[];
-
-  // つながっている家族のうち、既にアカウントと紐付いている相手の「故人」フラグと、
-  // (故人の場合の)間接の家族への共有可否を取得しておく。
-  const linkedUserIds = family
-    .map((m) => m.linked_user_id)
-    .filter((id): id is string => Boolean(id));
-
-  const deceasedStatus: Record<string, boolean> = {};
-  if (linkedUserIds.length > 0) {
-    const { data: linkedProfiles } = await supabase
-      .from("profiles")
-      .select("id, is_deceased")
-      .in("id", linkedUserIds);
-    for (const p of linkedProfiles ?? []) {
-      deceasedStatus[p.id as string] = Boolean(
-        (p as { is_deceased?: boolean }).is_deceased
-      );
-    }
-  }
-
-  const deceasedLinkedIds = linkedUserIds.filter((id) => deceasedStatus[id]);
-  const legacyShareStatus: Record<string, boolean> = {};
-  if (deceasedLinkedIds.length > 0) {
-    const results = await Promise.all(
-      deceasedLinkedIds.map((id) => getFamilyLegacyShare(id))
-    );
-    deceasedLinkedIds.forEach((id, i) => {
-      legacyShareStatus[id] = results[i];
-    });
-  }
 
   return (
     <div className="min-h-screen bg-cream">
@@ -116,14 +80,10 @@ export default async function SettingsPage({
           userId={user.id}
           displayName={displayName}
           purpose={profile?.purpose ?? null}
-          accountCode={profile?.account_code ?? null}
           initialFamily={family}
           initialWill={(willData as Will | null) ?? null}
           initialHandover={(handoverData as HandoverSettings | null) ?? null}
           initialRecipients={(recipientsData as HandoverRecipient[]) ?? []}
-          initialFamilyShareSettings={familyShareSettings}
-          initialDeceasedStatus={deceasedStatus}
-          initialLegacyShareStatus={legacyShareStatus}
           handoverOnly={handoverOnly}
         />
       </main>

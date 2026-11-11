@@ -27,7 +27,7 @@ export function FamilyItemsView({
       ) : !result.canView ? (
         <p className="rounded-xl border border-black/5 bg-white/70 px-4 py-3 text-sm text-ink/60">
           {ownerName}さんは、持ち物の記録をご家族に公開していません。
-          {ownerName}さんが設定画面で「持ち物の記録を、つながっているご家族にも見せる」にチェックを入れると、ここに表示されます。
+          {ownerName}さんが家系図の画面の「家族」の欄で「持ち物の記録を、つながっているご家族にも見せる」にチェックを入れると、ここに表示されます。
         </p>
       ) : result.items.length === 0 ? (
         <p className="text-sm text-ink/50">まだ持ち物が登録されていません。</p>

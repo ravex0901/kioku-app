@@ -48,7 +48,6 @@ type Props = {
   saved: ExplicitRelRow[];
   /** 保存できるか(テーブルがあるか) */
   available: boolean;
-  editHref?: string;
 };
 
 const SPOUSE_BUTTONS: { value: MarriageStatus; label: string }[] = [
@@ -76,7 +75,6 @@ export function FamilyTreeWithRelations({
   alwaysShowMemberIds,
   saved: initialSaved,
   available,
-  editHref,
 }: Props) {
   const [saved, setSaved] = useState<ExplicitRelRow[]>(initialSaved);
   const [memberRows, setMemberRows] = useState<FamilyRow[]>(initialMemberRows);
@@ -265,7 +263,7 @@ export function FamilyTreeWithRelations({
   return (
     <div className="flex flex-col gap-8">
       {input ? (
-        <FamilyTreeView input={input} editHref={editHref} />
+        <FamilyTreeView input={input} />
       ) : (
         <p className="rounded-2xl bg-card p-5 text-base text-ink/70">家系図を作れませんでした。</p>
       )}
@@ -373,7 +371,7 @@ export function FamilyTreeWithRelations({
           <h3 className="text-xl font-bold text-ink">② お子さん</h3>
           {children.length === 0 ? (
             <p className="mt-2 text-base text-ink/70">
-              お子さんはまだ登録されていません。「設定」の家族のところから登録できます。
+              お子さんはまだ登録されていません。下の「家族」の欄から登録できます。
             </p>
           ) : spouses.length === 0 ? (
             <p className="mt-2 text-base text-ink/70">

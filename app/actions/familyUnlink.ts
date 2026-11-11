@@ -241,7 +241,7 @@ export async function removeFamilyMember(linkedUserId: string, keepUserIds: stri
   if (failed.length) {
     return {
       ok: false,
-      error: `削除はしましたが、${failed.join("、")}さんを残す登録ができませんでした。設定の家族から登録し直してください。`,
+      error: `削除はしましたが、${failed.join("、")}さんを残す登録ができませんでした。家系図の下の「家族」の欄から登録し直してください。`,
     };
   }
   return { ok: true, dryRun: false, added };
