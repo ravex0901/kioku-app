@@ -7,7 +7,7 @@ import { useRouter } from "next/navigation";
 import { signupAndAcceptInvite } from "@/app/actions/auth";
 import { acceptFamilyInvite } from "@/app/actions/familyInvite";
 import { createClient } from "@/lib/supabase/client";
-import { FAMILY_RELATION_OPTIONS } from "@/lib/constants";
+import { familyRelationOptionsFor } from "@/lib/constants";
 import type { FamilyRelation } from "@/lib/types";
 import type { InviteInfo } from "@/app/actions/familyInvite";
 
@@ -17,12 +17,15 @@ export function InviteAcceptClient({
   isLoggedIn,
   initialRelation = null,
   awaitingEmailConfirm = false,
+  inviterGender = null,
 }: {
   token: string;
   info: InviteInfo;
   isLoggedIn: boolean;
   initialRelation?: FamilyRelation | null;
   awaitingEmailConfirm?: boolean;
+  /** 招待した方の性別(続柄の選択肢を、その性別に合うものだけにする) */
+  inviterGender?: string | null;
 }) {
   const router = useRouter();
 
@@ -91,9 +94,9 @@ export function InviteAcceptClient({
       </p>
 
       {isLoggedIn ? (
-        <LoggedInAccept token={token} inviterName={info.inviterName} />
+        <LoggedInAccept token={token} inviterName={info.inviterName} inviterGender={inviterGender} />
       ) : (
-        <NewAccountAccept token={token} />
+        <NewAccountAccept token={token} inviterGender={inviterGender} />
       )}
     </div>
   );
@@ -102,9 +105,11 @@ export function InviteAcceptClient({
 function LoggedInAccept({
   token,
   inviterName,
+  inviterGender,
 }: {
   token: string;
   inviterName: string;
+  inviterGender: string | null;
 }) {
   const [relation, setRelation] = useState<FamilyRelation>("other");
   const [error, setError] = useState<string | null>(null);
@@ -144,7 +149,7 @@ function LoggedInAccept({
           onChange={(e) => setRelation(e.target.value as FamilyRelation)}
           className="min-h-[50px] rounded-lg border border-black/10 bg-white px-4 py-2.5 text-ink outline-none focus:border-green-400 focus:ring-2 focus:ring-green-100"
         >
-          {FAMILY_RELATION_OPTIONS.map((opt) => (
+          {familyRelationOptionsFor(inviterGender).map((opt) => (
             <option key={opt.value} value={opt.value}>
               {opt.label}
             </option>
@@ -166,7 +171,7 @@ function LoggedInAccept({
   );
 }
 
-function NewAccountAccept({ token }: { token: string }) {
+function NewAccountAccept({ token, inviterGender }: { token: string; inviterGender: string | null }) {
   const [state, formAction, pending] = useActionState(
     signupAndAcceptInvite,
     undefined
@@ -246,7 +251,7 @@ function NewAccountAccept({ token }: { token: string }) {
             onChange={(e) => setRelation(e.target.value as FamilyRelation)}
             className="min-h-[50px] rounded-lg border border-black/10 bg-white px-4 py-2.5 text-ink outline-none focus:border-green-400 focus:ring-2 focus:ring-green-100"
           >
-            {FAMILY_RELATION_OPTIONS.map((opt) => (
+            {familyRelationOptionsFor(inviterGender).map((opt) => (
               <option key={opt.value} value={opt.value}>
                 {opt.label}
               </option>

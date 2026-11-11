@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { getFamilyInviteInfo } from "@/app/actions/familyInvite";
 import { InviteAcceptClient } from "@/components/InviteAcceptClient";
+import { createAdminClient } from "@/lib/supabase/admin";
 import type { FamilyRelation } from "@/lib/types";
 
 // 家族招待リンク。息子・孫など、ご家族がご自身のアカウントでこのリンクから
@@ -24,6 +25,22 @@ export default async function InvitePage({
       : confirmEmailRaw?.[0]) === "1";
 
   const info = await getFamilyInviteInfo(token);
+
+  // 招待した方の性別(続柄の選択肢をしぼるためだけに使う。画面に性別そのものは出さない)
+  let inviterGender: string | null = null;
+  const admin = createAdminClient();
+  if (admin && info.found && !info.alreadyLinked) {
+    const { data: inv } = await admin
+      .from("family_members")
+      .select("user_id")
+      .eq("invite_token", token)
+      .is("linked_user_id", null)
+      .maybeSingle();
+    if (inv) {
+      const { data: d } = await admin.from("profile_details").select("gender").eq("user_id", inv.user_id).maybeSingle();
+      if (d?.gender === "male" || d?.gender === "female") inviterGender = d.gender;
+    }
+  }
 
   const supabase = await createClient();
   const {
@@ -54,6 +71,7 @@ export default async function InvitePage({
             isLoggedIn={!!user}
             initialRelation={initialRelation ?? null}
             awaitingEmailConfirm={awaitingEmailConfirm}
+            inviterGender={inviterGender}
           />
         </div>
       </div>

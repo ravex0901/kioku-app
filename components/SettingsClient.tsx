@@ -32,7 +32,7 @@ export function SettingsClient({
   initialHandover: HandoverSettings | null;
   initialRecipients: HandoverRecipient[];
   // trueのときは、引き継ぎの項目だけを表示する(「もしもの時」から開いた場合)。
-  // falseのときは、引き継ぎの項目を表示せず、家族の欄への案内・AIの読み上げ音声・その他の管理・ログアウトを表示する。
+  // falseのときは、引き継ぎの項目を表示せず、AIの読み上げ音声・その他の管理・ログアウトを表示する(家族の欄は家系図の画面にある)。
   handoverOnly?: boolean;
 }) {
   // 家族の欄は家系図の画面へ移した。ここでは「もしもの時」の承認者・引き継ぎ先の選択にだけ使う。
@@ -257,20 +257,6 @@ export function SettingsClient({
         </div>
       </div>
 
-      {!handoverOnly && (
-        <section className="rounded-[1.75rem] border border-green-100 bg-white/70 p-5 shadow-sm sm:p-6">
-          <h2 className="mb-3 text-xs font-semibold tracking-[0.15em] text-gold">家族</h2>
-          <p className="mb-4 text-sm text-ink/70">
-            家族の招待・アカウントIDでの申請・続柄の修正・共有の設定は、家系図の画面(家系図の下)に移りました。
-          </p>
-          <Link
-            href="/family-tree#family"
-            className="inline-flex min-h-[50px] items-center justify-center rounded-full bg-green-700 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-green-800"
-          >
-            家系図の画面で家族を管理する
-          </Link>
-        </section>
-      )}
 
       {handoverOnly && (
       <>

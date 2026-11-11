@@ -229,6 +229,57 @@ export const FAMILY_RELATION_OPTIONS: {
   { value: "other", label: "その他" },
 ];
 
+// 続柄が表す相手の性別(兄弟姉妹・配偶者・いとこ・その他などは性別を持たない)
+const RELATION_PAIRS: [FamilyRelation, FamilyRelation][] = [
+  ["great_grandfather", "great_grandmother"],
+  ["father", "mother"],
+  ["grandfather", "grandmother"],
+  ["uncle", "aunt"],
+  ["older_brother", "older_sister"],
+  ["younger_brother", "younger_sister"],
+  ["son", "daughter"],
+  ["eldest_son", "eldest_daughter"],
+  ["grandson", "granddaughter"],
+  ["great_grandson", "great_granddaughter"],
+  ["brother", "sister"],
+  ["father_in_law", "mother_in_law"],
+  ["grandfather_in_law", "grandmother_in_law"],
+  ["son_in_law", "daughter_in_law"],
+  ["nephew", "niece"],
+];
+const RELATION_GENDER = new Map<string, "male" | "female">(
+  RELATION_PAIRS.flatMap(([m, f]) => [
+    [m, "male"],
+    [f, "female"],
+  ] as [string, "male" | "female"][])
+);
+
+/** 続柄が表す性別(性別を持たない続柄は null) */
+export function relationGender(value: string): "male" | "female" | null {
+  return RELATION_GENDER.get(value) ?? null;
+}
+
+/**
+ * 相手の性別に合う続柄だけを返す(2026-11-11 オーナー決定)。
+ * 相手が男性なら「母・娘・姉」などを出さない。性別が分からない(未登録・その他・回答しない)ときは全部出す。
+ */
+export function familyRelationOptionsFor(gender: string | null | undefined) {
+  if (gender !== "male" && gender !== "female") return FAMILY_RELATION_OPTIONS;
+  return FAMILY_RELATION_OPTIONS.filter((o) => {
+    const g = relationGender(o.value);
+    return g === null || g === gender;
+  });
+}
+
+/** 性別と食い違う続柄を、同じ立場の反対の性別の続柄に直す(例:女性なのに「父」→「母」)。合っていればそのまま */
+export function fitRelationToGender(value: string, gender: string | null | undefined): string {
+  if (gender !== "male" && gender !== "female") return value;
+  const g = relationGender(value);
+  if (g === null || g === gender) return value;
+  const pair = RELATION_PAIRS.find(([m, f]) => m === value || f === value)!;
+  return gender === "male" ? pair[0] : pair[1];
+}
+
 const LEGACY_FAMILY_RELATION_LABEL: Record<string, string> = {
   eldest_son: "長男",
   eldest_daughter: "長女",

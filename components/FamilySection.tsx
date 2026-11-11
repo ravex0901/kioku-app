@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
-import { FAMILY_RELATION_OPTIONS, familyRelationLabel } from "@/lib/constants";
+import { FAMILY_RELATION_OPTIONS, familyRelationLabel, familyRelationOptionsFor } from "@/lib/constants";
 import { requestFamilyLink } from "@/app/actions/familyLinkRequests";
 import { UnlinkFamilyDialog } from "@/components/UnlinkFamilyDialog";
 import {
@@ -26,6 +26,7 @@ export function FamilySection({
   initialFamilyShareSettings,
   initialDeceasedStatus,
   initialLegacyShareStatus,
+  linkedGenders = {},
 }: {
   userId: string;
   accountCode: string | null;
@@ -33,6 +34,8 @@ export function FamilySection({
   initialFamilyShareSettings?: FamilyShareSettings;
   initialDeceasedStatus?: Record<string, boolean>;
   initialLegacyShareStatus?: Record<string, boolean>;
+  /** アカウントでつながっている相手の性別(続柄の選択肢を、相手の性別に合うものだけにする) */
+  linkedGenders?: Record<string, string>;
 }) {
   const router = useRouter();
   const [family, setFamily] = useState(initialFamily);
@@ -285,14 +288,16 @@ export function FamilySection({
                     }
                     className="rounded-lg border border-black/10 bg-white px-2 py-1 text-xs text-ink/70 outline-none focus:border-green-400"
                   >
-                    {!FAMILY_RELATION_OPTIONS.some(
-                      (opt) => opt.value === member.relation
-                    ) && (
+                    {!familyRelationOptionsFor(
+                      member.linked_user_id ? linkedGenders[member.linked_user_id] : null
+                    ).some((opt) => opt.value === member.relation) && (
                       <option value={member.relation}>
                         {familyRelationLabel(member.relation)}
                       </option>
                     )}
-                    {FAMILY_RELATION_OPTIONS.map((opt) => (
+                    {familyRelationOptionsFor(
+                      member.linked_user_id ? linkedGenders[member.linked_user_id] : null
+                    ).map((opt) => (
                       <option key={opt.value} value={opt.value}>
                         {opt.label}
                       </option>

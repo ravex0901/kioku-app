@@ -3,6 +3,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { computeKinship, forwardRelation, planAutoLinks, type KinEdge, type MemberRow } from "@/lib/familyTree/kinship";
+import { fitRelationToGender } from "@/lib/constants";
 import type { FamilyRelation } from "@/lib/types";
 
 // 家系図の範囲内(lib/familyTree/kinship.ts)の人を、本人の家族欄に自動で加える(2026-11-11 オーナー決定)。
@@ -15,6 +16,8 @@ import type { FamilyRelation } from "@/lib/types";
 // - たどるのは、お互いが認めたつながり(双方向の行)だけ。DB の get_family_tree_graph がそれだけを返す。
 // - 本人の行で続柄が「その他」のまま(申請の承認・招待で仮に入る)のものは、
 //   相手側の登録とつながりから割り出した続柄に直す(割り出せなければそのまま)。
+// - 相手がプロフィールで性別を登録していて、続柄がその性別と食い違うもの(女性なのに「父」など)は、
+//   同じ立場の続柄に直す(「父」→「母」)。
 // - 相手側の行は RLS では作れないため、サーバー側の管理用クライアントで書く。
 //   どの人を加えるかは、この関数の中で DB のデータから計算し直す(画面から相手を指定させない)。
 
@@ -53,21 +56,26 @@ export async function syncAutoFamily(): Promise<SyncResult> {
 
   const ops = planAutoLinks({ viewerId: user.id, edges, rows, excluded, names: nameOf, genders });
 
-  // 本人の行で「その他」のままの続柄を、割り出せたものだけ直す(本人の行なので本人の権限で書く)
+  // 本人の行の続柄を直す(本人の行なので本人の権限で書く):
+  //   ①「その他」のまま → 割り出せた続柄に  ② 相手の登録した性別と食い違う → 同じ立場の続柄に
   const kin = computeKinship(user.id, edges, { genders });
   for (const r of rows) {
-    if (r.user_id !== user.id || !r.linked_user_id || r.relation !== "other") continue;
-    const info = kin.get(r.linked_user_id);
-    if (!info || info.kin === "self") continue;
-    const rel = forwardRelation(info);
-    if (rel === "other") continue;
+    if (r.user_id !== user.id || !r.linked_user_id) continue;
+    let rel = r.relation;
+    if (rel === "other") {
+      const info = kin.get(r.linked_user_id);
+      if (info && info.kin !== "self") rel = forwardRelation(info);
+    }
+    rel = fitRelationToGender(rel, genders[r.linked_user_id]);
+    if (rel === r.relation) continue;
     const { error } = await supabase
       .from("family_members")
       .update({ relation: rel as FamilyRelation })
       .eq("id", r.id)
       .eq("user_id", user.id)
-      .eq("relation", "other");
+      .eq("relation", r.relation);
     if (error) console.error("syncAutoFamily: fix relation failed", error);
+    else r.relation = rel;
   }
 
   let added = 0;

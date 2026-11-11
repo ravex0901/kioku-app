@@ -3,7 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import { Header } from "@/components/Header";
 import { BackButton } from "@/components/BackButton";
 import { FamilyTreeClient } from "@/components/FamilyTreeClient";
-import { FamilyTreeWithRelations, type PersonOption } from "@/components/FamilyTreeWithRelations";
+import { FamilyTreeWithRelations } from "@/components/FamilyTreeWithRelations";
 import { familyRelationLabel } from "@/lib/constants";
 import { buildTreeInput, type FamilyRow } from "@/lib/familyTree/fromRows";
 import { getFamilyTreeGraph } from "@/app/actions/familyTree";
@@ -96,7 +96,6 @@ export default async function FamilyTreePage({
     rows: FamilyRow[];
     accounts: { userId: string; name: string; isDeceased?: boolean; canViewJournal?: boolean }[];
     memberRows: FamilyRow[];
-    people: PersonOption[];
     alwaysShowMemberIds: string[];
   } | null = null;
   if (!legacy) {
@@ -148,40 +147,13 @@ export default async function FamilyTreePage({
           createdAt: f.created_at,
         }));
 
-      // 関係の登録で選べる人:ご本人・家系図に出ているアカウントの方・ご本人が登録した家族
-      const relationByAccount = new Map(
-        family.map((f) => [f.linked_user_id as string, f.relation as string])
-      );
-      const people: PersonOption[] = [
-        { key: `a:${user.id}`, ref: { accountId: user.id }, name: displayName, label: `${displayName}(ご本人)` },
-        ...accounts
-          .filter((a) => a.userId !== user.id)
-          .map((a) => {
-            const rel = relationByAccount.get(a.userId);
-            return {
-              key: `a:${a.userId}`,
-              ref: { accountId: a.userId },
-              name: a.name,
-              relation: rel,
-              label: rel ? `${a.name}(${familyRelationLabel(rel)})` : a.name,
-            };
-          }),
-        ...memberRows.map((r) => ({
-          key: `m:${r.id}`,
-          ref: { memberId: r.id },
-          name: r.name,
-          relation: r.relation,
-          label: `${r.name}(${familyRelationLabel(r.relation)})`,
-        })),
-      ];
-
       // 招待リンクのない、アカウントのない家族 = 家系図に残すために登録した方
       // (前の配偶者・「紐づけを解除」で削除したときに残した方)。家系図にいつも出す。
       const alwaysShowMemberIds = allFamily
         .filter((f) => !f.linked_user_id && !f.invite_token)
         .map((f) => f.id);
 
-      treeProps = { rows, accounts, memberRows, people, alwaysShowMemberIds };
+      treeProps = { rows, accounts, memberRows, alwaysShowMemberIds };
     } catch (e) {
       // 新しい家系図の作成に失敗しても、従来の表示で見られるようにする
       console.error("buildTreeInput failed", e);
@@ -206,10 +178,8 @@ export default async function FamilyTreePage({
             rows={treeProps.rows}
             accounts={treeProps.accounts}
             memberRows={treeProps.memberRows}
-            people={treeProps.people}
             alwaysShowMemberIds={treeProps.alwaysShowMemberIds}
             saved={relResult && relResult.ok ? relResult.relationships : []}
-            available={Boolean(relResult && relResult.ok && relResult.available)}
           />
         ) : (
           <FamilyTreeClient
@@ -227,6 +197,7 @@ export default async function FamilyTreePage({
             initialFamilyShareSettings={sectionData.familyShareSettings}
             initialDeceasedStatus={sectionData.deceasedStatus}
             initialLegacyShareStatus={sectionData.legacyShareStatus}
+            linkedGenders={sectionData.linkedGenders}
           />
         </div>
       </main>
