@@ -121,3 +121,7 @@ drop policy if exists family_relationships_delete_own on public.family_relations
 create policy family_relationships_delete_own on public.family_relationships
   for delete to authenticated
   using ((select auth.uid()) = owner_id);
+
+-- このプロジェクトは新しいテーブルに自動で権限を付けないため、明示的に付ける(行の制限は上の RLS)。
+grant select, insert, update, delete on public.family_relationships to authenticated;
+grant select, insert, update, delete on public.family_relationships to service_role;
