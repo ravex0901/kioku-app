@@ -45,30 +45,25 @@ function hashName(name: string): number {
 
 type EdgeStroke = { color: string; width: number; dash?: string };
 function strokeFor(style: EdgeStyle): EdgeStroke {
+  // 線の見方は「婚姻中(事実婚も同じ)・離別・死別・親子」の4種類だけにする。
+  // 関係のデータ(養子・連れ子など)は残し、描き方だけをまとめる。
   switch (style) {
     case "marriage":
+    case "common_law":
       return { color: TREE_COLORS.lineStrong, width: 2 };
     case "divorced":
-      // 離別(離婚):点々線(丸い点)。事実婚の破線と見分けがつくようにする
+      // 離別(離婚):点々線(丸い点)
       return { color: TREE_COLORS.deceased, width: 2.6, dash: "0.1 6" };
     case "widowed":
       return { color: TREE_COLORS.deceased, width: 2 };
-    case "common_law":
-      return { color: TREE_COLORS.lineStrong, width: 2, dash: "5 4" };
-    case "coparent":
-      return { color: TREE_COLORS.line, width: 1.6, dash: "2 4" };
     case "biological":
-      return { color: TREE_COLORS.line, width: 2 };
     case "legal":
-      return { color: TREE_COLORS.lineStrong, width: 1.4 };
     case "adoptive":
-      return { color: TREE_COLORS.gold, width: 2, dash: "7 5" };
     case "special_adoptive":
-      return { color: TREE_COLORS.gold, width: 3, dash: "7 5" };
     case "step":
-      return { color: TREE_COLORS.inkSoft, width: 1.6, dash: "2 5" };
+    case "coparent":
     case "sibling_unknown_parent":
-      return { color: TREE_COLORS.inkSoft, width: 1.6, dash: "2 4" };
+      return { color: TREE_COLORS.line, width: 2 };
   }
 }
 
@@ -161,23 +156,16 @@ export function renderTreeSvg(layout: LayoutResult, opts: RenderOptions = {}): s
 
 /** 凡例(線の見方)のデータ。画面の凡例と画像出力で共通に使う。 */
 export const LEGEND_ITEMS: { style: EdgeStyle; label: string }[] = [
-  { style: "marriage", label: "婚姻中の夫婦" },
+  { style: "marriage", label: "婚姻中の夫婦(事実婚も同じ)" },
   { style: "divorced", label: "離別(離婚)" },
   { style: "widowed", label: "死別" },
-  { style: "common_law", label: "事実婚" },
-  { style: "biological", label: "実の親子" },
-  { style: "legal", label: "法的な親子(戸籍上)" },
-  { style: "adoptive", label: "養子縁組" },
-  { style: "special_adoptive", label: "特別養子縁組" },
-  { style: "step", label: "継親子(連れ子)" },
-  { style: "coparent", label: "婚姻の記録がない親同士" },
-  { style: "sibling_unknown_parent", label: "兄弟姉妹(親は未登録)" },
+  { style: "biological", label: "親子(実の親子・戸籍上の親子)" },
 ];
 
 export function legendSwatchSvg(style: EdgeStyle): string {
   const st = strokeFor(style);
   let inner: string;
-  if (style === "marriage") {
+  if (style === "marriage" || style === "common_law") {
     inner = `<path d="M2 7H38M2 13H38" stroke="${st.color}" stroke-width="2" stroke-linecap="round"/>`;
   } else {
     inner = `<path d="M2 10H38" stroke="${st.color}" stroke-width="${st.width}" stroke-linecap="round"${st.dash ? ` stroke-dasharray="${st.dash}"` : ""}/>`;

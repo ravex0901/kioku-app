@@ -1063,7 +1063,8 @@ function layoutBand(args: BandArgs): BandResult {
       const x1 = lx + cardW;
       const x2 = rx;
       const segments: Segment[] =
-        style === "marriage"
+        // 事実婚も、婚姻中と同じ二重線で描く(線の見方を減らすため)
+        style === "marriage" || style === "common_law"
           ? [seg(x1, yy - 3, x2, yy - 3), seg(x1, yy + 3, x2, yy + 3)]
           : [seg(x1, yy, x2, yy)];
       edges.push({

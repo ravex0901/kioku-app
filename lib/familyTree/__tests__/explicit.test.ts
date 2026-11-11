@@ -5,7 +5,7 @@ import type { ExplicitRelRow, FamilyRow } from "../fromRows";
 import { layoutFamilyTree } from "../layout";
 import { familyRelationLabel } from "../../constants";
 import { isClean, verifyLayout } from "../verify";
-import { legendSwatchSvg, renderTreeSvg } from "../svg";
+import { LEGEND_ITEMS, legendSwatchSvg, renderTreeSvg } from "../svg";
 
 // 明示的な親族関係(family_relationships)のテスト。
 // 離婚・再婚・「どの配偶者との子か」を、家族の登録画面から入れたときの描画を確かめる。
@@ -147,5 +147,42 @@ describe("離別(離婚)の線の見た目", () => {
     const sw = legendSwatchSvg("divorced");
     assert.match(sw, /stroke-dasharray="0\.1 6"/);
     assert.equal((sw.match(/<path/g) ?? []).length, 1);
+  });
+});
+
+describe("線の見方を4種類にまとめる", () => {
+  it("凡例は 婚姻中(事実婚も同じ)・離別・死別・親子 の4つだけ", () => {
+    assert.deepEqual(
+      LEGEND_ITEMS.map((i) => i.style),
+      ["marriage", "divorced", "widowed", "biological"]
+    );
+    assert.match(LEGEND_ITEMS[0].label, /事実婚/);
+    assert.match(LEGEND_ITEMS[3].label, /戸籍/);
+  });
+
+  it("事実婚は婚姻中と同じ二重線で描く", () => {
+    const input = build(
+      [row("mX", "spouse", "パートナー")],
+      [{ id: "r1", type: "marriage", a: self, b: mem("mX"), marriageStatus: "common_law" }]
+    );
+    const L = layoutFamilyTree(input);
+    const e = L.edges.find((x) => x.kind === "marriage");
+    assert.ok(e);
+    assert.equal(e.segments.length, 2, "二重線になっていない");
+    const svg = renderTreeSvg(L);
+    const tag = svg.match(new RegExp(`<path data-edge-id="${e.id.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}"[^>]*>`));
+    assert.ok(tag);
+    assert.doesNotMatch(tag[0], /stroke-dasharray/, "破線のまま");
+  });
+
+  it("戸籍上の親子・養子・特別養子・連れ子・親不明の兄弟・婚姻の記録がない親同士は、実の親子と同じ線で描く", () => {
+    const strokeOf = (style: string) => {
+      const s = legendSwatchSvg(style as never);
+      return s.replace(/viewBox="[^"]*"/, "");
+    };
+    const base = strokeOf("biological");
+    for (const s of ["legal", "adoptive", "special_adoptive", "step", "sibling_unknown_parent", "coparent"]) {
+      assert.equal(strokeOf(s), base, `${s} の線が実の親子と違う`);
+    }
   });
 });
