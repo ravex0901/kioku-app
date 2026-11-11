@@ -1,4 +1,5 @@
 import { redirect } from "next/navigation";
+import { syncAutoFamily } from "@/app/actions/familyAutoLink";
 import { createClient } from "@/lib/supabase/server";
 import { Header } from "@/components/Header";
 import { BackButton } from "@/components/BackButton";
@@ -28,6 +29,10 @@ export default async function SettingsPage({
   if (!user) {
     redirect("/login");
   }
+
+  // 家系図の範囲内の人を、家族欄に自動で加えてから読み込む(失敗しても設定画面は表示する)
+  const sync = await syncAutoFamily();
+  if (!sync.ok) console.error("syncAutoFamily failed", sync.error);
 
   const [
     { data: profile },

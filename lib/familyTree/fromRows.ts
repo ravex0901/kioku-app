@@ -102,6 +102,21 @@ const RELATIONS: Record<string, RelationInfo> = {
   granddaughter: { gender: "female", role: "other", delta: 2 },
   great_grandson: { gender: "male", role: "other", delta: 3 },
   great_granddaughter: { gender: "female", role: "other", delta: 3 },
+  // 自動追加で使う続柄。兄弟・姉妹は年上か分からない兄弟。それ以外は線を引かず世代の目安だけ
+  // (線は、間にいる人の登録から引かれる)
+  brother: { gender: "male", role: "sibling", delta: 0 },
+  sister: { gender: "female", role: "sibling", delta: 0 },
+  father_in_law: { gender: "male", role: "other", delta: -1 },
+  mother_in_law: { gender: "female", role: "other", delta: -1 },
+  grandfather_in_law: { gender: "male", role: "other", delta: -2 },
+  grandmother_in_law: { gender: "female", role: "other", delta: -2 },
+  sibling_in_law: { role: "other", delta: 0 },
+  son_in_law: { gender: "male", role: "other", delta: 1 },
+  daughter_in_law: { gender: "female", role: "other", delta: 1 },
+  grandchild_in_law: { role: "other", delta: 2 },
+  nephew: { gender: "male", role: "other", delta: 1 },
+  niece: { gender: "female", role: "other", delta: 1 },
+  cousin: { role: "other", delta: 0 },
   other: { role: "other", delta: 0 },
 };
 

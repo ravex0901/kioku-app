@@ -83,6 +83,20 @@ export type FamilyRelation =
   | "other"
   // 前の配偶者(離婚した方)。家系図の「つながり」欄から登録する。
   | "ex_spouse"
+  // 家系図のつながりから自動で家族に加えるときに使う続柄(2026-11-11)
+  | "brother"
+  | "sister"
+  | "father_in_law"
+  | "mother_in_law"
+  | "grandfather_in_law"
+  | "grandmother_in_law"
+  | "sibling_in_law"
+  | "son_in_law"
+  | "daughter_in_law"
+  | "grandchild_in_law"
+  | "nephew"
+  | "niece"
+  | "cousin"
   // 旧バージョンの値(過去に登録されたデータとの互換性のために残す)。
   | "eldest_son"
   | "eldest_daughter";
@@ -612,6 +626,12 @@ export type Database = {
           relation: FamilyRelation;
         };
         Update: Partial<Omit<FamilyMember, "id" | "user_id" | "created_at">>;
+        Relationships: [];
+      };
+      family_auto_link_exclusions: {
+        Row: { user_id: string; other_user_id: string; created_at: string };
+        Insert: { user_id: string; other_user_id: string; created_at?: string };
+        Update: Partial<{ user_id: string; other_user_id: string; created_at: string }>;
         Relationships: [];
       };
       family_relationships: {

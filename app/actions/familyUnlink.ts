@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { getFamilyTreeGraph } from "@/app/actions/familyTree";
 import { FAMILY_RELATION_OPTIONS } from "@/lib/constants";
 import { relationshipsTableAvailable } from "@/lib/familyRelationshipsDb";
@@ -97,6 +98,20 @@ export type UnlinkResult =
     }
   | { ok: false; error: string };
 
+/** 解除した相手を、家系図の自動追加で付け直さないよう、双方向に記録する */
+async function recordExclusion(userId: string, otherUserId: string) {
+  const admin = createAdminClient();
+  if (!admin) return;
+  const { error } = await admin.from("family_auto_link_exclusions").upsert(
+    [
+      { user_id: userId, other_user_id: otherUserId },
+      { user_id: otherUserId, other_user_id: userId },
+    ],
+    { onConflict: "user_id,other_user_id", ignoreDuplicates: true }
+  );
+  if (error) console.error("recordExclusion error", error);
+}
+
 async function unlinkRpc(supabase: ServerClient, linkedUserId: string): Promise<string | null> {
   const { data, error } = await supabase.rpc("unlink_family_member", { p_linked_user_id: linkedUserId });
   if (error || !data) {
@@ -147,6 +162,7 @@ export async function separateFamilyMember(linkedUserId: string): Promise<Unlink
 
   const err = await unlinkRpc(ctx.supabase, linkedUserId);
   if (err) return { ok: false, error: err };
+  await recordExclusion(ctx.userId, linkedUserId);
 
   const added: FamilyMember[] = [];
   // 夫婦の登録が残っていれば消して、「離別」として登録し直す
@@ -196,6 +212,7 @@ export async function removeFamilyMember(linkedUserId: string, keepUserIds: stri
 
   const err = await unlinkRpc(ctx.supabase, linkedUserId);
   if (err) return { ok: false, error: err };
+  await recordExclusion(ctx.userId, linkedUserId);
 
   const added: FamilyMember[] = [];
   const failed: string[] = [];

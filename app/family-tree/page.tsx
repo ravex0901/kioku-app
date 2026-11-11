@@ -8,6 +8,8 @@ import { familyRelationLabel } from "@/lib/constants";
 import { buildTreeInput, type FamilyRow } from "@/lib/familyTree/fromRows";
 import { getFamilyTreeGraph } from "@/app/actions/familyTree";
 import { listFamilyRelationships } from "@/app/actions/familyRelationships";
+import { syncAutoFamily } from "@/app/actions/familyAutoLink";
+import { computeKinship } from "@/lib/familyTree/kinship";
 import type { FamilyMember } from "@/lib/types";
 
 export default async function FamilyTreePage({
@@ -25,6 +27,13 @@ export default async function FamilyTreePage({
 
   if (!user) {
     redirect("/login");
+  }
+
+  // 家系図の範囲内で、まだ家族欄にいない人を自動で加える(双方の家族欄に入る)。
+  // 失敗しても家系図は表示する。
+  if (!legacy) {
+    const sync = await syncAutoFamily();
+    if (!sync.ok) console.error("syncAutoFamily failed", sync.error);
   }
 
   const [{ data: profile }, { data: familyData }, graphResult, relResult] =
@@ -53,12 +62,26 @@ export default async function FamilyTreePage({
   // 承認済みのつながりをたどって合流した家族ネットワーク全体(本人を含む)。
   // 本人同士が代々つながっていくほど、ここに増えていく。どこで紐づけが起きても、
   // このネットワークに入っている全員に(本人が何もしなくても)自動的に反映される。
+  // 家系図に出すのは範囲内の人だけ(lib/familyTree/kinship.ts):
+  // 本人の曽祖父母〜曾孫(子や孫の配偶者)、おじおば・いとこ・甥姪、兄弟とその配偶者、配偶者の親・兄弟・祖父母。
+  // ただし、本人が「離婚・どの方との子か」などを登録したアカウントの人は、範囲外でも出す。
+  const explicitAccounts = new Set<string>();
+  if (relResult && relResult.ok) {
+    for (const r of relResult.relationships) {
+      if (r.a.accountId) explicitAccounts.add(r.a.accountId);
+      if (r.b.accountId) explicitAccounts.add(r.b.accountId);
+    }
+  }
   const graph = graphResult.ok
-    ? {
-        selfUserId: graphResult.selfUserId,
-        nodes: graphResult.nodes,
-        edges: graphResult.edges,
-      }
+    ? (() => {
+        const kin = computeKinship(user.id, graphResult.edges);
+        const keep = new Set([...kin.keys(), ...explicitAccounts, user.id]);
+        return {
+          selfUserId: graphResult.selfUserId,
+          nodes: graphResult.nodes.filter((n) => keep.has(n.userId)),
+          edges: graphResult.edges.filter((e) => keep.has(e.fromUserId) && keep.has(e.toUserId)),
+        };
+      })()
     : undefined;
 
   // 新しい家系図(関係データから線を引く日本式の縦型)。
