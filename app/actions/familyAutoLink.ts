@@ -2,7 +2,7 @@
 
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { planAutoLinks, type KinEdge, type MemberRow } from "@/lib/familyTree/kinship";
+import { computeKinship, forwardRelation, planAutoLinks, type KinEdge, type MemberRow } from "@/lib/familyTree/kinship";
 import type { FamilyRelation } from "@/lib/types";
 
 // 家系図の範囲内(lib/familyTree/kinship.ts)の人を、本人の家族欄に自動で加える(2026-11-11 オーナー決定)。
@@ -13,6 +13,8 @@ import type { FamilyRelation } from "@/lib/types";
 //   ほかの立場は、続柄と名前の両方が同じときだけつなぐ。
 // - 「紐づけを解除」した相手(family_auto_link_exclusions)は、自動で付け直さない。
 // - たどるのは、お互いが認めたつながり(双方向の行)だけ。DB の get_family_tree_graph がそれだけを返す。
+// - 本人の行で続柄が「その他」のまま(申請の承認・招待で仮に入る)のものは、
+//   相手側の登録とつながりから割り出した続柄に直す(割り出せなければそのまま)。
 // - 相手側の行は RLS では作れないため、サーバー側の管理用クライアントで書く。
 //   どの人を加えるかは、この関数の中で DB のデータから計算し直す(画面から相手を指定させない)。
 
@@ -50,6 +52,23 @@ export async function syncAutoFamily(): Promise<SyncResult> {
   const rows = (rowsData ?? []) as MemberRow[];
 
   const ops = planAutoLinks({ viewerId: user.id, edges, rows, excluded, names: nameOf, genders });
+
+  // 本人の行で「その他」のままの続柄を、割り出せたものだけ直す(本人の行なので本人の権限で書く)
+  const kin = computeKinship(user.id, edges, { genders });
+  for (const r of rows) {
+    if (r.user_id !== user.id || !r.linked_user_id || r.relation !== "other") continue;
+    const info = kin.get(r.linked_user_id);
+    if (!info || info.kin === "self") continue;
+    const rel = forwardRelation(info);
+    if (rel === "other") continue;
+    const { error } = await supabase
+      .from("family_members")
+      .update({ relation: rel as FamilyRelation })
+      .eq("id", r.id)
+      .eq("user_id", user.id)
+      .eq("relation", "other");
+    if (error) console.error("syncAutoFamily: fix relation failed", error);
+  }
 
   let added = 0;
   const now = new Date().toISOString();

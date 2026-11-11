@@ -79,7 +79,9 @@ export default async function FamilyTreePage({
   const graph = graphResult.ok
     ? (() => {
         const kin = computeKinship(user.id, graphResult.edges);
-        const keep = new Set([...kin.keys(), ...explicitAccounts, user.id]);
+        // 本人が直接つながっている人は、続柄が「その他」でも必ず出す
+        const direct = family.map((f) => f.linked_user_id as string);
+        const keep = new Set([...kin.keys(), ...explicitAccounts, ...direct, user.id]);
         return {
           selfUserId: graphResult.selfUserId,
           nodes: graphResult.nodes.filter((n) => keep.has(n.userId)),

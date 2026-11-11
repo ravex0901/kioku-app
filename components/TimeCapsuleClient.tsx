@@ -45,11 +45,15 @@ function conditionLabel(type: TimeCapsuleUnlockConditionType) {
   return UNLOCK_CONDITION_OPTIONS.find((o) => o.value === type)?.label ?? type;
 }
 
+// 日時は日本時間で表示する(サーバーで先に描くときも、ずれないように)
+const TZ = "Asia/Tokyo";
+
 function formatDate(iso: string) {
   return new Date(iso).toLocaleDateString("ja-JP", {
     year: "numeric",
     month: "long",
     day: "numeric",
+    timeZone: TZ,
   });
 }
 
@@ -58,14 +62,21 @@ function formatDate(iso: string) {
 function formatDateTime(iso: string) {
   const d = new Date(iso);
   const datePart = formatDate(iso);
-  if (d.getHours() === 0 && d.getMinutes() === 0) {
-    return datePart;
-  }
   const timePart = d.toLocaleTimeString("ja-JP", {
     hour: "2-digit",
     minute: "2-digit",
+    timeZone: TZ,
   });
+  if (timePart === "00:00") {
+    return datePart;
+  }
   return `${datePart} ${timePart}`;
+}
+
+// 受け取った側に見せる開封の条件。「日時を指定する」は、選んだ日時そのものを出す。
+function receivedConditionText(type: TimeCapsuleUnlockConditionType, openAt: string | null | undefined) {
+  if (type === "date" && openAt) return `${formatDateTime(openAt)}に開封`;
+  return conditionLabel(type);
 }
 
 function daysUntil(iso: string) {
@@ -590,7 +601,7 @@ function ReceivedCapsuleCard({
         <div className="flex items-center justify-between gap-3">
           <div>
             <p className="text-xs text-ink/40">
-              {conditionLabel(capsule.unlockConditionType)}・差出人:{" "}
+              {receivedConditionText(capsule.unlockConditionType, capsule.openAt)}・差出人:{" "}
               {capsule.senderName}
             </p>
             <p className="mt-1 font-serif-jp text-base font-bold text-ink">
@@ -674,7 +685,7 @@ function ReceivedCapsuleCard({
           </p>
           <p className="text-xs text-ink/50">
             差出人: {capsule.senderName} ・ 条件:{" "}
-            {conditionLabel(capsule.unlockConditionType)}
+            {receivedConditionText(capsule.unlockConditionType, capsule.openAt)}
           </p>
         </div>
       </div>
@@ -718,7 +729,9 @@ function ReceivedCapsuleCard({
 
       {capsule.unlockConditionType !== "marriage" && (
         <p className="text-xs text-ink/50">
-          {conditionLabel(capsule.unlockConditionType)}の条件を満たすと、自動的に開封できるようになります。
+          {capsule.unlockConditionType === "date" && capsule.openAt
+            ? `${formatDateTime(capsule.openAt)}になると、自動的に開封できるようになります(あと${daysUntil(capsule.openAt)}日)。`
+            : `「${conditionLabel(capsule.unlockConditionType)}」の条件を満たすと、自動的に開封できるようになります。`}
         </p>
       )}
     </div>

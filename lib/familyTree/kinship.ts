@@ -103,6 +103,43 @@ const REL: Record<string, { cat: EdgeCat; gender?: Gender; older?: boolean }> = 
   son_in_law: { cat: "child_in_law", gender: "male" },
   daughter_in_law: { cat: "child_in_law", gender: "female" },
   grandchild_in_law: { cat: "grandchild_in_law" },
+  // 片側が「その他」のとき、相手側の登録から補った続柄(性別は分からないので持たない)。画面には出ない
+  _parent: { cat: "parent" },
+  _child: { cat: "child" },
+  _sibling: { cat: "sibling" },
+  _spouse: { cat: "spouse" },
+  _grandparent: { cat: "grandparent" },
+  _grandchild: { cat: "grandchild" },
+  _great_grandparent: { cat: "great_grandparent" },
+  _great_grandchild: { cat: "great_grandchild" },
+  _uncle_aunt: { cat: "uncle_aunt" },
+  _nephew_niece: { cat: "nephew_niece" },
+  _cousin: { cat: "cousin" },
+  _spouse_parent: { cat: "spouse_parent" },
+  _spouse_grandparent: { cat: "spouse_grandparent" },
+  _sibling_in_law: { cat: "sibling_in_law" },
+  _child_in_law: { cat: "child_in_law" },
+  _grandchild_in_law: { cat: "grandchild_in_law" },
+};
+
+// 相手から見た線の種類 → 自分から見た線の種類
+const INVERSE_CAT: Record<EdgeCat, EdgeCat> = {
+  parent: "child",
+  child: "parent",
+  sibling: "sibling",
+  spouse: "spouse",
+  grandparent: "grandchild",
+  grandchild: "grandparent",
+  great_grandparent: "great_grandchild",
+  great_grandchild: "great_grandparent",
+  uncle_aunt: "nephew_niece",
+  nephew_niece: "uncle_aunt",
+  cousin: "cousin",
+  spouse_parent: "child_in_law",
+  child_in_law: "spouse_parent",
+  spouse_grandparent: "grandchild_in_law",
+  grandchild_in_law: "spouse_grandparent",
+  sibling_in_law: "sibling_in_law",
 };
 
 // (今の人の続き柄) × (その人から見た次の人の続柄) → 次の人の続き柄。表にない組み合わせは範囲外。
@@ -187,10 +224,25 @@ const PRIORITY: Kin[] = [
 ];
 const rank = (k: Kin) => PRIORITY.indexOf(k);
 
-/** 双方向の行がそろったつながりだけを残す(from → to と to → from の両方がある) */
+/**
+ * 双方向の行がそろったつながりだけを残す(from → to と to → from の両方がある)。
+ * 片側が「その他」(申請の承認・招待で仮に入る続柄)で、もう片側に続柄があれば、その逆で補う。
+ * (例:相手が本人を「息子」と登録していれば、本人から見た相手は「親」)
+ */
 function mutualEdges(edges: KinEdge[]): KinEdge[] {
-  const keys = new Set(edges.map((e) => `${e.fromUserId}>${e.toUserId}`));
-  return edges.filter((e) => e.fromUserId !== e.toUserId && keys.has(`${e.toUserId}>${e.fromUserId}`));
+  const byKey = new Map(edges.map((e) => [`${e.fromUserId}>${e.toUserId}`, e]));
+  const out: KinEdge[] = [];
+  for (const e of edges) {
+    if (e.fromUserId === e.toUserId) continue;
+    const rev = byKey.get(`${e.toUserId}>${e.fromUserId}`);
+    if (!rev) continue;
+    if ((e.relation === "other" || !e.relation) && REL[rev.relation]) {
+      out.push({ ...e, relation: `_${INVERSE_CAT[REL[rev.relation].cat]}` });
+    } else {
+      out.push(e);
+    }
+  }
+  return out;
 }
 
 /** ほかの人が登録した続柄から、その人の性別を推定する(多数決。分からなければ undefined) */

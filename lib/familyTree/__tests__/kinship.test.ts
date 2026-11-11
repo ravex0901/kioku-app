@@ -247,3 +247,34 @@ describe("自動追加で行う書き込み(planAutoLinks)", () => {
     assert.ok(ops.some((o) => o.owner === "me" && o.other === "bw" && o.relation === "sibling_in_law"));
   });
 });
+
+describe("片側が「その他」のつながり(申請の承認・招待で仮に入る続柄)", () => {
+  it("相手が本人を「息子」と登録していれば、本人から見た相手は親になる", () => {
+    const edges = [...both("me", "dad", "other", "son")];
+    assert.equal(kinOf(edges, "dad"), "parent");
+  });
+
+  it("親が「その他」でも、その先の兄弟・祖父母までたどれる", () => {
+    const edges = [...both("me", "dad", "other", "son"), ...both("dad", "bro", "son", "father"), ...both("dad", "gpa", "father", "son")];
+    assert.equal(kinOf(edges, "bro"), "sibling");
+    assert.equal(kinOf(edges, "gpa"), "grandparent");
+  });
+
+  it("性別が分かれば、本人の家族欄の続柄も割り出せる(「父」)", () => {
+    const edges = [...both("me", "dad", "other", "son"), ...both("dad", "mom", "spouse", "spouse"), E("mom", "dad", "spouse"), ...both("bro", "dad", "father", "son")];
+    const info = computeKinship("me", edges, { genders: { dad: "male" } }).get("dad")!;
+    assert.equal(forwardRelation(info), "father");
+  });
+
+  it("両側とも「その他」なら、たどらない", () => {
+    const edges = [...both("me", "x", "other", "other"), ...both("x", "xKid", "son", "father")];
+    assert.equal(kinOf(edges, "x"), undefined);
+    assert.equal(kinOf(edges, "xKid"), undefined);
+  });
+
+  it("元配偶者は、相手が「配偶者」と登録していても配偶者として補わない", () => {
+    const edges = [...both("me", "ex", "ex_spouse", "spouse"), ...both("ex", "exDad", "father", "daughter")];
+    assert.equal(kinOf(edges, "ex"), undefined);
+    assert.equal(kinOf(edges, "exDad"), undefined);
+  });
+});

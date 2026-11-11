@@ -1,6 +1,7 @@
 "use server";
 
 import { createClient } from "@/lib/supabase/server";
+import { syncAutoFamily } from "@/app/actions/familyAutoLink";
 import type { FamilyRelation, PendingFamilyLinkRequest } from "@/lib/types";
 
 // 「アカウントIDでつなぐ」を、即座につながる方式から
@@ -90,6 +91,10 @@ export async function approveFamilyLinkRequest(
   if (!result.ok) {
     return { ok: false, error: result.error ?? "許可に失敗しました。" };
   }
+  // 許可した側の続柄は「その他」で仮に作られるため、相手の登録から割り出して直す
+  // (あわせて家系図の範囲内の人も加える)。失敗しても許可そのものは済んでいる。
+  const sync = await syncAutoFamily();
+  if (!sync.ok) console.error("syncAutoFamily after approve failed", sync.error);
   return { ok: true };
 }
 
