@@ -147,7 +147,9 @@ describe("自動で家族に加えるときの続柄", () => {
     const edges = [...both("me", "wife", "spouse", "spouse"), ...both("wife", "wDad", "father", "daughter")];
     assert.equal(inferGender("wDad", edges), "male");
     assert.equal(inferGender("wife", edges), "female");
-    assert.equal(inferGender("me", edges), undefined);
+    // 本人の続柄はだれも登録していないが、配偶者が女性なので男性とみなす
+    assert.equal(inferGender("me", edges), "male");
+    assert.equal(inferGender("x", edges), undefined);
   });
 
   it("配偶者の父 → 本人側は「義父」、相手側は本人の性別で「娘の夫」", () => {

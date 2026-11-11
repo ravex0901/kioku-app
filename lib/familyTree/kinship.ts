@@ -206,6 +206,22 @@ export function inferGender(userId: string, edges: KinEdge[], profileGender?: st
   }
   if (m > f) return "male";
   if (f > m) return "female";
+  // 最後の手がかり:配偶者の性別がわかれば、その反対とみなす(続柄を「その他」にしないため)
+  for (const e of edges) {
+    if (e.relation !== "spouse") continue;
+    const partner = e.fromUserId === userId ? e.toUserId : e.toUserId === userId ? e.fromUserId : null;
+    if (!partner) continue;
+    let pm = 0;
+    let pf = 0;
+    for (const x of edges) {
+      if (x.toUserId !== partner) continue;
+      const g = REL[x.relation]?.gender;
+      if (g === "male") pm++;
+      if (g === "female") pf++;
+    }
+    if (pm > pf) return "female";
+    if (pf > pm) return "male";
+  }
   return undefined;
 }
 
