@@ -198,6 +198,7 @@ export default async function FamilyTreePage({
             initialDeceasedStatus={sectionData.deceasedStatus}
             initialLegacyShareStatus={sectionData.legacyShareStatus}
             linkedGenders={sectionData.linkedGenders}
+            initialBlockedIds={sectionData.blockedIds}
           />
         </div>
       </main>

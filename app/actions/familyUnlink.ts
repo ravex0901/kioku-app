@@ -77,27 +77,12 @@ async function loadContext(linkedUserId: string): Promise<Ctx | { error: string 
   if (!graph.ok) return { error: graph.error };
 
   // 自動追加だけでできたつながり(双方の行とも招待トークンなし)を除いた線で計算する
-  const ids = graph.nodes.map((n) => n.userId);
   const admin = createAdminClient();
-  let edges = graph.edges;
-  let autoPairs: [string, string][] = [];
-  if (admin && ids.length > 0) {
-    const { data: rows } = await admin
-      .from("family_members")
-      .select("user_id, linked_user_id, invite_token")
-      .in("user_id", ids)
-      .not("linked_user_id", "is", null);
-    const auto = new Set(
-      (rows ?? []).filter((r) => !r.invite_token).map((r) => `${r.user_id}>${r.linked_user_id}`)
-    );
-    edges = graph.edges.filter(
-      (e) => !(auto.has(`${e.fromUserId}>${e.toUserId}`) && auto.has(`${e.toUserId}>${e.fromUserId}`))
-    );
-    autoPairs = graph.edges
-      .filter((e) => e.fromUserId < e.toUserId)
-      .filter((e) => auto.has(`${e.fromUserId}>${e.toUserId}`) && auto.has(`${e.toUserId}>${e.fromUserId}`))
-      .map((e) => [e.fromUserId, e.toUserId]);
-  }
+  const split = admin
+    ? await splitAutoEdges(admin, graph.nodes.map((n) => n.userId), graph.edges)
+    : { manualEdges: graph.edges, autoPairs: [] as [string, string][] };
+  const edges = split.manualEdges;
+  const autoPairs = split.autoPairs;
 
   const impact = analyzeUnlink({
     viewerId: user.id,
@@ -122,7 +107,15 @@ async function loadContext(linkedUserId: string): Promise<Ctx | { error: string 
  * 自動追加のつながりは、もとになったつながり(自動追加でない線)でつながっている間だけ残す。
  * 解除によって、もとのつながりが切れた自動追加のつながり(ほかのご家族どうしのものも含む)を消す。
  */
-async function pruneOrphanedAutoLinks(ctx: Ctx, cut: [string, string]) {
+async function pruneOrphanedAutoLinks(ctx: Pick<Ctx, "manualEdges" | "autoPairs">, cut: [string, string]) {
+  const isCut = (a: string, b: string) => (a === cut[0] && b === cut[1]) || (a === cut[1] && b === cut[0]);
+  await pruneAutoLinksWhere(ctx, isCut);
+}
+
+async function pruneAutoLinksWhere(
+  ctx: Pick<Ctx, "manualEdges" | "autoPairs">,
+  removed: (a: string, b: string) => boolean
+) {
   const admin = createAdminClient();
   if (!admin || ctx.autoPairs.length === 0) return;
   const comp = (skipCut: boolean) => {
@@ -136,9 +129,7 @@ async function pruneOrphanedAutoLinks(ctx: Ctx, cut: [string, string]) {
       return p;
     };
     for (const e of ctx.manualEdges) {
-      const isCut =
-        (e.fromUserId === cut[0] && e.toUserId === cut[1]) || (e.fromUserId === cut[1] && e.toUserId === cut[0]);
-      if (skipCut && isCut) continue;
+      if (skipCut && removed(e.fromUserId, e.toUserId)) continue;
       parent.set(find(e.fromUserId), find(e.toUserId));
     }
     return find;
@@ -181,6 +172,28 @@ export type UnlinkResult =
       added: FamilyMember[];
     }
   | { ok: false; error: string };
+
+type Edge = { fromUserId: string; toUserId: string; relation: string };
+
+/** 家系図の線を、自動追加でない線(manualEdges)と、自動追加だけでできた組(autoPairs)に分ける */
+async function splitAutoEdges(
+  admin: NonNullable<ReturnType<typeof createAdminClient>>,
+  ids: string[],
+  allEdges: Edge[]
+): Promise<{ manualEdges: Edge[]; autoPairs: [string, string][] }> {
+  if (ids.length === 0) return { manualEdges: allEdges, autoPairs: [] };
+  const { data: rows } = await admin
+    .from("family_members")
+    .select("user_id, linked_user_id, invite_token")
+    .in("user_id", ids)
+    .not("linked_user_id", "is", null);
+  const auto = new Set((rows ?? []).filter((r) => !r.invite_token).map((r) => `${r.user_id}>${r.linked_user_id}`));
+  const isAutoPair = (e: Edge) => auto.has(`${e.fromUserId}>${e.toUserId}`) && auto.has(`${e.toUserId}>${e.fromUserId}`);
+  return {
+    manualEdges: allEdges.filter((e) => !isAutoPair(e)),
+    autoPairs: allEdges.filter((e) => e.fromUserId < e.toUserId && isAutoPair(e)).map((e) => [e.fromUserId, e.toUserId]),
+  };
+}
 
 /** 解除した相手を、家系図の自動追加で付け直さないよう、双方向に記録する */
 async function recordExclusion(userId: string, otherUserId: string) {
@@ -346,4 +359,121 @@ export async function removeFamilyMember(linkedUserId: string, keepUserIds: stri
     };
   }
   return { ok: true, dryRun: false, added };
+}
+
+// ---------------------------------------------------------------------------
+// 離縁(2026-11-18 オーナー決定)
+//   家系図のつながりは残したまま、相手と「相手だけにつながっている人」(離婚なら相手の親など)と、
+//   お互いの写真・持ち物・日記・ボイス・タイムカプセル・お知らせを見えなくする。
+//   見えなくするのは DB の family_content_blocks(内容を見せる関数・ポリシーが確かめる)。
+//   配偶者なら、家系図の線を離婚(点々線)にする。
+// ---------------------------------------------------------------------------
+
+export type RienPreview =
+  | { ok: true; name: string; relation: string; isSpouse: boolean; others: ImpactNode[] }
+  | { ok: false; error: string };
+
+/** 離縁すると見えなくなる人(相手と、相手だけにつながっている人) */
+export async function previewRien(linkedUserId: string): Promise<RienPreview> {
+  const ctx = await loadContext(linkedUserId);
+  if ("error" in ctx) return { ok: false, error: ctx.error };
+  return {
+    ok: true,
+    name: ctx.member.name,
+    relation: ctx.member.relation,
+    isSpouse: SPOUSE_LIKE.has(ctx.member.relation),
+    others: ctx.impact.dependents.map((d) => ({ userId: d.userId, name: d.name })),
+  };
+}
+
+const SPOUSE_LIKE = new Set(["spouse", "ex_spouse"]);
+
+export async function rienFamilyMember(linkedUserId: string): Promise<{ ok: true } | { ok: false; error: string }> {
+  const ctx = await loadContext(linkedUserId);
+  if ("error" in ctx) return { ok: false, error: ctx.error };
+  const admin = createAdminClient();
+  if (!admin) return { ok: false, error: "いまは離縁できません(サーバーの設定がありません)。" };
+
+  const targets = [linkedUserId, ...ctx.impact.dependents.map((d) => d.userId)];
+  const rows = targets.flatMap((t) => [
+    { user_id: ctx.userId, other_user_id: t, origin_user_id: linkedUserId },
+    { user_id: t, other_user_id: ctx.userId, origin_user_id: linkedUserId },
+  ]);
+  const { error } = await admin
+    .from("family_content_blocks")
+    .upsert(rows, { onConflict: "user_id,other_user_id", ignoreDuplicates: true });
+  if (error) {
+    console.error("rien: insert blocks failed", error);
+    return { ok: false, error: "離縁できませんでした。もう一度お試しください。" };
+  }
+
+  // 配偶者なら、双方の家系図で線を離婚(点々線)にする
+  if (SPOUSE_LIKE.has(ctx.member.relation) && ctx.available) {
+    for (const owner of [ctx.userId, linkedUserId]) {
+      const other = owner === ctx.userId ? linkedUserId : ctx.userId;
+      await admin
+        .from("family_relationships")
+        .delete()
+        .eq("owner_id", owner)
+        .eq("type", "marriage")
+        .or(
+          `and(a_account_id.eq.${owner},b_account_id.eq.${other}),and(a_account_id.eq.${other},b_account_id.eq.${owner})`
+        );
+      const { error: mErr } = await admin.from("family_relationships").insert({
+        owner_id: owner,
+        type: "marriage",
+        a_account_id: owner,
+        b_account_id: other,
+        marriage_status: "divorced",
+      });
+      if (mErr) console.error("rien: divorced line failed", owner, mErr);
+    }
+  }
+
+  revalidatePath("/family-tree");
+  return { ok: true };
+}
+
+// ---------------------------------------------------------------------------
+// 家系図から自分を切り離す(2026-11-18 オーナー決定)
+//   本人の家族欄をすべて消し(名前だけの家族・招待リンクも含む)、
+//   ほかの方の家族欄にある本人とのつながりも消す。本人を通じてだけできていた
+//   自動追加のつながり(ほかのご家族どうしのもの)も消す。取り消せない。
+// ---------------------------------------------------------------------------
+
+export async function detachFromFamilyTree(): Promise<{ ok: true } | { ok: false; error: string }> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { ok: false, error: "ログインしてください。" };
+  const admin = createAdminClient();
+  if (!admin) return { ok: false, error: "いまは切り離せません(サーバーの設定がありません)。" };
+
+  // 消す前の家系図(本人を通じてだけできていた自動追加のつながりを見つけるため)
+  const graph = await getFamilyTreeGraph();
+  const edges = graph.ok ? await splitAutoEdges(admin, graph.nodes.map((n) => n.userId), graph.edges) : null;
+
+  const steps = [
+    admin.from("family_members").delete().or(`user_id.eq.${user.id},linked_user_id.eq.${user.id}`),
+    admin.from("family_relationships").delete().eq("owner_id", user.id),
+    admin.from("family_content_blocks").delete().or(`user_id.eq.${user.id},other_user_id.eq.${user.id}`),
+    admin.from("family_auto_link_exclusions").delete().or(`user_id.eq.${user.id},other_user_id.eq.${user.id}`),
+  ];
+  for (const step of steps) {
+    const { error } = await step;
+    // 保存先の表がまだない(family_relationships)ときは飛ばす
+    if (error && error.code !== "42P01") {
+      console.error("detachFromFamilyTree error", error);
+      return { ok: false, error: "切り離しの途中で失敗しました。もう一度お試しください。" };
+    }
+  }
+
+  if (edges) {
+    await pruneAutoLinksWhere(edges, (a, b) => a === user.id || b === user.id);
+  }
+
+  revalidatePath("/family-tree");
+  revalidatePath("/settings");
+  return { ok: true };
 }

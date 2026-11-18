@@ -20,6 +20,8 @@ export type FamilySectionData = {
   legacyShareStatus: Record<string, boolean>;
   /** つながっている相手の性別(続柄の選択肢をしぼるため。本人の設定画面以外には出さない) */
   linkedGenders: Record<string, string>;
+  /** 離縁して、お互いに写真・日記などが見えない相手 */
+  blockedIds: string[];
 };
 
 export async function loadFamilySectionData(
@@ -61,5 +63,9 @@ export async function loadFamilySectionData(
     }
   }
 
-  return { familyShareSettings, deceasedStatus, legacyShareStatus, linkedGenders };
+  // 離縁した相手(本人の行だけ読める)。表がまだないときは空のまま
+  const { data: blocks } = await supabase.from("family_content_blocks").select("other_user_id");
+  const blockedIds = (blocks ?? []).map((b) => b.other_user_id as string);
+
+  return { familyShareSettings, deceasedStatus, legacyShareStatus, linkedGenders, blockedIds };
 }

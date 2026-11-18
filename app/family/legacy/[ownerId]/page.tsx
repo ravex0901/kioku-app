@@ -35,7 +35,17 @@ export default async function FamilyLegacyPage({
       .select("share_token, family_member_id")
       .eq("user_id", ownerId);
 
-    if (!settings || settings.disclosure_status !== "approved") {
+    // 離縁した相手どうしは、「もしもの時」の内容も見られない
+    const { data: blocked } = await admin
+      .from("family_content_blocks")
+      .select("user_id")
+      .eq("user_id", user.id)
+      .eq("other_user_id", ownerId)
+      .maybeSingle();
+
+    if (blocked) {
+      message = "この方の内容は表示できません。";
+    } else if (!settings || settings.disclosure_status !== "approved") {
       message = "運営による確認が完了していないため、まだ表示できません。";
     } else {
       let token: string | null = null;

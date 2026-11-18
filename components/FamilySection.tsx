@@ -5,7 +5,8 @@ import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { FAMILY_RELATION_OPTIONS, familyRelationLabel, familyRelationOptionsFor } from "@/lib/constants";
 import { requestFamilyLink } from "@/app/actions/familyLinkRequests";
-import { UnlinkFamilyDialog } from "@/components/UnlinkFamilyDialog";
+import { RienDialog } from "@/components/RienDialog";
+import { detachFromFamilyTree } from "@/app/actions/familyUnlink";
 import {
   setFamilyShareSettings,
   setFamilyItemsDirectShare,
@@ -27,6 +28,7 @@ export function FamilySection({
   initialDeceasedStatus,
   initialLegacyShareStatus,
   linkedGenders = {},
+  initialBlockedIds = [],
 }: {
   userId: string;
   accountCode: string | null;
@@ -36,6 +38,8 @@ export function FamilySection({
   initialLegacyShareStatus?: Record<string, boolean>;
   /** アカウントでつながっている相手の性別(続柄の選択肢を、相手の性別に合うものだけにする) */
   linkedGenders?: Record<string, string>;
+  /** 離縁して、お互いに写真・日記などが見えない相手 */
+  initialBlockedIds?: string[];
 }) {
   const router = useRouter();
   const [family, setFamily] = useState(initialFamily);
@@ -99,15 +103,32 @@ export function FamilySection({
   const [savingDeceasedId, setSavingDeceasedId] = useState<string | null>(
     null
   );
-  // 「紐づけを解除」を押した先の画面(離別か削除かを選ぶ)。
-  // 削除のときは、相手を通じてだけつながっていた方を、ひとりずつ残すか選べる。
-  const [unlinkTarget, setUnlinkTarget] = useState<FamilyMember | null>(null);
-  function handleUnlinkFamilyMember(member: FamilyMember) {
-    if (!member.linked_user_id) return;
-    setUnlinkTarget(member);
+  // 「離縁」:家系図には残し、相手(と相手だけにつながっている方)とお互いの写真・日記などを見えなくする
+  const [rienTarget, setRienTarget] = useState<FamilyMember | null>(null);
+  const [blockedIds, setBlockedIds] = useState<Set<string>>(new Set(initialBlockedIds));
+  function handleRienDone(linkedUserId: string) {
+    setBlockedIds((prev) => new Set([...prev, linkedUserId]));
+    router.refresh();
   }
-  function handleUnlinkDone(removedMemberId: string, added: FamilyMember[]) {
-    setFamily((prev) => [...prev.filter((f) => f.id !== removedMemberId), ...added]);
+
+  // 家系図から自分を切り離す(家族欄をすべて消す。取り消せない)
+  const [detachStep, setDetachStep] = useState<0 | 1>(0);
+  const [detachAgree, setDetachAgree] = useState(false);
+  const [detaching, setDetaching] = useState(false);
+  const [detachError, setDetachError] = useState<string | null>(null);
+  async function handleDetach() {
+    setDetaching(true);
+    setDetachError(null);
+    const r = await detachFromFamilyTree();
+    setDetaching(false);
+    if (!r.ok) {
+      setDetachError(r.error);
+      return;
+    }
+    setFamily([]);
+    setBlockedIds(new Set());
+    setDetachStep(0);
+    setDetachAgree(false);
     router.refresh();
   }
 
@@ -251,12 +272,8 @@ export function FamilySection({
 
   return (
     <>
-      {unlinkTarget && (
-        <UnlinkFamilyDialog
-          member={unlinkTarget}
-          onClose={() => setUnlinkTarget(null)}
-          onDone={handleUnlinkDone}
-        />
+      {rienTarget && (
+        <RienDialog member={rienTarget} onClose={() => setRienTarget(null)} onDone={handleRienDone} />
       )}
       <section
         id="family"
@@ -310,13 +327,19 @@ export function FamilySection({
                       <span className="inline-flex w-fit items-center gap-1 rounded-full bg-green-50 px-2.5 py-1 text-[11px] font-medium text-green-700">
                         ✓ ご本人のアカウントとつながり済み
                       </span>
-                      <button
-                        type="button"
-                        onClick={() => handleUnlinkFamilyMember(member)}
-                        className="rounded-full border border-black/10 px-2.5 py-1 text-[11px] font-medium text-ink/50 transition hover:bg-black/5"
-                      >
-                        紐づけを解除
-                      </button>
+                      {blockedIds.has(member.linked_user_id) ? (
+                        <span className="inline-flex w-fit items-center rounded-full bg-black/5 px-2.5 py-1 text-[11px] font-medium text-ink/60">
+                          離縁済み(写真・日記などはお互いに見えません)
+                        </span>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={() => setRienTarget(member)}
+                          className="rounded-full border border-black/10 px-2.5 py-1 text-[11px] font-medium text-ink/50 transition hover:bg-black/5"
+                        >
+                          離縁
+                        </button>
+                      )}
                     </div>
                     <label className="flex items-center gap-2 text-[11px] text-ink/60">
                       <input
@@ -544,6 +567,64 @@ export function FamilySection({
           </label>
           {networkShareSaved && (
             <p className="text-xs text-green-700">設定を保存しました。</p>
+          )}
+        </div>
+
+        <div className="mt-8 rounded-xl border border-red-200 bg-red-50/60 p-4">
+          <h3 className="text-sm font-bold text-red-800">家系図から自分を切り離す(紐づけ解除)</h3>
+          <p className="mt-1 text-xs leading-relaxed text-ink/70">
+            ご家族とのつながりをすべて解除し、家族欄を空にします。名前だけで登録したご家族や招待リンクも消えます。
+          </p>
+          {detachStep === 0 && (
+            <button
+              type="button"
+              onClick={() => setDetachStep(1)}
+              className="mt-3 inline-flex min-h-[48px] items-center justify-center rounded-full border border-red-600 px-5 text-sm font-semibold text-red-700 transition hover:bg-red-100"
+            >
+              紐づけ解除
+            </button>
+          )}
+          {detachStep >= 1 && (
+            <div className="mt-3 flex flex-col gap-3 rounded-lg bg-white p-3 text-sm text-ink/80">
+              <p className="font-semibold text-ink">解除すると、次のようになります。元に戻せません。</p>
+              <ul className="list-disc space-y-1 pl-5 text-xs leading-relaxed">
+                <li>あなたの家族欄が空になり、家系図にはあなただけが残ります</li>
+                <li>ご家族の家族欄・家系図からも、あなたが消えます</li>
+                <li>ご家族と、お互いの写真・日記・持ち物などが見えなくなります</li>
+                <li>タイムカプセルの宛先・「もしもの時」の承認者や引き継ぎ先に指定したご家族の指定も外れます</li>
+              </ul>
+              <label className="flex items-start gap-2 text-sm">
+                <input
+                  type="checkbox"
+                  checked={detachAgree}
+                  onChange={(e) => setDetachAgree(e.target.checked)}
+                  className="mt-0.5 h-5 w-5 rounded border-black/20"
+                />
+                上の内容を確認しました
+              </label>
+              {detachError && <p className="text-sm text-red-600">{detachError}</p>}
+              <div className="grid grid-cols-2 gap-2">
+                <button
+                  type="button"
+                  disabled={detaching}
+                  onClick={() => {
+                    setDetachStep(0);
+                    setDetachAgree(false);
+                  }}
+                  className="min-h-[48px] rounded-full border border-black/15 bg-white text-sm text-ink"
+                >
+                  やめる
+                </button>
+                <button
+                  type="button"
+                  disabled={!detachAgree || detaching}
+                  onClick={handleDetach}
+                  className="min-h-[48px] rounded-full bg-red-600 text-sm font-semibold text-white disabled:opacity-50"
+                >
+                  {detaching ? "解除しています…" : "すべて解除する"}
+                </button>
+              </div>
+            </div>
           )}
         </div>
       </section>

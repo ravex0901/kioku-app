@@ -634,6 +634,12 @@ export type Database = {
         Update: Partial<{ user_id: string; other_user_id: string; created_at: string }>;
         Relationships: [];
       };
+      family_content_blocks: {
+        Row: { user_id: string; other_user_id: string; origin_user_id: string | null; created_at: string };
+        Insert: { user_id: string; other_user_id: string; origin_user_id?: string | null; created_at?: string };
+        Update: Partial<{ user_id: string; other_user_id: string; origin_user_id: string | null; created_at: string }>;
+        Relationships: [];
+      };
       family_relationships: {
         Row: FamilyRelationshipRow;
         Insert: Partial<Omit<FamilyRelationshipRow, "id" | "created_at" | "updated_at">> & {
