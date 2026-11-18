@@ -477,3 +477,63 @@ export async function detachFromFamilyTree(): Promise<{ ok: true } | { ok: false
   revalidatePath("/settings");
   return { ok: true };
 }
+
+// ---------------------------------------------------------------------------
+// 復縁(2026-11-18 オーナー決定):離縁を取り消す。家系図で離縁した方をタップして行う。
+//   その離縁で一緒に見えなくした方(相手だけにつながっていた方)の分もまとめて戻す。
+//   配偶者の離縁で引いた離婚の線(家系図の点々線)も消す。
+// ---------------------------------------------------------------------------
+
+export async function reconcileFamilyMember(otherUserId: string): Promise<{ ok: true } | { ok: false; error: string }> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { ok: false, error: "ログインしてください。" };
+  if (!otherUserId || otherUserId === user.id) return { ok: false, error: "指定が正しくありません。" };
+  const admin = createAdminClient();
+  if (!admin) return { ok: false, error: "いまは復縁できません(サーバーの設定がありません)。" };
+
+  // 本人の離縁の記録(本人の行だけ読める)
+  const { data: block } = await supabase
+    .from("family_content_blocks")
+    .select("origin_user_id")
+    .eq("user_id", user.id)
+    .eq("other_user_id", otherUserId)
+    .maybeSingle();
+  if (!block) return { ok: false, error: "この方とは離縁していません。" };
+  const origin = block.origin_user_id ?? otherUserId;
+
+  const { error } = await admin
+    .from("family_content_blocks")
+    .delete()
+    .eq("origin_user_id", origin)
+    .or(`user_id.eq.${user.id},other_user_id.eq.${user.id}`);
+  if (error) {
+    console.error("reconcile: delete blocks failed", error);
+    return { ok: false, error: "復縁できませんでした。もう一度お試しください。" };
+  }
+  // 起点の記録がない古い行のため、この 2 人の行も消す
+  await admin
+    .from("family_content_blocks")
+    .delete()
+    .or(
+      `and(user_id.eq.${user.id},other_user_id.eq.${otherUserId}),and(user_id.eq.${otherUserId},other_user_id.eq.${user.id})`
+    );
+
+  // 離縁で引いた離婚の線を消す(双方の家系図)
+  for (const owner of [user.id, origin]) {
+    const other = owner === user.id ? origin : user.id;
+    const { error: mErr } = await admin
+      .from("family_relationships")
+      .delete()
+      .eq("owner_id", owner)
+      .eq("type", "marriage")
+      .eq("marriage_status", "divorced")
+      .or(`and(a_account_id.eq.${owner},b_account_id.eq.${other}),and(a_account_id.eq.${other},b_account_id.eq.${owner})`);
+    if (mErr && mErr.code !== "42P01") console.error("reconcile: remove divorced line failed", mErr);
+  }
+
+  revalidatePath("/family-tree");
+  return { ok: true };
+}

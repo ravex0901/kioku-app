@@ -180,6 +180,7 @@ export default async function FamilyTreePage({
             memberRows={treeProps.memberRows}
             alwaysShowMemberIds={treeProps.alwaysShowMemberIds}
             saved={relResult && relResult.ok ? relResult.relationships : []}
+            blockedIds={sectionData.blockedIds}
           />
         ) : (
           <FamilyTreeClient

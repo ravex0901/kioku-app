@@ -17,6 +17,9 @@ type Props = {
   /** 前回の配置(更新時に関係のない人物を動かさないため) */
   onLayoutDone?: (positions: Record<string, number>) => void;
   previousX?: Record<string, number>;
+  /** 離縁している方(アカウントID)。人物をタップすると「復縁する」を出す */
+  reconcilableIds?: string[];
+  onReconcile?: (accountId: string, name: string) => void;
 };
 
 const SCOPES: { value: FocusScope; label: string }[] = [
@@ -32,7 +35,7 @@ const GEN_OPTIONS: { value: string; label: string; up: number | null; down: numb
   { value: "me", label: "ご自身の世代だけ", up: 0, down: 0 },
 ];
 
-export function FamilyTreeView({ input, previousX, onLayoutDone }: Props) {
+export function FamilyTreeView({ input, previousX, onLayoutDone, reconcilableIds, onReconcile }: Props) {
   const boxRef = useRef<HTMLDivElement>(null);
   const wrapRef = useRef<HTMLDivElement>(null);
   const [box, setBox] = useState({ w: 360, h: 520 });
@@ -420,7 +423,15 @@ export function FamilyTreeView({ input, previousX, onLayoutDone }: Props) {
                 日記を見る
               </a>
             )}
+            {sel.accountId && onReconcile && reconcilableIds?.includes(sel.accountId) && (
+              <button type="button" onClick={() => onReconcile(sel.accountId as string, sel.name)} className={btn}>
+                復縁する
+              </button>
+            )}
           </div>
+          {sel.accountId && reconcilableIds?.includes(sel.accountId) && (
+            <p className="mt-2 text-sm text-ink/60">離縁しています(写真・日記などはお互いに見えません)。</p>
+          )}
         </div>
       )}
     </div>

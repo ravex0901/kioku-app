@@ -46,13 +46,18 @@ export async function syncAutoFamily(): Promise<SyncResult> {
   const nameOf = new Map((graph.nodes ?? []).map((n) => [n.userId, n.name]));
 
   const ids = [...new Set([user.id, ...(graph.nodes ?? []).map((n) => n.userId)])];
-  const [{ data: details }, { data: excl }, { data: rowsData }] = await Promise.all([
+  const [{ data: details }, { data: excl }, { data: blocks }, { data: rowsData }] = await Promise.all([
     admin.from("profile_details").select("user_id, gender").in("user_id", ids),
     admin.from("family_auto_link_exclusions").select("other_user_id").eq("user_id", user.id),
+    // 離縁した方は、自動で家族に加え直さない
+    admin.from("family_content_blocks").select("other_user_id").eq("user_id", user.id),
     admin.from("family_members").select("id, user_id, name, relation, linked_user_id").in("user_id", ids),
   ]);
   const genders = Object.fromEntries((details ?? []).map((d) => [d.user_id, d.gender]));
-  const excluded = new Set((excl ?? []).map((e) => e.other_user_id));
+  const excluded = new Set([
+    ...(excl ?? []).map((e) => e.other_user_id),
+    ...(blocks ?? []).map((b) => b.other_user_id),
+  ]);
   const rows = (rowsData ?? []) as MemberRow[];
 
   const ops = planAutoLinks({ viewerId: user.id, edges, rows, excluded, names: nameOf, genders });

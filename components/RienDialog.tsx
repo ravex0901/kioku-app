@@ -99,7 +99,9 @@ export function RienDialog({ member, onClose, onDone }: Props) {
             {step.p.isSpouse && (
               <p className="mt-3 text-sm text-ink/70">家系図の線は、離婚の点々線になります。</p>
             )}
-            <p className="mt-3 text-sm font-semibold text-ink">いまは、この画面から元に戻すことはできません。</p>
+            <p className="mt-3 text-sm text-ink/70">
+              離縁した方は家族欄から外れます。家系図には残り、家系図でその方をタップすると「復縁する」で元に戻せます。
+            </p>
             <div className="mt-5 grid grid-cols-2 gap-2">
               <button
                 type="button"
@@ -124,7 +126,7 @@ export function RienDialog({ member, onClose, onDone }: Props) {
         {step.kind === "done" && (
           <>
             <p className="mt-4 text-base leading-relaxed text-ink">
-              {step.name}さんと離縁しました。お互いの写真・日記などは見えなくなりました。
+              {step.name}さんと離縁しました。お互いの写真・日記などは見えなくなりました。元に戻すときは、家系図で{step.name}さんをタップして「復縁する」を押してください。
             </p>
             <button
               type="button"

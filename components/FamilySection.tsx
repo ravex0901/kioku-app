@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { FAMILY_RELATION_OPTIONS, familyRelationLabel, familyRelationOptionsFor } from "@/lib/constants";
@@ -106,10 +106,17 @@ export function FamilySection({
   // 「離縁」:家系図には残し、相手(と相手だけにつながっている方)とお互いの写真・日記などを見えなくする
   const [rienTarget, setRienTarget] = useState<FamilyMember | null>(null);
   const [blockedIds, setBlockedIds] = useState<Set<string>>(new Set(initialBlockedIds));
+  // 家系図から復縁したときなど、サーバーから届く一覧が変わったら合わせる
+  const blockedKey = initialBlockedIds.join(",");
+  useEffect(() => {
+    setBlockedIds(new Set(blockedKey ? blockedKey.split(",") : []));
+  }, [blockedKey]);
   function handleRienDone(linkedUserId: string) {
     setBlockedIds((prev) => new Set([...prev, linkedUserId]));
     router.refresh();
   }
+  // 離縁した方は家族欄に出さない(家系図には残り、そこから復縁できる)
+  const listed = family.filter((m) => !m.linked_user_id || !blockedIds.has(m.linked_user_id));
 
   // 家系図から自分を切り離す(家族欄をすべて消す。取り消せない)
   const [detachStep, setDetachStep] = useState<0 | 1>(0);
@@ -282,13 +289,13 @@ export function FamilySection({
         <h2 className="mb-3 text-xs font-semibold tracking-[0.15em] text-gold">
           家族
         </h2>
-        {family.length === 0 ? (
+        {listed.length === 0 ? (
           <p className="mb-4 text-sm text-ink/60">
             まだ家族が招待されていません。
           </p>
         ) : (
           <ul className="mb-4 flex flex-col gap-2">
-            {family.map((member) => (
+            {listed.map((member) => (
               <li
                 key={member.id}
                 className="flex flex-col gap-2 rounded-xl border border-green-100 bg-white px-4 py-2.5 text-sm"
@@ -327,19 +334,13 @@ export function FamilySection({
                       <span className="inline-flex w-fit items-center gap-1 rounded-full bg-green-50 px-2.5 py-1 text-[11px] font-medium text-green-700">
                         ✓ ご本人のアカウントとつながり済み
                       </span>
-                      {blockedIds.has(member.linked_user_id) ? (
-                        <span className="inline-flex w-fit items-center rounded-full bg-black/5 px-2.5 py-1 text-[11px] font-medium text-ink/60">
-                          離縁済み(写真・日記などはお互いに見えません)
-                        </span>
-                      ) : (
-                        <button
-                          type="button"
-                          onClick={() => setRienTarget(member)}
-                          className="rounded-full border border-black/10 px-2.5 py-1 text-[11px] font-medium text-ink/50 transition hover:bg-black/5"
-                        >
-                          離縁
-                        </button>
-                      )}
+                      <button
+                        type="button"
+                        onClick={() => setRienTarget(member)}
+                        className="rounded-full border border-black/10 px-2.5 py-1 text-[11px] font-medium text-ink/50 transition hover:bg-black/5"
+                      >
+                        離縁
+                      </button>
                     </div>
                     <label className="flex items-center gap-2 text-[11px] text-ink/60">
                       <input
