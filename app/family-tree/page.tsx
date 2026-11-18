@@ -200,6 +200,7 @@ export default async function FamilyTreePage({
             initialLegacyShareStatus={sectionData.legacyShareStatus}
             linkedGenders={sectionData.linkedGenders}
             initialBlockedIds={sectionData.blockedIds}
+            directIds={sectionData.directIds}
           />
         </div>
       </main>

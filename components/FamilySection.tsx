@@ -29,6 +29,7 @@ export function FamilySection({
   initialLegacyShareStatus,
   linkedGenders = {},
   initialBlockedIds = [],
+  directIds = [],
 }: {
   userId: string;
   accountCode: string | null;
@@ -40,6 +41,8 @@ export function FamilySection({
   linkedGenders?: Record<string, string>;
   /** 離縁して、お互いに写真・日記などが見えない相手 */
   initialBlockedIds?: string[];
+  /** 直接つながっている相手(故人の「間接のご家族にも共有する」を変えられる) */
+  directIds?: string[];
 }) {
   const router = useRouter();
   const [family, setFamily] = useState(initialFamily);
@@ -357,7 +360,13 @@ export function FamilySection({
                       />
                       故人として設定する
                     </label>
-                    {deceasedStatus[member.linked_user_id] && (
+                    {deceasedStatus[member.linked_user_id] && !directIds.includes(member.linked_user_id) && (
+                      <p className="rounded-lg bg-black/5 px-2.5 py-2 text-[11px] text-ink/60">
+                        孫など間接のご家族への共有は、この方と直接つながっているご家族だけが設定できます(いまは
+                        {legacyShareStatus[member.linked_user_id] ? "共有しています" : "共有していません"})。
+                      </p>
+                    )}
+                    {deceasedStatus[member.linked_user_id] && directIds.includes(member.linked_user_id) && (
                       <label className="flex items-start gap-2 rounded-lg bg-black/5 px-2.5 py-2 text-[11px] text-ink/60">
                         <input
                           type="checkbox"
